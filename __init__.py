@@ -320,6 +320,90 @@ def write_material_name(settings,mat_id):
     blf.draw(font_id, text)
     gpu.state.blend_set('ALPHA')   
 
+test_fsh = '''
+        #define PI 3.1415926538
+        uniform vec2 origin;
+        uniform float radius; 
+        uniform float width;      
+        uniform float eps;
+        //uniform sampler2D prev_tex;  
+        in vec2 uv;
+        out vec4 fragColor;      
+
+        float simple_step(float rds, float dst){
+            if(eps < 0){
+                return 0.;
+            }
+            return (dst <= rds)?1.:0.;
+        } 
+        float smooth_step(float rds, float dst, float eps){
+            return smoothstep(rds+eps, rds-eps, dst);
+        }
+        float gaussian_step(float rds, float dst, float eps){
+            float o = rds-eps;
+            if (dst < o){
+                return 1.;
+            }
+            return exp( -(dst-o)*(dst-o)/(eps*eps) );          
+        }
+        float aa_circle(float rds, float dst){
+            //return simple_step(rds,dst);
+            return smooth_step(rds,dst,eps);
+            //return gaussian_step(rds,dst,eps);
+        }        
+        float aa_contour(float rds, float dst, float wdt){
+            float a0 = aa_circle(rds+wdt/2., dst);
+            float a1 = aa_circle(rds-wdt/2., dst);
+            return a0*(1-a1);
+        }     
+        vec4 alpha_compose(vec4 A, vec4 B){
+            vec4 color = vec4(0.);
+            color.a = A.a + B.a*(1.- A.a);
+            if( color.a == 0. ){
+                return color;
+            }
+            color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
+            return color;
+        }
+
+        void main()
+        {                    
+          float d = length(uv-origin);
+
+          vec3 fill_color = vec3(0,0.,1);
+          float a_fill = aa_circle(radius, d);
+          vec4 fill_fc = vec4(fill_color, a_fill);
+
+          vec3 line_color = vec3(0,1,0);
+          float a_line = aa_contour(radius, d, width);
+          vec4 line_fc = vec4(line_color,a_line);
+
+          fragColor = alpha_compose(line_fc, fill_fc);
+        }
+    '''
+
+def draw_test(settings):
+    shader = gpu.types.GPUShader(vsh, test_fsh)
+    batch = setup_vsh(settings,shader)
+
+    # import imbuf
+    # im_path = __path__[0] + "/blender-icon.png"
+    # im_buffer = imbuf.load(im_path)
+    # im_tex = gpu.texture.from_image(im_buffer)
+    
+    eps = 1
+    rds = settings.mc_outer_radius
+    wdt = 2
+
+    print(f'radius {rds}, eps = {eps}')
+
+    shader.uniform_float("origin", settings.origin)
+    shader.uniform_float("radius", rds)
+    shader.uniform_float("width", wdt)
+    shader.uniform_float("eps", eps)
+    
+    batch.draw(shader)  
+
 
 def draw_callback_px(op, context,settings):    
     gpu.state.blend_set('ALPHA')   
@@ -327,7 +411,9 @@ def draw_callback_px(op, context,settings):
     draw_main_circle(settings)  
     draw_material_circles(settings)  
     write_material_name(settings,settings.mat_selected)
-    
+    # if settings.mat_selected >= 0:
+    # draw_test(settings)
+
     # Reset blend mode
     gpu.state.blend_set('NONE')
 
