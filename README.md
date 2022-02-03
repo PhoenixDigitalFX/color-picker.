@@ -10,6 +10,8 @@ Blender add-on to quickly switch between materials of an active Grease pencil ob
 * Left-click on one of the materials to make it active,
 * Or right-click (or press ESC) to cancel the operation
 
+![UI](docs/gcp_preview.png "Preview of the GP Color Picker")
+
 ## License
 
 Published under GPLv3 license.
