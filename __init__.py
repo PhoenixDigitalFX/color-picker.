@@ -174,13 +174,13 @@ main_circle_fsh = '''
         {                    
           float d = length(uv-origin);
 
-          vec4 fill_color = circle_color;
-          vec4 line_color_ = line_color;
+          vec4 fill_color_ = circle_color;
+          vec4 stroke_color = line_color;
 
-          fill_color.a = aa_donut(outer_radius, inner_radius, d, aa_eps);
-          line_color_.a = aa_contour(inner_radius, line_width, d, aa_eps);
+          fill_color_.a *= aa_donut(outer_radius, inner_radius, d, aa_eps);
+          stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
 
-          fragColor = alpha_compose(line_color_, fill_color);      
+          fragColor = alpha_compose(stroke_color, fill_color_);      
         }
     '''
 
@@ -254,14 +254,14 @@ mats_circle_fsh = '''
           float d = length(uv-ci);     
                   
           /* check if inside circle */
-          fill_color.a = aa_circle(mat_radius, d, aa_eps);
-          line_color.a = aa_contour(mat_radius, mat_line_width, d, aa_eps);
+          fill_color.a *= aa_circle(mat_radius, d, aa_eps);
+          line_color.a *= aa_contour(mat_radius, mat_line_width, d, aa_eps);
           fragColor = alpha_compose(line_color, fill_color);
 
           if( is_selected ){
               float s_radius = mat_radius + mat_line_width*2;
               vec4 selection_color = selected_color;
-              selection_color.a = aa_contour(s_radius, mat_line_width, d, aa_eps);
+              selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
               fragColor = alpha_compose(selection_color, fragColor);
           }
         }
@@ -455,8 +455,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             i = settings.mat_selected
             if (i >= 0) and (i < settings.mat_nb):
                 settings.active_obj.active_material_index = i
-                settings.active_obj.active_material = settings.materials[i]
-            
+                settings.active_obj.active_material = settings.materials[i]            
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
 
@@ -484,8 +483,9 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return False
 
         s.load_mat_radius()
-        s.mat_fill_colors = [ m.grease_pencil.fill_color for m in s.materials ]
-        s.mat_line_colors = [ m.grease_pencil.color for m in s.materials ] 
+        mat_gp = [ m.grease_pencil for m in s.materials ]
+        s.mat_fill_colors = [ m.fill_color if m.show_fill else ([0.,0.,0.,0.]) for m in mat_gp ]
+        s.mat_line_colors = [ m.color if m.show_stroke else ([0.,0.,0.,0.]) for m in mat_gp ] 
         # mprv = [ m.preview for m in settings["materials"] ];
         return True
 
