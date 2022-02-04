@@ -230,17 +230,6 @@ mats_circle_fsh = '''
             return a0*(1-a1);
         }     
 
-        float aa_line( vec2 udr, float lgt, vec2 uv, float wdt, float eps){
-            float prj = dot(uv, udr);
-            /* check if pos in segment */
-            float asg = smoothstep(lgt+eps, lgt-eps, prj);
-            if(asg == 0.){
-                return 0.;
-            }
-            float d = length(-uv + prj*udr);
-            return asg*smoothstep(wdt/2+eps, wdt/2-eps, d);
-        }
-
         vec4 alpha_compose(vec4 A, vec4 B){
             /* A over B */
             vec4 color = vec4(0.);
@@ -274,6 +263,13 @@ mats_circle_fsh = '''
           /* check if inside circle */
           fill_color.a *= aa_circle(mat_radius, d, aa_eps);
           line_color.a *= aa_contour(mat_radius, mat_line_width, d, aa_eps);
+          if( is_active ){
+              vec4 act_color = active_color;
+              act_color.a *= aa_circle(mat_radius+2*mat_line_width, d, aa_eps);
+              fill_color = alpha_compose(act_color, fill_color);
+              line_color = alpha_compose(act_color, line_color);
+          }
+
           fragColor = alpha_compose(line_color, fill_color);
 
           if( is_selected ){
@@ -282,15 +278,6 @@ mats_circle_fsh = '''
               vec2 udr = vec2(cos(th_i), sin(th_i));
               selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
               fragColor = alpha_compose(selection_color, fragColor);
-          }
-          if( is_active ){
-              float a_radius = mat_radius + mat_line_width*2;
-              vec4 act_color = active_color;
-              vec2 udr = vec2(cos(th_i), sin(th_i));
-              float alp = aa_line(udr, mat_centers_radius - a_radius, loc_uv, mat_line_width, aa_eps); 
-              alp = alp*(1- aa_circle(mat_radius,length(loc_uv),aa_eps));
-              act_color.a *= (alp + aa_contour(a_radius, mat_line_width, d, aa_eps));
-              fragColor = alpha_compose(act_color, fragColor);
           }
         }
     '''
@@ -346,7 +333,6 @@ def write_material_name(settings,mat_id):
     txd = np.asarray(blf.dimensions(font_id, text))
     pos = org - 0.5*txd
     blf.position(font_id, pos[0], pos[1], 0)
-    
     blf.draw(font_id, text)
     gpu.state.blend_set('ALPHA')   
 
