@@ -314,19 +314,14 @@ def draw_material_circles(settings):
     shader.uniform_float("origin", settings.origin)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
-    batch.draw(shader)   
+    batch.draw(shader) 
 
-def write_material_name(settings,mat_id):
-    if mat_id < 0:
-        return  
-    text = settings.materials[mat_id].name
+def write_circle_centered(org, ird, text):
     font_id = 1
     blf.color(font_id, *(settings.text_color))
     blf.size(font_id, settings.text_size, 72)
     blf.enable(font_id,blf.CLIPPING)
     
-    org = settings.origin + 0.5*settings.region_dim
-    ird = settings.mc_outer_radius
     dmin, dmax = org - ird, org + ird
     blf.clipping(font_id, dmin[0], dmin[1], dmax[0], dmax[1])
     
@@ -335,6 +330,23 @@ def write_material_name(settings,mat_id):
     blf.position(font_id, pos[0], pos[1], 0)
     blf.draw(font_id, text)
     gpu.state.blend_set('ALPHA')   
+
+
+def draw_text(settings):
+    # Material names when selected
+    txt = settings.materials[settings.mat_selected].name
+    org = settings.origin + 0.5*settings.region_dim
+    ird = settings.mc_outer_radius
+    write_circle_centered(org, ird, txt)
+
+    # Active material marker
+    txt = "[A]"
+    thi = 2*pi*settings.mat_active/settings.mat_nb
+    uvc = np.asarray([cos(thi), sin(thi)])
+    org += settings.mat_centers_radius*uvc
+    ird = settings.mat_radius
+    write_circle_centered(org, ird, txt)
+
 
 test_fsh = '''
         #define PI 3.1415926538
@@ -426,7 +438,7 @@ def draw_callback_px(op, context,settings):
     
     draw_main_circle(settings)  
     draw_material_circles(settings)  
-    write_material_name(settings,settings.mat_selected)
+    draw_text(settings)
     # if settings.mat_selected >= 0:
     # draw_test(settings)
 
