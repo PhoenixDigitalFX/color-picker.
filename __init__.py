@@ -52,6 +52,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 addon_keymaps = [] 
 class GPCOLORPICKER_settings():
     def __init__(self): 
+        self.key_shortcut = 'U'
         self.origin = np.asarray([0,0])
         self.active_obj = None
         self.materials = []
@@ -450,8 +451,9 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
         if event.type == 'MOUSEMOVE':
             settings.mat_selected = self.get_selected_mat_id(event)
-
-        elif event.type == 'LEFTMOUSE':
+        
+        elif ((event.type == settings.key_shortcut) \
+                and (event.value == 'RELEASE')) or (event.type == 'LEFTMOUSE'):
             i = settings.mat_selected
             if (i >= 0) and (i < settings.mat_nb):
                 settings.active_obj.active_material_index = i
@@ -530,7 +532,7 @@ def register():
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new(GPCOLORPICKER_OT_wheel.bl_idname, \
-                                    type='U', value='PRESS', ctrl=True)
+                                    type=settings.key_shortcut, value='PRESS', ctrl=True)
         addon_keymaps.append((km, kmi))
     
 
