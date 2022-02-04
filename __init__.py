@@ -66,9 +66,11 @@ class GPCOLORPICKER_settings():
         self.mc_fill_color = (0.4,0.4,0.4,1.)
         self.mc_line_color = (0.96,0.96,0.96,1.)
         self.selected_color = (0.,1.,0.,1.)
+        self.active_color =  (0.2,0.2,0.2,0.5)
 
         self.mat_nb = -1
         self.mat_selected =  -1
+        self.mat_active =  -1
         self.mat_fill_colors = []
         self.mat_line_colors = []
 
@@ -203,11 +205,13 @@ def draw_main_circle(settings):
 mats_circle_fsh = '''
         #define PI 3.1415926538        
         uniform vec4 selected_color;
+        uniform vec4 active_color;
         uniform float mat_radius;
         uniform float mat_line_width;
         uniform float mat_centers_radius;
         uniform int mat_nb;
         uniform int mat_selected;
+        uniform int mat_active;
         uniform vec4 mat_fill_colors[__NMAT__];
         uniform vec4 mat_line_colors[__NMAT__];
 
@@ -234,7 +238,7 @@ mats_circle_fsh = '''
                 return 0.;
             }
             float d = length(-uv + prj*udr);
-            return asg*smoothstep(wdt+eps, wdt-eps, d);
+            return asg*smoothstep(wdt/2+eps, wdt/2-eps, d);
         }
 
         vec4 alpha_compose(vec4 A, vec4 B){
@@ -259,7 +263,8 @@ mats_circle_fsh = '''
           /* get color and if circle is currently selected */
           vec4 fill_color = mat_fill_colors[i];
           vec4 line_color = mat_line_colors[i];
-          bool is_selected = (i == int(mat_selected));
+          bool is_selected = (i == mat_selected);
+          bool is_active = (i == mat_active);
           
           /* compute the center of circle */
           float th_i = 2*PI*i/mat_nb;
@@ -275,9 +280,17 @@ mats_circle_fsh = '''
               float s_radius = mat_radius + mat_line_width*2;
               vec4 selection_color = selected_color;
               vec2 udr = vec2(cos(th_i), sin(th_i));
-              float alp = aa_line(udr, mat_centers_radius - s_radius, loc_uv, mat_line_width, aa_eps); 
-              selection_color.a *= (alp + aa_contour(s_radius, mat_line_width, d, aa_eps));
+              selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
               fragColor = alpha_compose(selection_color, fragColor);
+          }
+          if( is_active ){
+              float a_radius = mat_radius + mat_line_width*2;
+              vec4 act_color = active_color;
+              vec2 udr = vec2(cos(th_i), sin(th_i));
+              float alp = aa_line(udr, mat_centers_radius - a_radius, loc_uv, mat_line_width, aa_eps); 
+              alp = alp*(1- aa_circle(mat_radius,length(loc_uv),aa_eps));
+              act_color.a *= (alp + aa_contour(a_radius, mat_line_width, d, aa_eps));
+              fragColor = alpha_compose(act_color, fragColor);
           }
         }
     '''
@@ -300,11 +313,13 @@ def draw_material_circles(settings):
     batch = setup_vsh(settings,shader)
     
     shader.uniform_float("selected_color", settings.selected_color)
+    shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
     shader.uniform_float("mat_line_width", settings.mat_line_width)
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius); 
     shader.uniform_int("mat_nb", settings.mat_nb);    
     shader.uniform_int("mat_selected", settings.mat_selected);   
+    shader.uniform_int("mat_active", settings.mat_active);   
 
     set_uniform_vector_float(shader, settings.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, settings.mat_line_colors, "mat_line_colors")
@@ -503,6 +518,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         s.materials = [ m.material for k,m in s.active_obj.material_slots.items() \
                                     if m.material.is_grease_pencil ]       
         s.mat_nb = min(s.mat_nmax,len(s.materials))
+        s.mat_active = s.active_obj.active_material_index
 
         if s.mat_nb == 0:
             self.report({'INFO'}, "No material in the active object")
