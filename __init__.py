@@ -225,6 +225,18 @@ mats_circle_fsh = '''
             float a1 = aa_circle(rds-wdt/2., dst, eps);
             return a0*(1-a1);
         }     
+
+        float aa_line( vec2 udr, float lgt, vec2 uv, float wdt, float eps){
+            float prj = dot(uv, udr);
+            /* check if pos in segment */
+            float asg = smoothstep(lgt+eps, lgt-eps, prj);
+            if(asg == 0.){
+                return 0.;
+            }
+            float d = length(-uv + prj*udr);
+            return asg*smoothstep(wdt+eps, wdt-eps, d);
+        }
+
         vec4 alpha_compose(vec4 A, vec4 B){
             /* A over B */
             vec4 color = vec4(0.);
@@ -262,7 +274,9 @@ mats_circle_fsh = '''
           if( is_selected ){
               float s_radius = mat_radius + mat_line_width*2;
               vec4 selection_color = selected_color;
-              selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
+              vec2 udr = vec2(cos(th_i), sin(th_i));
+              float alp = aa_line(udr, mat_centers_radius - s_radius, loc_uv, mat_line_width, aa_eps); 
+              selection_color.a *= (alp + aa_contour(s_radius, mat_line_width, d, aa_eps));
               fragColor = alpha_compose(selection_color, fragColor);
           }
         }
