@@ -382,8 +382,8 @@ def draw_callback_px(op, context,settings):
     draw_main_circle(settings)  
     draw_material_circles(settings)  
     draw_text(settings)
-    if settings.mat_selected >= 0:
-        draw_test(settings)
+    # if settings.mat_selected >= 0:
+    #     draw_test(settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
