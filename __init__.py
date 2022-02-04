@@ -32,7 +32,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     # TODO: add keymap in prefs    
     icon_scale: IntProperty(
         name="Icon scale",
-        min=100, default=300, max=500
+        min=100, default=250, max=500
     )    
     pie_color: FloatVectorProperty(
             subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.4,0.4,0.4,1.))
@@ -59,7 +59,7 @@ class GPCOLORPICKER_settings():
         self.region_dim = np.asarray([0,0])
         self.anti_aliasing_eps = 0.5
 
-        self.set_icon_scale(300)
+        self.set_icon_scale(250)
         self.mat_line_width = 2.
         self.mc_line_width = 1.
 
