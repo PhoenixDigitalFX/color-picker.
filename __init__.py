@@ -110,12 +110,12 @@ vsh = '''
         uniform mat4 modelViewProjectionMatrix;
         
         in vec2 pos;
-        out vec2 uv;
+        out vec2 lpos;
 
         void main()
         {
           gl_Position = modelViewProjectionMatrix*vec4(pos, 0.0, 1.0);
-          uv = pos;
+          lpos = pos;
         }
     '''
 
@@ -144,7 +144,7 @@ main_circle_fsh = '''
         
         uniform vec2 origin;        
         uniform float aa_eps;
-        in vec2 uv;
+        in vec2 lpos;
         out vec4 fragColor;            
         
         float aa_circle(float rds, float dst, float eps){
@@ -175,7 +175,7 @@ main_circle_fsh = '''
 
         void main()
         {                    
-          float d = length(uv-origin);
+          float d = length(lpos-origin);
 
           vec4 fill_color_ = circle_color;
           vec4 stroke_color = line_color;
@@ -217,7 +217,7 @@ mats_circle_fsh = '''
 
         uniform vec2 origin;        
         uniform float aa_eps;
-        in vec2 uv;
+        in vec2 lpos;
         out vec4 fragColor;   
 
         float aa_circle(float rds, float dst, float eps){
@@ -244,8 +244,8 @@ mats_circle_fsh = '''
         void main()
         {                              
           /* find optimal circle index for current location */
-          vec2 loc_uv = uv-origin;
-          float dt = mod(atan(loc_uv.y, loc_uv.x),2*PI);
+          vec2 loc_pos = lpos-origin;
+          float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
           int i = int(floor((dt*mat_nb/PI + 1)/2));
           i = (i == mat_nb) ? 0 : i;
 
@@ -258,7 +258,7 @@ mats_circle_fsh = '''
           /* compute the center of circle */
           float th_i = 2*PI*i/mat_nb;
           vec2 ci = mat_centers_radius*vec2(cos(th_i),sin(th_i)) + origin;
-          float d = length(uv-ci);     
+          float d = length(lpos-ci);     
                   
           /* check if inside circle */
           fill_color.a *= aa_circle(mat_radius, d, aa_eps);
@@ -342,85 +342,28 @@ def draw_text(settings):
 
 test_fsh = '''
         #define PI 3.1415926538
-        uniform vec2 origin;
-        uniform float radius; 
-        uniform float width;      
-        uniform float eps;
-        //uniform sampler2D prev_tex;  
-        in vec2 uv;
-        out vec4 fragColor;      
+        uniform sampler2D tex;  
 
-        float simple_step(float rds, float dst){
-            if(eps < 0){
-                return 0.;
-            }
-            return (dst <= rds)?1.:0.;
-        } 
-        float smooth_step(float rds, float dst, float eps){
-            return smoothstep(rds+eps, rds-eps, dst);
-        }
-        float gaussian_step(float rds, float dst, float eps){
-            float o = rds-eps;
-            if (dst < o){
-                return 1.;
-            }
-            return exp( -(dst-o)*(dst-o)/(eps*eps) );          
-        }
-        float aa_circle(float rds, float dst){
-            //return simple_step(rds,dst);
-            return smooth_step(rds,dst,eps);
-            //return gaussian_step(rds,dst,eps);
-        }        
-        float aa_contour(float rds, float dst, float wdt){
-            float a0 = aa_circle(rds+wdt/2., dst);
-            float a1 = aa_circle(rds-wdt/2., dst);
-            return a0*(1-a1);
-        }     
-        vec4 alpha_compose(vec4 A, vec4 B){
-            vec4 color = vec4(0.);
-            color.a = A.a + B.a*(1.- A.a);
-            if( color.a == 0. ){
-                return color;
-            }
-            color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
-            return color;
-        }
+        in vec2 lpos;
+        out vec4 fragColor;      
 
         void main()
         {                    
-          float d = length(uv-origin);
+            fragColor = vec4(0.,0.,1.,0.5);
 
-          vec3 fill_color = vec3(0,0.,1);
-          float a_fill = aa_circle(radius, d);
-          vec4 fill_fc = vec4(fill_color, a_fill);
-
-          vec3 line_color = vec3(0,1,0);
-          float a_line = aa_contour(radius, d, width);
-          vec4 line_fc = vec4(line_color,a_line);
-
-          fragColor = alpha_compose(line_fc, fill_fc);
         }
     '''
-
 def draw_test(settings):
     shader = gpu.types.GPUShader(vsh, test_fsh)
     batch = setup_vsh(settings,shader)
 
-    # import imbuf
-    # im_path = __path__[0] + "/blender-icon.png"
-    # im_buffer = imbuf.load(im_path)
-    # im_tex = gpu.texture.from_image(im_buffer)
-    
-    eps = 1
-    rds = settings.mc_outer_radius
-    wdt = 2
-
-    print(f'radius {rds}, eps = {eps}')
-
-    shader.uniform_float("origin", settings.origin)
-    shader.uniform_float("radius", rds)
-    shader.uniform_float("width", wdt)
-    shader.uniform_float("eps", eps)
+    # imn = "gp_material_prw_" + str(settings.mat_selected)
+    prv = settings.materials[settings.mat_selected].preview
+    dat = prv.icon_pixels_float
+    s = prv.icon_size[0]*prv.icon_size[1]*4
+    pbf = gpu.types.Buffer('FLOAT', s, dat)
+    tx = gpu.types.GPUTexture(prv.icon_size, data=pbf, format='RGBA16F')
+    # shader.uniform_sampler("tex",)
     
     batch.draw(shader)  
 
@@ -431,8 +374,8 @@ def draw_callback_px(op, context,settings):
     draw_main_circle(settings)  
     draw_material_circles(settings)  
     draw_text(settings)
-    # if settings.mat_selected >= 0:
-    # draw_test(settings)
+    if settings.mat_selected >= 0:
+        draw_test(settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
