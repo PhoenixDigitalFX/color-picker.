@@ -52,7 +52,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 addon_keymaps = [] 
 class GPCOLORPICKER_settings():
     def __init__(self): 
-        self.key_shortcut = 'U'
+        self.key_shortcut = 'S'
         self.origin = np.asarray([0,0])
         self.active_obj = None
         self.materials = []
@@ -542,7 +542,7 @@ def register():
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new(GPCOLORPICKER_OT_wheel.bl_idname, \
-                                    type=settings.key_shortcut, value='PRESS', ctrl=True)
+                                    type=settings.key_shortcut, value='PRESS')
         addon_keymaps.append((km, kmi))
     
 
