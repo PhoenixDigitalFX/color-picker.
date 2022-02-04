@@ -347,14 +347,16 @@ def draw_text(settings):
 test_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
+        uniform float ratio;
 
         in vec2 lpos;
         in vec2 uv;
         out vec4 fragColor;      
 
         void main()
-        {                    
-            fragColor = vec4(uv,0.,0.5);
+        {                  
+
+            fragColor = texture(tex,ratio*uv);
 
         }
     '''
@@ -368,7 +370,8 @@ def draw_test(settings):
     s = prv.icon_size[0]*prv.icon_size[1]*4
     pbf = gpu.types.Buffer('FLOAT', s, dat)
     tx = gpu.types.GPUTexture(prv.icon_size, data=pbf, format='RGBA16F')
-    # shader.uniform_sampler("tex",)
+    shader.uniform_sampler("tex",tx)
+    shader.uniform_float("ratio",5)
     
     batch.draw(shader)  
 
