@@ -66,7 +66,7 @@ class GPCOLORPICKER_settings():
         self.mc_fill_color = (0.4,0.4,0.4,1.)
         self.mc_line_color = (0.96,0.96,0.96,1.)
         self.selected_color = (0.,1.,0.,1.)
-        self.active_color =  (0.2,0.2,0.2,0.5)
+        self.active_color =  (0.05,0.05,0.05,1)
 
         self.mat_nb = -1
         self.mat_selected =  -1
@@ -146,7 +146,7 @@ main_circle_fsh = '''
         uniform vec4 line_color;
         uniform float inner_radius;
         uniform float outer_radius;
-        uniform float line_width;       
+        uniform float line_width;
          
         uniform float aa_eps;
         in vec2 lpos;
@@ -189,7 +189,8 @@ main_circle_fsh = '''
           fill_color_.a *= aa_donut(outer_radius, inner_radius, d, aa_eps);
           stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
 
-          fragColor = alpha_compose(stroke_color, fill_color_);      
+          fragColor = alpha_compose(stroke_color, fill_color_);     
+           
         }
     '''
 
@@ -268,12 +269,6 @@ mats_circle_fsh = '''
           /* check if inside circle */
           fill_color.a *= aa_circle(mat_radius, d, aa_eps);
           line_color.a *= aa_contour(mat_radius, mat_line_width, d, aa_eps);
-          if( is_active ){
-              vec4 act_color = active_color;
-              act_color.a *= aa_circle(mat_radius+2*mat_line_width, d, aa_eps);
-              fill_color = alpha_compose(act_color, fill_color);
-              line_color = alpha_compose(act_color, line_color);
-          }
 
           fragColor = alpha_compose(line_color, fill_color);
 
@@ -283,6 +278,14 @@ mats_circle_fsh = '''
               vec2 udr = vec2(cos(th_i), sin(th_i));
               selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
               fragColor = alpha_compose(selection_color, fragColor);
+          }
+
+          if( is_active ){
+              vec4 act_color = active_color;
+              vec2 act_ctr = (mat_centers_radius + mat_radius*1.3)*vec2(cos(th_i),sin(th_i));
+              float act_dst = length(lpos-act_ctr);
+              act_color.a *= aa_circle(mat_line_width*2, act_dst, aa_eps);
+              fragColor = alpha_compose(act_color, fragColor);
           }
         }
     '''
