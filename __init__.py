@@ -60,7 +60,7 @@ class GPCOLORPICKER_settings():
         self.anti_aliasing_eps = 0.5
 
         self.set_icon_scale(250)
-        self.mat_line_width = 2.
+        self.mat_line_width = 5.
         self.mc_line_width = 1.
 
         self.mc_fill_color = (0.4,0.4,0.4,1.)
@@ -80,7 +80,7 @@ class GPCOLORPICKER_settings():
         self.icon_scale = scale
         alpha = 0.9
         beta = 0.5
-        gamma = 0.3
+        gamma = 0.2
         self.mat_rmin = 20
         self.mat_centers_radius = self.icon_scale/(2*(1+gamma))
         self.mc_outer_radius = alpha*self.mat_centers_radius
@@ -273,7 +273,7 @@ mats_circle_fsh = '''
           fragColor = alpha_compose(line_color, fill_color);
 
           if( is_selected ){
-              float s_radius = mat_radius + mat_line_width*2;
+              float s_radius = mat_radius + mat_line_width;
               vec4 selection_color = selected_color;
               vec2 udr = vec2(cos(th_i), sin(th_i));
               selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
@@ -282,9 +282,10 @@ mats_circle_fsh = '''
 
           if( is_active ){
               vec4 act_color = active_color;
-              vec2 act_ctr = (mat_centers_radius + mat_radius*1.3)*vec2(cos(th_i),sin(th_i));
+              float act_rds = mat_centers_radius + mat_radius + mat_line_width*2;
+              vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
               float act_dst = length(lpos-act_ctr);
-              act_color.a *= aa_circle(mat_line_width*2, act_dst, aa_eps);
+              act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
               fragColor = alpha_compose(act_color, fragColor);
           }
         }
