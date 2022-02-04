@@ -449,12 +449,11 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         context.area.tag_redraw()
 
         if event.type == 'MOUSEMOVE':
-            if settings.mat_nb > 0:
-                settings.mat_selected = self.get_selected_mat_id(event)
+            settings.mat_selected = self.get_selected_mat_id(event)
 
         elif event.type == 'LEFTMOUSE':
             i = settings.mat_selected
-            if i >= 0:
+            if (i >= 0) and (i < settings.mat_nb):
                 settings.active_obj.active_material_index = i
                 settings.active_obj.active_material = settings.materials[i]
             
@@ -470,13 +469,25 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     def load_grease_pencil_materials(self):
         s = settings
         s.active_obj = bpy.context.active_object
+
+        if s.active_obj is None:
+            # Should be avoided by poll function but who knows
+            self.report({'ERROR'}, "No active object")
+            return False
+
         s.materials = [ m.material for k,m in s.active_obj.material_slots.items() \
                                     if m.material.is_grease_pencil ]       
         s.mat_nb = min(s.mat_nmax,len(s.materials))
+
+        if s.mat_nb == 0:
+            self.report({'INFO'}, "No material in the active object")
+            return False
+
         s.load_mat_radius()
         s.mat_fill_colors = [ m.grease_pencil.fill_color for m in s.materials ]
         s.mat_line_colors = [ m.grease_pencil.color for m in s.materials ] 
         # mprv = [ m.preview for m in settings["materials"] ];
+        return True
 
     def load_preferences(self, prefs):
         settings.set_icon_scale(prefs.icon_scale)
@@ -493,9 +504,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             self.load_preferences(prefs)
 
         # Loading materials 
-        self.load_grease_pencil_materials()  
-        if settings.mat_nb == 0:
-            self.report({'INFO'}, "No material in the active object")
+        if not (self.load_grease_pencil_materials()):
             return {'CANCELLED'}      
 
         # Setting modal handler
