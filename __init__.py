@@ -73,6 +73,7 @@ class GPCOLORPICKER_settings():
         self.mat_active =  -1
         self.mat_fill_colors = []
         self.mat_line_colors = []
+        self.mat_tex = []
 
         self.text_color = (0.,0.,0.,1.)
 
@@ -368,12 +369,7 @@ def draw_test(settings):
     shader = gpu.types.GPUShader(vsh, test_fsh)
     batch = setup_vsh(settings,shader)
 
-    # imn = "gp_material_prw_" + str(settings.mat_selected)
-    prv = settings.materials[settings.mat_selected].preview
-    dat = prv.icon_pixels_float
-    s = prv.icon_size[0]*prv.icon_size[1]*4
-    pbf = gpu.types.Buffer('FLOAT', s, dat)
-    tx = gpu.types.GPUTexture(prv.icon_size, data=pbf, format='RGBA16F')
+    tx = settings.mat_tex[settings.mat_selected]
     shader.uniform_sampler("tex",tx)
     shader.uniform_float("ratio",5)
     
@@ -386,8 +382,8 @@ def draw_callback_px(op, context,settings):
     draw_main_circle(settings)  
     draw_material_circles(settings)  
     draw_text(settings)
-    # if settings.mat_selected >= 0:
-    #     draw_test(settings)
+    if settings.mat_selected >= 0:
+        draw_test(settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
@@ -473,7 +469,15 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         mat_gp = [ m.grease_pencil for m in s.materials ]
         s.mat_fill_colors = [ m.fill_color if m.show_fill else ([0.,0.,0.,0.]) for m in mat_gp ]
         s.mat_line_colors = [ m.color if m.show_stroke else ([0.,0.,0.,0.]) for m in mat_gp ] 
-        # mprv = [ m.preview for m in settings["materials"] ];
+        
+        def getGPUPreviewTexture(prv):
+            dat = prv.icon_pixels_float
+            s = prv.icon_size[0]*prv.icon_size[1]*4
+            pbf = gpu.types.Buffer('FLOAT', s, dat)
+            return gpu.types.GPUTexture(prv.icon_size, data=pbf, format='RGBA16F')
+
+        s.mat_tex = [ getGPUPreviewTexture(m.preview) for m in settings.materials ]
+
         return True
 
     def load_preferences(self, prefs):
