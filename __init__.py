@@ -449,15 +449,25 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     def modal(self, context, event):
         context.area.tag_redraw()
 
+        def validate_selection():
+            i = settings.mat_selected
+            if (i >= 0) and (i < settings.mat_nb):
+                settings.active_obj.active_material_index = i
+                settings.active_obj.active_material = settings.materials[i]   
+                return True
+            return False
+
         if event.type == 'MOUSEMOVE':
             settings.mat_selected = self.get_selected_mat_id(event)
         
         elif ((event.type == settings.key_shortcut) \
-                and (event.value == 'RELEASE')) or (event.type == 'LEFTMOUSE'):
-            i = settings.mat_selected
-            if (i >= 0) and (i < settings.mat_nb):
-                settings.active_obj.active_material_index = i
-                settings.active_obj.active_material = settings.materials[i]            
+                and (event.value == 'RELEASE')):
+            if validate_selection():       
+                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+                return {'FINISHED'}
+                
+        elif (event.type == 'LEFTMOUSE'):
+            validate_selection()          
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
 
