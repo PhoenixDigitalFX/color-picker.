@@ -108,21 +108,25 @@ from math import *
 
 vsh = '''            
         uniform mat4 modelViewProjectionMatrix;
+        uniform float dimension;
+        uniform vec2 origin;
         
         in vec2 pos;
         out vec2 lpos;
+        out vec2 uv;
 
         void main()
         {
-          gl_Position = modelViewProjectionMatrix*vec4(pos, 0.0, 1.0);
-          lpos = pos;
+          gl_Position = modelViewProjectionMatrix*vec4(dimension*pos+origin, 0.0, 1.0);
+          lpos = dimension*pos;
+          uv = (pos+1)*0.5;
         }
     '''
 
 def setup_vsh(settings,shader):
         # Simple screen quad
     dimension = settings.mc_outer_radius + 2*settings.mat_radius
-    vdata = dimension*(np.asarray(((-1, 1), (-1, -1),(1, -1), (1, 1))))+ settings.origin
+    vdata = np.asarray(((-1, 1), (-1, -1),(1, -1), (1, 1)))
     vertices = np.ndarray.tolist(vdata)        
     indices = ((0, 1, 2), (0, 2, 3))
     
@@ -132,6 +136,8 @@ def setup_vsh(settings,shader):
         # Set up uniform variables
     matrix = gpu.matrix.get_projection_matrix()*gpu.matrix.get_model_view_matrix()
     shader.uniform_float("modelViewProjectionMatrix", matrix)     
+    shader.uniform_float("dimension",dimension)
+    shader.uniform_float("origin", settings.origin)
     return batch 
 
 main_circle_fsh = '''
@@ -141,10 +147,10 @@ main_circle_fsh = '''
         uniform float inner_radius;
         uniform float outer_radius;
         uniform float line_width;       
-        
-        uniform vec2 origin;        
+         
         uniform float aa_eps;
         in vec2 lpos;
+        in vec2 uv;
         out vec4 fragColor;            
         
         float aa_circle(float rds, float dst, float eps){
@@ -175,7 +181,7 @@ main_circle_fsh = '''
 
         void main()
         {                    
-          float d = length(lpos-origin);
+          float d = length(lpos);
 
           vec4 fill_color_ = circle_color;
           vec4 stroke_color = line_color;
@@ -197,7 +203,6 @@ def draw_main_circle(settings):
     shader.uniform_float("outer_radius", settings.mc_outer_radius)
     shader.uniform_float("line_width", settings.mc_line_width)
 
-    shader.uniform_float("origin", settings.origin)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
     batch.draw(shader)  
@@ -214,10 +219,10 @@ mats_circle_fsh = '''
         uniform int mat_active;
         uniform vec4 mat_fill_colors[__NMAT__];
         uniform vec4 mat_line_colors[__NMAT__];
-
-        uniform vec2 origin;        
+  
         uniform float aa_eps;
         in vec2 lpos;
+        in vec2 uv;
         out vec4 fragColor;   
 
         float aa_circle(float rds, float dst, float eps){
@@ -244,7 +249,7 @@ mats_circle_fsh = '''
         void main()
         {                              
           /* find optimal circle index for current location */
-          vec2 loc_pos = lpos-origin;
+          vec2 loc_pos = lpos;
           float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
           int i = int(floor((dt*mat_nb/PI + 1)/2));
           i = (i == mat_nb) ? 0 : i;
@@ -257,7 +262,7 @@ mats_circle_fsh = '''
           
           /* compute the center of circle */
           float th_i = 2*PI*i/mat_nb;
-          vec2 ci = mat_centers_radius*vec2(cos(th_i),sin(th_i)) + origin;
+          vec2 ci = mat_centers_radius*vec2(cos(th_i),sin(th_i));
           float d = length(lpos-ci);     
                   
           /* check if inside circle */
@@ -311,7 +316,6 @@ def draw_material_circles(settings):
     set_uniform_vector_float(shader, settings.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, settings.mat_line_colors, "mat_line_colors")
 
-    shader.uniform_float("origin", settings.origin)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
     batch.draw(shader) 
@@ -345,11 +349,12 @@ test_fsh = '''
         uniform sampler2D tex;  
 
         in vec2 lpos;
+        in vec2 uv;
         out vec4 fragColor;      
 
         void main()
         {                    
-            fragColor = vec4(0.,0.,1.,0.5);
+            fragColor = vec4(uv,0.,0.5);
 
         }
     '''
