@@ -339,14 +339,6 @@ def draw_text(settings):
     ird = settings.mc_outer_radius
     write_circle_centered(org, ird, txt)
 
-    # Active material marker
-    txt = "[A]"
-    thi = 2*pi*settings.mat_active/settings.mat_nb
-    uvc = np.asarray([cos(thi), sin(thi)])
-    org += settings.mat_centers_radius*uvc
-    ird = settings.mat_radius
-    write_circle_centered(org, ird, txt)
-
 
 test_fsh = '''
         #define PI 3.1415926538
