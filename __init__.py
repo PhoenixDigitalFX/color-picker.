@@ -77,16 +77,16 @@ class GPCOLORPICKER_settings():
 
     def set_icon_scale(self,scale):
         self.icon_scale = scale
-        alpha = 0.9
-        beta = 0.5
-        gamma = 0.2
+        self.mat_centers_radius = self.icon_scale/(2*(1.2))
+        self.mc_outer_radius = 0.9*self.mat_centers_radius
+        self.mc_inner_radius = 0.6*self.mc_outer_radius
+        self.interaction_radius = 0.5*self.mc_outer_radius
+
         self.mat_rmin = 20
-        self.mat_centers_radius = self.icon_scale/(2*(1+gamma))
-        self.mc_outer_radius = alpha*self.mat_centers_radius
-        self.mc_inner_radius = beta*self.mc_outer_radius
-        self.mat_rmax = gamma*self.mat_centers_radius
+        self.mat_rmax = 0.2*self.mat_centers_radius
         self.mat_radius = self.mat_rmax
-        self.selected_radius = self.mat_radius*1.2
+
+        self.selected_radius = 1.2*self.mat_radius
         self.mat_nmax = floor(pi/asin(self.mat_rmin/self.mat_centers_radius))
         self.text_size = ceil(0.08*self.icon_scale)
 
@@ -364,7 +364,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         
         # Check in which section of the circle the mouse is located
         mouse_local = mouse_pos - settings.origin
-        if np.linalg.norm(mouse_local) < settings.mc_inner_radius:
+        if np.linalg.norm(mouse_local) < settings.interaction_radius:
             return -1              
         dt = atan2(mouse_local[1], mouse_local[0]) % (2*pi)
         return int(floor((dt*settings.mat_nb/pi + 1)/2)) % (settings.mat_nb)
