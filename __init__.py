@@ -1,7 +1,5 @@
 from http import server
 import bpy
-import numpy as np
-from math import *
 
 bl_info = {
     "name": "GP Color Picker",
@@ -10,7 +8,7 @@ bl_info = {
     "blender": (3, 0, 0),
     "version": (1,0,1),
     "location": "Press S in Draw mode with a GP object activated",
-    "category": "00"
+    "category": "Material"
 }
 
 ### ----------------- User Preferences
@@ -28,7 +26,6 @@ class GPCOLORPICKER_theme(PropertyGroup):
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
-    # TODO: add keymap in prefs    
     icon_scale: IntProperty(
         name="Icon scale",
         min=100, default=250, max=500
@@ -348,41 +345,12 @@ def draw_text(settings):
     write_circle_centered(org, ird, txt)
 
 
-test_fsh = '''
-        #define PI 3.1415926538
-        uniform sampler2D tex;  
-        uniform float ratio;
-
-        in vec2 lpos;
-        in vec2 uv;
-        out vec4 fragColor;      
-
-        void main()
-        {                  
-
-            fragColor = texture(tex,ratio*uv);
-
-        }
-    '''
-def draw_test(settings):
-    shader = gpu.types.GPUShader(vsh, test_fsh)
-    batch = setup_vsh(settings,shader)
-
-    tx = settings.mat_tex[settings.mat_selected]
-    shader.uniform_sampler("tex",tx)
-    shader.uniform_float("ratio",5)
-    
-    batch.draw(shader)  
-
-
 def draw_callback_px(op, context,settings):    
     gpu.state.blend_set('ALPHA')   
     
     draw_main_circle(settings)  
     draw_material_circles(settings)  
     draw_text(settings)
-    # if settings.mat_selected >= 0:
-    #     draw_test(settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
@@ -468,14 +436,6 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         mat_gp = [ m.grease_pencil for m in s.materials ]
         s.mat_fill_colors = [ m.fill_color if m.show_fill else ([0.,0.,0.,0.]) for m in mat_gp ]
         s.mat_line_colors = [ m.color if m.show_stroke else ([0.,0.,0.,0.]) for m in mat_gp ] 
-        
-        def getGPUPreviewTexture(prv):
-            dat = prv.icon_pixels_float
-            s = prv.icon_size[0]*prv.icon_size[1]*4
-            pbf = gpu.types.Buffer('FLOAT', s, dat)
-            return gpu.types.GPUTexture(prv.icon_size, data=pbf, format='RGBA16F')
-
-        # s.mat_tex = [ getGPUPreviewTexture(m.preview) for m in settings.materials ]
 
         return True
 
