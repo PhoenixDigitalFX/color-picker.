@@ -13,8 +13,6 @@ bl_info = {
     "category": "00"
 }
 
-
-
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
@@ -48,7 +46,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             return 
         
         ifl = open(fpt, 'r')
-        ctn = json.load(fpt)
+        ctn = json.load(ifl)
         ifl.close()
 
         print(ctn)
