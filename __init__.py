@@ -13,18 +13,12 @@ bl_info = {
     "category": "00"
 }
 
+
+
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
-from bpy.props import FloatVectorProperty, IntProperty
-
-class GPCOLORPICKER_theme(PropertyGroup):
-    pie_color: FloatVectorProperty(
-        subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.4,0.4,0.4,1.))
-    line_color: FloatVectorProperty(
-        subtype='COLOR', name="Line Color", min=0, max=1, size=4, default=(0.96,0.96,0.96,1.))
-    text_color: FloatVectorProperty(
-        subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
-
+from bpy.props import *
+import json, os
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
@@ -40,12 +34,36 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     text_color: FloatVectorProperty(
         subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
 
+    def on_file_update(self, value):
+        fpt = self.json_fpath
+        if not os.path.isfile(fpt):
+            print("Error : {} path not found".format(fpt))
+            return 
+
+        fnm = os.path.basename(fpt)
+        ext = fnm.split(os.extsep)
+        
+        if (len(ext) < 2) or (ext[-1] != "json"):
+            print("Error : {} is not a json file".format(fnm))
+            return 
+        
+        ifl = open(fpt, 'r')
+        ctn = json.load(fpt)
+        ifl.close()
+
+        print(ctn)
+
+    json_fpath: StringProperty(
+        subtype='FILE_PATH', name='File path', update=on_file_update)
+
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "icon_scale")
         layout.prop(self, "pie_color")
         layout.prop(self, "line_color")
         layout.prop(self, "text_color")
+        layout.prop(self, "json_fpath")
+    
 
 ### --------------- Settings
 addon_keymaps = [] 
