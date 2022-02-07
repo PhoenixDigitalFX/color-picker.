@@ -59,11 +59,12 @@ class GPCOLORPICKER_settings():
         self.anti_aliasing_eps = 0.5
 
         self.set_icon_scale(250)
-        self.mat_line_width = 4.
+        self.mat_line_width = 5.
         self.mc_line_width = 1.
 
         self.mc_fill_color = (0.4,0.4,0.4,1.)
         self.mc_line_color = (0.96,0.96,0.96,1.)
+        self.active_color =  (0.05,0.05,0.05,1)
 
         self.mat_nb = -1
         self.mat_selected =  -1
@@ -148,6 +149,7 @@ main_circle_fsh = '''
         uniform float outer_radius;
         uniform float line_width;
         uniform float selected_radius;
+        uniform vec4 active_color;
         uniform float mat_radius;
         uniform float mat_line_width;
         uniform float mat_centers_radius;
@@ -222,10 +224,18 @@ main_circle_fsh = '''
           /* draw circle */
           float radius = is_selected?selected_radius:mat_radius;
           fill_color.a *= aa_circle(radius, d, aa_eps);
-          float lwd = is_active?2*mat_line_width:mat_line_width;
-          line_color.a *= aa_contour(radius, lwd, d, aa_eps);
+          line_color.a *= aa_contour(radius, mat_line_width, d, aa_eps);
 
           vec4 fragColor_mat = alpha_compose(line_color, fill_color);
+
+          if( is_active ){
+              vec4 act_color = active_color;
+              float act_rds = mat_centers_radius + mat_radius + mat_line_width*2;
+              vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
+              float act_dst = length(lpos-act_ctr);
+              act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
+              fragColor_mat = alpha_compose(act_color, fragColor_mat);
+          }
 
           fragColor = alpha_compose(fragColor_mat, fragColor_main);           
         }
@@ -247,6 +257,7 @@ def draw_main_circle(settings):
     shader.uniform_float("line_width", settings.mc_line_width)
 
     shader.uniform_float("selected_radius", settings.selected_radius)
+    shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
     shader.uniform_float("mat_line_width", settings.mat_line_width)
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius); 
