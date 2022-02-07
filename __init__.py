@@ -61,7 +61,6 @@ class GPCOLORPICKER_settings():
 
         self.mc_fill_color = (0.4,0.4,0.4,1.)
         self.mc_line_color = (0.96,0.96,0.96,1.)
-        self.selected_color = (0.,1.,0.,1.)
         self.active_color =  (0.05,0.05,0.05,1)
 
         self.mat_nb = -1
@@ -75,15 +74,16 @@ class GPCOLORPICKER_settings():
 
     def set_icon_scale(self,scale):
         self.icon_scale = scale
-        alpha = 0.9
-        beta = 0.5
-        gamma = 0.2
+        self.mat_centers_radius = self.icon_scale/(2*(1.2))
+        self.mc_outer_radius = 0.9*self.mat_centers_radius
+        self.mc_inner_radius = 0.6*self.mc_outer_radius
+        self.interaction_radius = 0.5*self.mc_outer_radius
+
         self.mat_rmin = 20
-        self.mat_centers_radius = self.icon_scale/(2*(1+gamma))
-        self.mc_outer_radius = alpha*self.mat_centers_radius
-        self.mc_inner_radius = beta*self.mc_outer_radius
-        self.mat_rmax = gamma*self.mat_centers_radius
+        self.mat_rmax = 0.2*self.mat_centers_radius
         self.mat_radius = self.mat_rmax
+
+        self.selected_radius = 1.2*self.mat_radius
         self.mat_nmax = floor(pi/asin(self.mat_rmin/self.mat_centers_radius))
         self.text_size = ceil(0.08*self.icon_scale)
 
@@ -92,6 +92,7 @@ class GPCOLORPICKER_settings():
             return self.mat_rmax
         r_opt = 0.8*self.mat_centers_radius*sin(pi/self.mat_nb)
         self.mat_radius = max(self.mat_rmin,min(r_opt,self.mat_rmax))
+        self.selected_radius = self.mat_radius*1.2
         return self.mat_radius
 
 settings = GPCOLORPICKER_settings()
@@ -144,6 +145,16 @@ main_circle_fsh = '''
         uniform float inner_radius;
         uniform float outer_radius;
         uniform float line_width;
+        uniform float selected_radius;
+        uniform vec4 active_color;
+        uniform float mat_radius;
+        uniform float mat_line_width;
+        uniform float mat_centers_radius;
+        uniform int mat_nb;
+        uniform int mat_selected;
+        uniform int mat_active;
+        uniform vec4 mat_fill_colors[__NMAT__];
+        uniform vec4 mat_line_colors[__NMAT__];
          
         uniform float aa_eps;
         in vec2 lpos;
@@ -178,6 +189,7 @@ main_circle_fsh = '''
 
         void main()
         {                    
+          /*    MAIN CIRCLE    */
           float d = length(lpos);
 
           vec4 fill_color_ = circle_color;
@@ -186,67 +198,10 @@ main_circle_fsh = '''
           fill_color_.a *= aa_donut(outer_radius, inner_radius, d, aa_eps);
           stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
 
-          fragColor = alpha_compose(stroke_color, fill_color_);     
-           
-        }
-    '''
+          vec4 fragColor_main = alpha_compose(stroke_color, fill_color_);     
 
-def draw_main_circle(settings):      
-    shader = gpu.types.GPUShader(vsh, main_circle_fsh)
-    batch = setup_vsh(settings,shader)
-    
-    shader.uniform_float("circle_color", settings.mc_fill_color)
-    shader.uniform_float("line_color", settings.mc_line_color)
-    shader.uniform_float("inner_radius", settings.mc_inner_radius)
-    shader.uniform_float("outer_radius", settings.mc_outer_radius)
-    shader.uniform_float("line_width", settings.mc_line_width)
-
-    shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
-    
-    batch.draw(shader)  
-
-mats_circle_fsh = '''
-        #define PI 3.1415926538        
-        uniform vec4 selected_color;
-        uniform vec4 active_color;
-        uniform float mat_radius;
-        uniform float mat_line_width;
-        uniform float mat_centers_radius;
-        uniform int mat_nb;
-        uniform int mat_selected;
-        uniform int mat_active;
-        uniform vec4 mat_fill_colors[__NMAT__];
-        uniform vec4 mat_line_colors[__NMAT__];
-  
-        uniform float aa_eps;
-        in vec2 lpos;
-        in vec2 uv;
-        out vec4 fragColor;   
-
-        float aa_circle(float rds, float dst, float eps){
-            return smoothstep(rds+eps, rds-eps, dst);
-        }        
-
-        float aa_contour(float rds, float wdt, float dst, float eps){
-            float a0 = aa_circle(rds+wdt/2., dst, eps);
-            float a1 = aa_circle(rds-wdt/2., dst, eps);
-            return a0*(1-a1);
-        }     
-
-        vec4 alpha_compose(vec4 A, vec4 B){
-            /* A over B */
-            vec4 color = vec4(0.);
-            color.a = A.a + B.a*(1.- A.a);
-            if( color.a == 0. ){
-                return color;
-            }
-            color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
-            return color;
-        }
-        
-        void main()
-        {                              
-          /* find optimal circle index for current location */
+          /*    MATERIALS CIRCLES    */
+           /* find optimal circle index for current location */
           vec2 loc_pos = lpos;
           float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
           int i = int(floor((dt*mat_nb/PI + 1)/2));
@@ -261,21 +216,14 @@ mats_circle_fsh = '''
           /* compute the center of circle */
           float th_i = 2*PI*i/mat_nb;
           vec2 ci = mat_centers_radius*vec2(cos(th_i),sin(th_i));
-          float d = length(lpos-ci);     
+          d = length(lpos-ci);     
                   
-          /* check if inside circle */
-          fill_color.a *= aa_circle(mat_radius, d, aa_eps);
-          line_color.a *= aa_contour(mat_radius, mat_line_width, d, aa_eps);
+          /* draw circle */
+          float radius = is_selected?selected_radius:mat_radius;
+          fill_color.a *= aa_circle(radius, d, aa_eps);
+          line_color.a *= aa_contour(radius, mat_line_width, d, aa_eps);
 
-          fragColor = alpha_compose(line_color, fill_color);
-
-          if( is_selected ){
-              float s_radius = mat_radius + mat_line_width;
-              vec4 selection_color = selected_color;
-              vec2 udr = vec2(cos(th_i), sin(th_i));
-              selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
-              fragColor = alpha_compose(selection_color, fragColor);
-          }
+          vec4 fragColor_mat = alpha_compose(line_color, fill_color);
 
           if( is_active ){
               vec4 act_color = active_color;
@@ -283,29 +231,29 @@ mats_circle_fsh = '''
               vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
               float act_dst = length(lpos-act_ctr);
               act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
-              fragColor = alpha_compose(act_color, fragColor);
+              fragColor_mat = alpha_compose(act_color, fragColor_mat);
           }
+
+          fragColor = alpha_compose(fragColor_mat, fragColor_main);           
         }
     '''
 
-def set_uniform_vector_float(shader, data, var_name):
-    if(len(data) == 0):
-        return
-    dim = [len(data),len(data[0])]
-    buf = gpu.types.Buffer('FLOAT', dim, data)
-    loc = shader.uniform_from_name(var_name)
-    shader.uniform_vector_float(loc, buf, dim[1], dim[0])
-
-def draw_material_circles(settings): 
+def draw_main_circle(settings):      
     nmat = settings.mat_nb
     if nmat <= 0:
         return    
     
-    fsh = mats_circle_fsh.replace("__NMAT__",str(nmat));
+    fsh = main_circle_fsh.replace("__NMAT__",str(nmat));
     shader = gpu.types.GPUShader(vsh, fsh)
     batch = setup_vsh(settings,shader)
     
-    shader.uniform_float("selected_color", settings.selected_color)
+    shader.uniform_float("circle_color", settings.mc_fill_color)
+    shader.uniform_float("line_color", settings.mc_line_color)
+    shader.uniform_float("inner_radius", settings.mc_inner_radius)
+    shader.uniform_float("outer_radius", settings.mc_outer_radius)
+    shader.uniform_float("line_width", settings.mc_line_width)
+
+    shader.uniform_float("selected_radius", settings.selected_radius)
     shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
     shader.uniform_float("mat_line_width", settings.mat_line_width)
@@ -314,42 +262,48 @@ def draw_material_circles(settings):
     shader.uniform_int("mat_selected", settings.mat_selected);   
     shader.uniform_int("mat_active", settings.mat_active);   
 
+    def set_uniform_vector_float(shader, data, var_name):
+        if(len(data) == 0):
+            return
+        dim = [len(data),len(data[0])]
+        buf = gpu.types.Buffer('FLOAT', dim, data)
+        loc = shader.uniform_from_name(var_name)
+        shader.uniform_vector_float(loc, buf, dim[1], dim[0])
+
     set_uniform_vector_float(shader, settings.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, settings.mat_line_colors, "mat_line_colors")
 
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
-    batch.draw(shader) 
-
-def write_circle_centered(org, ird, text):
-    font_id = 1
-    blf.color(font_id, *(settings.text_color))
-    blf.size(font_id, settings.text_size, 72)
-    blf.enable(font_id,blf.CLIPPING)
-    
-    dmin, dmax = org - ird, org + ird
-    blf.clipping(font_id, dmin[0], dmin[1], dmax[0], dmax[1])
-    
-    txd = np.asarray(blf.dimensions(font_id, text))
-    pos = org - 0.5*txd
-    blf.position(font_id, pos[0], pos[1], 0)
-    blf.draw(font_id, text)
-    gpu.state.blend_set('ALPHA')   
+    batch.draw(shader)  
 
 
 def draw_text(settings):
+    def write_circle_centered(org, ird, text):
+        font_id = 1
+        blf.color(font_id, *(settings.text_color))
+        blf.size(font_id, settings.text_size, 72)
+        blf.enable(font_id,blf.CLIPPING)
+        
+        dmin, dmax = org - ird, org + ird
+        blf.clipping(font_id, dmin[0], dmin[1], dmax[0], dmax[1])
+        
+        txd = np.asarray(blf.dimensions(font_id, text))
+        pos = org - 0.5*txd
+        blf.position(font_id, pos[0], pos[1], 0)
+        blf.draw(font_id, text)
+        gpu.state.blend_set('ALPHA')   
+
     # Material names when selected
     txt = settings.materials[settings.mat_selected].name
     org = settings.origin + 0.5*settings.region_dim
     ird = settings.mc_outer_radius
     write_circle_centered(org, ird, txt)
 
-
 def draw_callback_px(op, context,settings):    
     gpu.state.blend_set('ALPHA')   
     
     draw_main_circle(settings)  
-    draw_material_circles(settings)  
     draw_text(settings)
 
     # Reset blend mode
@@ -378,7 +332,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         
         # Check in which section of the circle the mouse is located
         mouse_local = mouse_pos - settings.origin
-        if np.linalg.norm(mouse_local) < settings.mc_inner_radius:
+        if np.linalg.norm(mouse_local) < settings.interaction_radius:
             return -1              
         dt = atan2(mouse_local[1], mouse_local[0]) % (2*pi)
         return int(floor((dt*settings.mat_nb/pi + 1)/2)) % (settings.mat_nb)
