@@ -6,7 +6,7 @@ Blender add-on to quickly switch between materials of an active Grease pencil ob
 
 * Select a Grease Pencil object,
 * Switch to Draw Mode,
-* Press Ctrl+U. The list of materials now appear in a wheel-like menu.
+* Press S. The list of materials now appear in a wheel-like menu.
 * Left-click on one of the materials to make it active,
 * Or right-click (or press ESC) to cancel the operation
 

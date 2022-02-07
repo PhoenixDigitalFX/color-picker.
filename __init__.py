@@ -9,8 +9,7 @@ bl_info = {
     "description": "Quickly switch between materials of the active Grease pencil object",
     "blender": (3, 0, 0),
     "version": (1,0,1),
-    "location": "Press Ctrl+U in Draw mode with a GP object activated",
-    # "warning": "In development",
+    "location": "Press S in Draw mode with a GP object activated",
     "category": "00"
 }
 
@@ -126,7 +125,7 @@ vsh = '''
 
 def setup_vsh(settings,shader):
         # Simple screen quad
-    dimension = settings.mc_outer_radius + 2*settings.mat_radius
+    dimension = settings.mat_centers_radius + 2*settings.mat_radius
     vdata = np.asarray(((-1, 1), (-1, -1),(1, -1), (1, 1)))
     vertices = np.ndarray.tolist(vdata)        
     indices = ((0, 1, 2), (0, 2, 3))
@@ -476,7 +475,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             pbf = gpu.types.Buffer('FLOAT', s, dat)
             return gpu.types.GPUTexture(prv.icon_size, data=pbf, format='RGBA16F')
 
-        s.mat_tex = [ getGPUPreviewTexture(m.preview) for m in settings.materials ]
+        # s.mat_tex = [ getGPUPreviewTexture(m.preview) for m in settings.materials ]
 
         return True
 
