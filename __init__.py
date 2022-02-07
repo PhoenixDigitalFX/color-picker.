@@ -147,6 +147,16 @@ main_circle_fsh = '''
         uniform float inner_radius;
         uniform float outer_radius;
         uniform float line_width;
+        uniform vec4 selected_color;
+        uniform vec4 active_color;
+        uniform float mat_radius;
+        uniform float mat_line_width;
+        uniform float mat_centers_radius;
+        uniform int mat_nb;
+        uniform int mat_selected;
+        uniform int mat_active;
+        uniform vec4 mat_fill_colors[__NMAT__];
+        uniform vec4 mat_line_colors[__NMAT__];
          
         uniform float aa_eps;
         in vec2 lpos;
@@ -189,67 +199,9 @@ main_circle_fsh = '''
           fill_color_.a *= aa_donut(outer_radius, inner_radius, d, aa_eps);
           stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
 
-          fragColor = alpha_compose(stroke_color, fill_color_);     
-           
-        }
-    '''
+          vec4 fragColor_main = alpha_compose(stroke_color, fill_color_);     
 
-def draw_main_circle(settings):      
-    shader = gpu.types.GPUShader(vsh, main_circle_fsh)
-    batch = setup_vsh(settings,shader)
-    
-    shader.uniform_float("circle_color", settings.mc_fill_color)
-    shader.uniform_float("line_color", settings.mc_line_color)
-    shader.uniform_float("inner_radius", settings.mc_inner_radius)
-    shader.uniform_float("outer_radius", settings.mc_outer_radius)
-    shader.uniform_float("line_width", settings.mc_line_width)
-
-    shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
-    
-    batch.draw(shader)  
-
-mats_circle_fsh = '''
-        #define PI 3.1415926538        
-        uniform vec4 selected_color;
-        uniform vec4 active_color;
-        uniform float mat_radius;
-        uniform float mat_line_width;
-        uniform float mat_centers_radius;
-        uniform int mat_nb;
-        uniform int mat_selected;
-        uniform int mat_active;
-        uniform vec4 mat_fill_colors[__NMAT__];
-        uniform vec4 mat_line_colors[__NMAT__];
-  
-        uniform float aa_eps;
-        in vec2 lpos;
-        in vec2 uv;
-        out vec4 fragColor;   
-
-        float aa_circle(float rds, float dst, float eps){
-            return smoothstep(rds+eps, rds-eps, dst);
-        }        
-
-        float aa_contour(float rds, float wdt, float dst, float eps){
-            float a0 = aa_circle(rds+wdt/2., dst, eps);
-            float a1 = aa_circle(rds-wdt/2., dst, eps);
-            return a0*(1-a1);
-        }     
-
-        vec4 alpha_compose(vec4 A, vec4 B){
-            /* A over B */
-            vec4 color = vec4(0.);
-            color.a = A.a + B.a*(1.- A.a);
-            if( color.a == 0. ){
-                return color;
-            }
-            color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
-            return color;
-        }
-        
-        void main()
-        {                              
-          /* find optimal circle index for current location */
+           /* find optimal circle index for current location */
           vec2 loc_pos = lpos;
           float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
           int i = int(floor((dt*mat_nb/PI + 1)/2));
@@ -264,20 +216,20 @@ mats_circle_fsh = '''
           /* compute the center of circle */
           float th_i = 2*PI*i/mat_nb;
           vec2 ci = mat_centers_radius*vec2(cos(th_i),sin(th_i));
-          float d = length(lpos-ci);     
+          d = length(lpos-ci);     
                   
           /* check if inside circle */
           fill_color.a *= aa_circle(mat_radius, d, aa_eps);
           line_color.a *= aa_contour(mat_radius, mat_line_width, d, aa_eps);
 
-          fragColor = alpha_compose(line_color, fill_color);
+          vec4 fragColor_mat = alpha_compose(line_color, fill_color);
 
           if( is_selected ){
               float s_radius = mat_radius + mat_line_width;
               vec4 selection_color = selected_color;
               vec2 udr = vec2(cos(th_i), sin(th_i));
               selection_color.a *= aa_contour(s_radius, mat_line_width, d, aa_eps);
-              fragColor = alpha_compose(selection_color, fragColor);
+              fragColor_mat = alpha_compose(selection_color, fragColor_mat);
           }
 
           if( is_active ){
@@ -286,28 +238,28 @@ mats_circle_fsh = '''
               vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
               float act_dst = length(lpos-act_ctr);
               act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
-              fragColor = alpha_compose(act_color, fragColor);
+              fragColor_mat = alpha_compose(act_color, fragColor_mat);
           }
+
+          fragColor = alpha_compose(fragColor_mat, fragColor_main);           
         }
     '''
 
-def set_uniform_vector_float(shader, data, var_name):
-    if(len(data) == 0):
-        return
-    dim = [len(data),len(data[0])]
-    buf = gpu.types.Buffer('FLOAT', dim, data)
-    loc = shader.uniform_from_name(var_name)
-    shader.uniform_vector_float(loc, buf, dim[1], dim[0])
-
-def draw_material_circles(settings): 
+def draw_main_circle(settings):      
     nmat = settings.mat_nb
     if nmat <= 0:
         return    
     
-    fsh = mats_circle_fsh.replace("__NMAT__",str(nmat));
+    fsh = main_circle_fsh.replace("__NMAT__",str(nmat));
     shader = gpu.types.GPUShader(vsh, fsh)
     batch = setup_vsh(settings,shader)
     
+    shader.uniform_float("circle_color", settings.mc_fill_color)
+    shader.uniform_float("line_color", settings.mc_line_color)
+    shader.uniform_float("inner_radius", settings.mc_inner_radius)
+    shader.uniform_float("outer_radius", settings.mc_outer_radius)
+    shader.uniform_float("line_width", settings.mc_line_width)
+
     shader.uniform_float("selected_color", settings.selected_color)
     shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
@@ -317,38 +269,46 @@ def draw_material_circles(settings):
     shader.uniform_int("mat_selected", settings.mat_selected);   
     shader.uniform_int("mat_active", settings.mat_active);   
 
+    def set_uniform_vector_float(shader, data, var_name):
+        if(len(data) == 0):
+            return
+        dim = [len(data),len(data[0])]
+        buf = gpu.types.Buffer('FLOAT', dim, data)
+        loc = shader.uniform_from_name(var_name)
+        shader.uniform_vector_float(loc, buf, dim[1], dim[0])
+
     set_uniform_vector_float(shader, settings.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, settings.mat_line_colors, "mat_line_colors")
 
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
-    batch.draw(shader) 
-
-def write_circle_centered(org, ird, text):
-    font_id = 1
-    blf.color(font_id, *(settings.text_color))
-    blf.size(font_id, settings.text_size, 72)
-    blf.enable(font_id,blf.CLIPPING)
-    
-    dmin, dmax = org - ird, org + ird
-    blf.clipping(font_id, dmin[0], dmin[1], dmax[0], dmax[1])
-    
-    txd = np.asarray(blf.dimensions(font_id, text))
-    pos = org - 0.5*txd
-    blf.position(font_id, pos[0], pos[1], 0)
-    blf.draw(font_id, text)
-    gpu.state.blend_set('ALPHA')   
+    batch.draw(shader)  
 
 
 def draw_text(settings):
+    def write_circle_centered(org, ird, text):
+        font_id = 1
+        blf.color(font_id, *(settings.text_color))
+        blf.size(font_id, settings.text_size, 72)
+        blf.enable(font_id,blf.CLIPPING)
+        
+        dmin, dmax = org - ird, org + ird
+        blf.clipping(font_id, dmin[0], dmin[1], dmax[0], dmax[1])
+        
+        txd = np.asarray(blf.dimensions(font_id, text))
+        pos = org - 0.5*txd
+        blf.position(font_id, pos[0], pos[1], 0)
+        blf.draw(font_id, text)
+        gpu.state.blend_set('ALPHA')   
+
     # Material names when selected
     txt = settings.materials[settings.mat_selected].name
     org = settings.origin + 0.5*settings.region_dim
     ird = settings.mc_outer_radius
     write_circle_centered(org, ird, txt)
 
-
-test_fsh = '''
+def draw_test(settings):
+    test_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
         uniform float ratio;
@@ -364,7 +324,6 @@ test_fsh = '''
 
         }
     '''
-def draw_test(settings):
     shader = gpu.types.GPUShader(vsh, test_fsh)
     batch = setup_vsh(settings,shader)
 
@@ -379,7 +338,6 @@ def draw_callback_px(op, context,settings):
     gpu.state.blend_set('ALPHA')   
     
     draw_main_circle(settings)  
-    draw_material_circles(settings)  
     draw_text(settings)
     # if settings.mat_selected >= 0:
     #     draw_test(settings)
