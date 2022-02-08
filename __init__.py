@@ -91,15 +91,10 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         prv = scol.box()
         prv.label(text="Preview", icon='NONE')
     
-class GPCOLORPICKER_MaterialSettings(PropertyGroup):
-    is_picked: bpy.props.BoolProperty
-
 
 addon_keymaps = [] 
         
 def register():
-    bpy.utils.register_class(GPCOLORPICKER_MaterialSettings)
-    bpy.types.MaterialGPencilStyle.gcp_settings = bpy.props.PointerProperty(type=GPCOLORPICKER_MaterialSettings) 
     bpy.utils.register_class(GPCOLORPICKER_OT_wheel)
     bpy.utils.register_class(GPCOLORPICKER_theme)
     bpy.utils.register_class(GPCOLORPICKER_preferences)
@@ -123,7 +118,6 @@ def unregister():
     bpy.utils.unregister_class(GPCOLORPICKER_theme)
     bpy.utils.unregister_class(GPCOLORPICKER_preferences)
     bpy.utils.unregister_class(GPCOLORPICKER_OT_wheel)
-    bpy.utils.unregister_class(GPCOLORPICKER_MaterialSettings)
     
     
 if __name__ == "__main__":
