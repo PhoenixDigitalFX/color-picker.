@@ -93,8 +93,11 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     
 
 addon_keymaps = [] 
-classes = [GPCOLORPICKER_OT_wheel, GPCOLORPICKER_theme, GPCOLORPICKER_preferences]
-        
+classes = [ GPCOLORPICKER_OT_wheel, \
+            GPCOLORPICKER_theme, \
+            GPCOLORPICKER_preferences
+          ]
+
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
