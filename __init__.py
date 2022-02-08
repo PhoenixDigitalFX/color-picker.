@@ -27,6 +27,7 @@ class GPCOLORPICKER_theme(PropertyGroup):
 
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
+    crt_fpt = ''
 
     # TODO: add keymap in prefs    
     icon_scale: IntProperty(
@@ -36,6 +37,9 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
     def on_file_update(self, value):
         fpt = self.json_fpath
+        if fpt == self.crt_fpt:
+            return
+
         if not os.path.isfile(fpt):
             print("Error : {} path not found".format(fpt))
             return 
@@ -47,6 +51,9 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             print("Error : {} is not a json file".format(fnm))
             return 
         
+        #TODO: fix this update that does not work
+        self.crt_fpt = fpt
+        
         ifl = open(fpt, 'r')
         ctn = json.load(ifl)
         ifl.close()
@@ -55,7 +62,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     json_fpath: StringProperty(
-        subtype='FILE_PATH', name='File path', update=on_file_update)
+        subtype='FILE_PATH', name='File path', update=on_file_update, options={'TEXTEDIT_UPDATE'})
 
     mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
                             default="from_file")
