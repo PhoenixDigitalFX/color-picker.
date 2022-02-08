@@ -62,8 +62,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return {'CANCELLED'}
 
         return {'RUNNING_MODAL'}
-    
-    def load_grease_pencil_materials(self):
+
+    def load_active_materials(self):
         s = settings
         s.active_obj = bpy.context.active_object
 
@@ -79,6 +79,22 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
         if s.mat_nb == 0:
             self.report({'INFO'}, "No material in the active object")
+            return False
+        return True
+    
+    def load_from_json(self):
+        print("Not yet implemented")
+        return False
+    
+    def load_grease_pencil_materials(self):
+        s = settings
+
+        if s.mat_from_active:
+            flag = self.load_active_materials()
+        else:
+            flag = self.load_from_json()
+
+        if not flag:
             return False
 
         s.load_mat_radius()
