@@ -17,6 +17,14 @@ bl_info = {
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
 import json, os
+class GPCOLORPICKER_theme(PropertyGroup):
+    pie_color: FloatVectorProperty(
+            subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.4,0.4,0.4,1.))
+    line_color: FloatVectorProperty(
+        subtype='COLOR', name="Line Color", min=0, max=1, size=4, default=(0.96,0.96,0.96,1.))
+    text_color: FloatVectorProperty(
+        subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
+
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
@@ -25,12 +33,6 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         name="Icon scale",
         min=100, default=250, max=500
     )    
-    pie_color: FloatVectorProperty(
-            subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.4,0.4,0.4,1.))
-    line_color: FloatVectorProperty(
-        subtype='COLOR', name="Line Color", min=0, max=1, size=4, default=(0.96,0.96,0.96,1.))
-    text_color: FloatVectorProperty(
-        subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
 
     def on_file_update(self, value):
         fpt = self.json_fpath
@@ -51,16 +53,37 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
         print(ctn)
 
+    theme: PointerProperty(type=GPCOLORPICKER_theme)
     json_fpath: StringProperty(
         subtype='FILE_PATH', name='File path', update=on_file_update)
 
+    mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
+                            default="from_file")
+
     def draw(self, context):
         layout = self.layout
-        layout.prop(self, "icon_scale")
-        layout.prop(self, "pie_color")
-        layout.prop(self, "line_color")
-        layout.prop(self, "text_color")
-        layout.prop(self, "json_fpath")
+        frow = layout.row()
+        fcol = frow.column()
+        stgs = fcol.box()
+        stgs.label(text="Settings", icon='MODIFIER')
+        stgs.prop(self, "icon_scale")
+
+        props = fcol.box()
+        props.label(text="Theme", icon='RESTRICT_COLOR_ON')
+        props.prop(self.theme, 'pie_color', text="Pie Color")
+        props.prop(self.theme, 'line_color', text="Line Color")
+        props.prop(self.theme, 'text_color', text="Text Color")
+
+        scol = frow.column()
+        mats = scol.box()
+        mats.label(text="Materials", icon='MATERIAL')
+        mats.row().prop_tabs_enum(self, "mat_mode")
+
+        if self.mat_mode == "from_file":
+            mats.prop(self, "json_fpath")
+
+        prv = scol.box()
+        prv.label(text="Preview", icon='NONE')
     
 class GPCOLORPICKER_MaterialSettings(PropertyGroup):
     is_picked: bpy.props.BoolProperty
@@ -479,6 +502,7 @@ def register():
     bpy.utils.register_class(GPCOLORPICKER_MaterialSettings)
     bpy.types.MaterialGPencilStyle.gcp_settings = bpy.props.PointerProperty(type=GPCOLORPICKER_MaterialSettings) 
     bpy.utils.register_class(GPCOLORPICKER_OT_wheel)
+    bpy.utils.register_class(GPCOLORPICKER_theme)
     bpy.utils.register_class(GPCOLORPICKER_preferences)
     
     # Add the hotkey
@@ -497,6 +521,7 @@ def unregister():
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
+    bpy.utils.unregister_class(GPCOLORPICKER_theme)
     bpy.utils.unregister_class(GPCOLORPICKER_preferences)
     bpy.utils.unregister_class(GPCOLORPICKER_OT_wheel)
     bpy.utils.unregister_class(GPCOLORPICKER_MaterialSettings)
