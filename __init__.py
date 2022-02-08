@@ -442,14 +442,6 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         s.mat_fill_colors = [ m.fill_color if m.show_fill else ([0.,0.,0.,0.]) for m in mat_gp ]
         s.mat_line_colors = [ m.color if m.show_stroke else ([0.,0.,0.,0.]) for m in mat_gp ] 
         
-        def getGPUPreviewTexture(prv):
-            dat = prv.icon_pixels_float
-            s = prv.icon_size[0]*prv.icon_size[1]*4
-            pbf = gpu.types.Buffer('FLOAT', s, dat)
-            return gpu.types.GPUTexture(prv.icon_size, data=pbf, format='RGBA16F')
-
-        # s.mat_tex = [ getGPUPreviewTexture(m.preview) for m in settings.materials ]
-
         return True
 
     def load_preferences(self, prefs):
