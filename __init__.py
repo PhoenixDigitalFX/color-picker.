@@ -93,11 +93,11 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     
 
 addon_keymaps = [] 
+classes = [GPCOLORPICKER_OT_wheel, GPCOLORPICKER_theme, GPCOLORPICKER_preferences]
         
 def register():
-    bpy.utils.register_class(GPCOLORPICKER_OT_wheel)
-    bpy.utils.register_class(GPCOLORPICKER_theme)
-    bpy.utils.register_class(GPCOLORPICKER_preferences)
+    for cls in classes:
+        bpy.utils.register_class(cls)
     
     # Add the hotkey
     wm = bpy.context.window_manager
@@ -115,10 +115,8 @@ def unregister():
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    bpy.utils.unregister_class(GPCOLORPICKER_theme)
-    bpy.utils.unregister_class(GPCOLORPICKER_preferences)
-    bpy.utils.unregister_class(GPCOLORPICKER_OT_wheel)
-    
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
     
 if __name__ == "__main__":
     register() 
