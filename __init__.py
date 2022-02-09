@@ -26,7 +26,6 @@ class GPCOLORPICKER_theme(PropertyGroup):
 
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
-    crt_fpt = ''
 
     # TODO: add keymap in prefs    
     icon_scale: IntProperty(
@@ -78,6 +77,9 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
+    from . gpmatpalette import register_data
+    register_data()
+    
     # Add the hotkey
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
@@ -93,6 +95,9 @@ def unregister():
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
+
+    from . gpmatpalette import unregister_data
+    unregister_data()
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

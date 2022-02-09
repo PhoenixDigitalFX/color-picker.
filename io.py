@@ -28,6 +28,12 @@ def upload_material(name, mdat):
 
     return True
 
+def updatePalette(name_set):
+    bpy.context.scene.gpmatpalette.clear()
+    for name in name_set:
+        gpmatit = bpy.context.scene.gpmatpalette.add()
+        gpmatit.mat_name = name
+
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     bl_idname = "gpencil.file_load"
@@ -61,6 +67,8 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
             print(f"Material {name}")
             upload_material(name, mat)
 
+        updatePalette(ctn.keys())
+        
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences
         if prefs is None : 
