@@ -23,11 +23,21 @@ def upload_material(name, mdat):
 
     return True
 
-def updatePalette(name_set):
+def update_palette(name_set):
     bpy.context.scene.gpmatpalette.clear()
     for name in name_set:
-        gpmatit = bpy.context.scene.gpmatpalette.add()
+        gpmatit = bpy.context.scene.gpmatpalette.materials.add()
         gpmatit.mat_name = name
+
+def upload_image(imdata, fpath):
+    if not "path" in imdata:
+        return False
+    impath = imdata["path"]
+    if ("relative" in imdata) and (imdata["relative"]):
+        impath = os.path.dirname(fpath) + "/" + impath
+    print("Image full path : ", impath)
+    
+    return True
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
@@ -45,24 +55,32 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
 
         if not os.path.isfile(fpt):
             print("Error : {} path not found".format(fpt))
-            return 
+            return {'CANCELLED'}
 
         fnm = os.path.basename(fpt)
         ext = fnm.split(os.extsep)
         
         if (len(ext) < 2) or (ext[-1] != "json"):
             print("Error : {} is not a json file".format(fnm))
-            return 
+            return {'CANCELLED'}
         
         ifl = open(fpt, 'r')
         ctn = json.load(ifl)
         ifl.close()
+        
+        if not "palette" in ctn :
+            print("Error : {} does not contain any palette".format(fnm))
+            return {'CANCELLED'}
 
-        for name,mat in ctn.items():
+        palette = ctn["palette"]
+        for name,mat in palette.items():
             print(f"Material {name}")
             upload_material(name, mat)
 
-        updatePalette(ctn.keys())
+        update_palette(palette.keys())
+
+        if "image" in ctn:
+            upload_image(ctn["image"], fpt)
 
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences

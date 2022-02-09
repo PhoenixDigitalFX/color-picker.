@@ -74,11 +74,12 @@ classes = [ GPCOLORPICKER_OT_wheel, \
           ]
 
 def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-    
+
     from . gpmatpalette import register_data
     register_data()
+
+    for cls in classes:
+        bpy.utils.register_class(cls)
     
     # Add the hotkey
     wm = bpy.context.window_manager
@@ -96,11 +97,11 @@ def unregister():
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    from . gpmatpalette import unregister_data
-    unregister_data()
-
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     
+    from . gpmatpalette import unregister_data
+    unregister_data()
+
 if __name__ == "__main__":
     register() 
