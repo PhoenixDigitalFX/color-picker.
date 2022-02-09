@@ -20,14 +20,11 @@ def upload_material(name, mdat):
             count_ignored += 1 
             continue
         setattr(m, k, v)
+    
+    gpmatit = bpy.context.scene.gpmatpalette.materials.add()
+    gpmatit.mat_name = name
 
     return True
-
-def update_palette(name_set):
-    bpy.context.scene.gpmatpalette.clear()
-    for name in name_set:
-        gpmatit = bpy.context.scene.gpmatpalette.materials.add()
-        gpmatit.mat_name = name
 
 def upload_image(imdata, fpath):
     if not "path" in imdata:
@@ -36,6 +33,8 @@ def upload_image(imdata, fpath):
     if ("relative" in imdata) and (imdata["relative"]):
         impath = os.path.dirname(fpath) + "/" + impath
     print("Image full path : ", impath)
+    
+    bpy.context.scene.gpmatpalette.image = impath
     
     return True
 
@@ -68,16 +67,15 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         ctn = json.load(ifl)
         ifl.close()
         
-        if not "palette" in ctn :
-            print("Error : {} does not contain any palette".format(fnm))
+        if not "materials" in ctn :
+            print("Error : {} does not contain any material".format(fnm))
             return {'CANCELLED'}
 
-        palette = ctn["palette"]
+        bpy.context.scene.gpmatpalette.clear()
+        palette = ctn["materials"]
         for name,mat in palette.items():
             print(f"Material {name}")
             upload_material(name, mat)
-
-        update_palette(palette.keys())
 
         if "image" in ctn:
             upload_image(ctn["image"], fpt)
