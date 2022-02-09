@@ -28,13 +28,11 @@ def upload_material(name, mdat):
 
     return True
 
-
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     bl_idname = "gpencil.file_load"
-    bl_label = "Load JSON grease pencil materials file"    
+    bl_label = "Load File"    
 
-    cur_filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
@@ -43,8 +41,6 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
 
     def execute(self, context): 
         fpt = self.filepath       
-        if fpt == self.cur_filepath:
-            return
 
         if not os.path.isfile(fpt):
             print("Error : {} path not found".format(fpt))
@@ -57,7 +53,6 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
             print("Error : {} is not a json file".format(fnm))
             return 
         
-        self.curr_fpath = fpt    
         ifl = open(fpt, 'r')
         ctn = json.load(ifl)
         ifl.close()
@@ -65,6 +60,13 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         for name,mat in ctn.items():
             print(f"Material {name}")
             upload_material(name, mat)
+
+        # Update data in user preferences
+        prefs = context.preferences.addons[__package__].preferences
+        if prefs is None : 
+            self.report({'WARNING'}, "Could not load user preferences")
+        else:
+            prefs.json_fpath = fpt
 
         return {'FINISHED'}
 
