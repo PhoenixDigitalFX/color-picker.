@@ -37,11 +37,20 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
         def validate_selection():
             i = settings.mat_selected
-            if (i >= 0) and (i < settings.mat_nb):
-                settings.active_obj.active_material_index = i
-                settings.active_obj.active_material = settings.materials[i]   
-                return True
-            return False
+            if (i < 0) or (i >= settings.mat_nb):
+                return False
+                
+            if not settings.mat_from_active:
+                ob_mat = settings.active_obj.data.materials                
+                mat = settings.materials[i]
+                i = ob_mat.find(mat.name)
+                if i < 0:
+                    i = len(ob_mat)
+                    ob_mat.append(mat)
+
+            settings.active_obj.active_material_index = i
+            
+            return True
 
         if event.type == 'MOUSEMOVE':
             settings.mat_selected = self.get_selected_mat_id(event)

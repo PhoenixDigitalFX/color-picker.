@@ -10,11 +10,6 @@ def upload_material(name, mdat):
     elif not mat.is_grease_pencil:
         print(f"Error: Material {name} exists and is not GP.")
         return False
-        
-    # Assign it to object
-    ob = bpy.context.active_object
-    if not name in ob.data.materials:
-        ob.data.materials.append(mat)
 
     # Setting up material settings
     m = mat.grease_pencil
@@ -68,7 +63,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
             upload_material(name, mat)
 
         updatePalette(ctn.keys())
-        
+
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences
         if prefs is None : 
