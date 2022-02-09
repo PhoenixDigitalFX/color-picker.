@@ -15,8 +15,7 @@ from . op import GPCOLORPICKER_OT_wheel,settings
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
-import os
-from . io import import_mat_from_json
+from . io import GPCOLORPICKER_OT_getJSONFile
 class GPCOLORPICKER_theme(PropertyGroup):
     pie_color: FloatVectorProperty(
             subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.4,0.4,0.4,1.))
@@ -35,29 +34,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         min=100, default=250, max=500
     )    
 
-    def on_file_update(self, value):
-        fpt = self.json_fpath
-        if fpt == self.crt_fpt:
-            return
-
-        if not os.path.isfile(fpt):
-            print("Error : {} path not found".format(fpt))
-            return 
-
-        fnm = os.path.basename(fpt)
-        ext = fnm.split(os.extsep)
-        
-        if (len(ext) < 2) or (ext[-1] != "json"):
-            print("Error : {} is not a json file".format(fnm))
-            return 
-        
-        #TODO: fix this update that does not work
-        import_mat_from_json(fpt)
-
     theme: PointerProperty(type=GPCOLORPICKER_theme)
-    json_fpath: StringProperty(
-        subtype='FILE_PATH', name='File path', update=on_file_update, options={'TEXTEDIT_UPDATE'})
-
     mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
                             default="from_file")
 
@@ -81,7 +58,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         mats.row().prop_tabs_enum(self, "mat_mode")
 
         if self.mat_mode == "from_file":
-            mats.prop(self, "json_fpath")
+            mats.operator("gpencil.file_load")
 
         prv = scol.box()
         prv.label(text="Preview", icon='NONE')
@@ -89,6 +66,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
 addon_keymaps = [] 
 classes = [ GPCOLORPICKER_OT_wheel, \
+            GPCOLORPICKER_OT_getJSONFile, \
             GPCOLORPICKER_theme, \
             GPCOLORPICKER_preferences
           ]

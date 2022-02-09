@@ -1,7 +1,4 @@
-import json
-import bpy
-
-
+import json, os, bpy
 
 def upload_material(name, mdat):
     # Get material
@@ -31,12 +28,46 @@ def upload_material(name, mdat):
 
     return True
 
-def import_mat_from_json(json_fpath):    
-    ifl = open(json_fpath, 'r')
-    ctn = json.load(ifl)
-    ifl.close()
 
-    for name,mat in ctn.items():
-        print(f"Material {name}")
-        upload_material(name, mat)
+### ----------------- Operator definition
+class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
+    bl_idname = "gpencil.file_load"
+    bl_label = "Load JSON grease pencil materials file"    
 
+    cur_filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context): 
+        fpt = self.filepath       
+        if fpt == self.cur_filepath:
+            return
+
+        if not os.path.isfile(fpt):
+            print("Error : {} path not found".format(fpt))
+            return 
+
+        fnm = os.path.basename(fpt)
+        ext = fnm.split(os.extsep)
+        
+        if (len(ext) < 2) or (ext[-1] != "json"):
+            print("Error : {} is not a json file".format(fnm))
+            return 
+        
+        self.curr_fpath = fpt    
+        ifl = open(fpt, 'r')
+        ctn = json.load(ifl)
+        ifl.close()
+
+        for name,mat in ctn.items():
+            print(f"Material {name}")
+            upload_material(name, mat)
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
