@@ -8,7 +8,7 @@ settings = GPCOLORPICKER_settings()
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
-    bl_idname = "object.gcp"
+    bl_idname = "gpencil.color_pick"
     bl_label = "GP Color Picker"    
     
     def __init__(self): pass            
