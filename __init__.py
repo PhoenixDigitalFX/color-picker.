@@ -15,7 +15,8 @@ from . op import GPCOLORPICKER_OT_wheel,settings
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
-import json, os
+import os
+from . io import import_mat_from_json
 class GPCOLORPICKER_theme(PropertyGroup):
     pie_color: FloatVectorProperty(
             subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.4,0.4,0.4,1.))
@@ -51,13 +52,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             return 
         
         #TODO: fix this update that does not work
-        self.crt_fpt = fpt
-        
-        ifl = open(fpt, 'r')
-        ctn = json.load(ifl)
-        ifl.close()
-
-        print(ctn)
+        import_mat_from_json(fpt)
 
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     json_fpath: StringProperty(
