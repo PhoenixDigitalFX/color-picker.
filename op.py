@@ -39,7 +39,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             i = settings.mat_selected
             if (i < 0) or (i >= settings.mat_nb):
                 return False
-                
+
             if not settings.mat_from_active:
                 ob_mat = settings.active_obj.data.materials                
                 mat = settings.materials[i]
@@ -98,7 +98,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         s.mat_active = -1
 
         if s.mat_nb == 0:
-            self.report({'INFO'}, "No material in the active object")
+            self.report({'INFO'}, "No JSON file or empty file")
             return False
 
         return True

@@ -36,7 +36,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     json_fpath: StringProperty(subtype="FILE_PATH")
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
-                            default="from_file")
+                            default="from_active")
 
     def draw(self, context):
         layout = self.layout

@@ -194,6 +194,8 @@ def draw_text(settings):
         gpu.state.blend_set('ALPHA')   
 
     # Material names when selected
+    if settings.mat_selected < 0:
+        return
     txt = settings.materials[settings.mat_selected].name
     org = settings.origin + 0.5*settings.region_dim
     ird = settings.mc_outer_radius
