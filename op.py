@@ -65,7 +65,6 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
     def load_active_materials(self):
         s = settings
-        s.active_obj = bpy.context.active_object
 
         if s.active_obj is None:
             # Should be avoided by poll function but who knows
@@ -82,9 +81,18 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return False
         return True
     
-    def load_from_json(self):
-        print("Not yet implemented")
-        return False
+    def load_from_palette(self):
+        s = settings
+        palette = bpy.context.scene.gpmatpalette
+        s.materials = [ bpy.data.materials[n.mat_name] for n in palette ]       
+        s.mat_nb = min(s.mat_nmax,len(s.materials))
+        s.mat_active = -1
+
+        if s.mat_nb == 0:
+            self.report({'INFO'}, "No material in the active object")
+            return False
+
+        return True
     
     def load_grease_pencil_materials(self):
         s = settings
@@ -92,7 +100,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         if s.mat_from_active:
             flag = self.load_active_materials()
         else:
-            flag = self.load_from_json()
+            flag = self.load_from_palette()
 
         if not flag:
             return False
@@ -109,6 +117,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         settings.mc_fill_color = prefs.theme.pie_color
         settings.mc_line_color = prefs.theme.line_color
         settings.text_color = prefs.theme.text_color
+        settings.mat_from_active = (prefs.mat_mode == "from_active")
 
     def invoke(self, context, event):  
         # Update settings from user preferences
@@ -117,6 +126,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
         else:
             self.load_preferences(prefs)
+
+        settings.active_obj = bpy.context.active_object
 
         # Loading materials 
         if not (self.load_grease_pencil_materials()):

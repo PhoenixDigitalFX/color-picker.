@@ -18,7 +18,7 @@ class GPCOLORPICKER_settings():
         self.mc_line_color = (0.96,0.96,0.96,1.)
         self.active_color =  (0.05,0.05,0.05,1)
 
-        self.mat_from_active = True
+        self.mat_from_active = False
         self.mat_nb = -1
         self.mat_selected =  -1
         self.mat_active =  -1
