@@ -32,9 +32,13 @@ def upload_image(imdata, fpath):
     impath = imdata["path"]
     if ("relative" in imdata) and (imdata["relative"]):
         impath = os.path.dirname(fpath) + "/" + impath
-    print("Image full path : ", impath)
-    
-    bpy.context.scene.gpmatpalette.image = impath
+
+    if not os.path.isfile(impath):
+        print("Error : File {} not found".format(impath))
+        return False
+
+    im = bpy.data.images.load(filepath=impath, check_existing=False)
+    bpy.context.scene.gpmatpalette.image = im.name
     
     return True
 
@@ -74,7 +78,6 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         bpy.context.scene.gpmatpalette.clear()
         palette = ctn["materials"]
         for name,mat in palette.items():
-            print(f"Material {name}")
             upload_material(name, mat)
 
         if "image" in ctn:

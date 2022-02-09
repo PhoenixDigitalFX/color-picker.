@@ -7,11 +7,15 @@ class GPMatItem(PropertyGroup):
 
 class GPMatPalette(PropertyGroup):
     materials: CollectionProperty(type=GPMatItem)
-    image: StringProperty(subtype='FILE_PATH')
+    image: StringProperty(subtype='FILE_NAME')
 
     def clear(self):
         self.materials.clear()
-        self.image = ''
+        
+        # Remove image from database
+        if self.image in bpy.data.images:
+            bpy.data.images.remove(bpy.data.images[self.image])
+        self.image = ""
 
 def register_data():
     bpy.utils.register_class(GPMatItem)
@@ -19,6 +23,7 @@ def register_data():
     bpy.types.Scene.gpmatpalette = PointerProperty(type=GPMatPalette)
 
 def unregister_data():
+    bpy.context.scene.gpmatpalette.clear()
     bpy.utils.unregister_class(GPMatPalette)
     bpy.utils.unregister_class(GPMatItem)
     
