@@ -32,7 +32,7 @@ class GPCOLORPICKER_settings():
         self.icon_scale = scale
         self.mat_centers_radius = self.icon_scale/(2*(1.2))
         self.mc_outer_radius = 0.9*self.mat_centers_radius
-        if not self.mat_from_active and self.gpu_tex:
+        if self.useGPUTexture():
             self.mc_inner_radius = 0.0
         else:
             self.mc_inner_radius = 0.6*self.mc_outer_radius
