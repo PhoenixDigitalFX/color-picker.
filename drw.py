@@ -214,10 +214,17 @@ def draw_test(context, settings):
 
         void main()
         {          
-            vec2 uv_loc = (uv - 0.5)*2;       
-            vec2 uv_tex = ((uv_loc*dimension/rad_tex) - 1)*0.5;
-            fragColor = texture(tex,uv_tex);
+            float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
+            float dim_ratio = dimension/rad_tex;
+            vec2 uv_tex = dim_ratio * uv + 0.5*(1 - dim_ratio);
+            uv_tex.y *= aspect_ratio;
 
+            if((uv_tex.x < 0) || (uv_tex.x > 1) ||  (uv_tex.y < 0) || (uv_tex.y > 1)){
+                fragColor = vec4(0.);
+            }
+            else{
+                fragColor = texture(tex,uv_tex);
+            }  
         }
     '''
     shader = gpu.types.GPUShader(vsh, test_fsh)
@@ -225,7 +232,6 @@ def draw_test(context, settings):
 
     tx = settings.gputex
     shader.uniform_sampler("tex",tx)
-    print("Got GPU texture of size {}x{} (format: {})".format(tx.width, tx.height, tx.format))
 
     rds = (settings.mc_inner_radius + settings.mc_outer_radius)*0.5
     shader.uniform_float("rad_tex",rds)
