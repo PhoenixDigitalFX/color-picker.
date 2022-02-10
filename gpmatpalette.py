@@ -1,4 +1,4 @@
-import bpy
+import bpy,gpu
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, CollectionProperty, PointerProperty
 
@@ -8,7 +8,12 @@ class GPMatItem(PropertyGroup):
 class GPMatPalette(PropertyGroup):
     materials: CollectionProperty(type=GPMatItem)
     image: StringProperty(subtype='FILE_NAME')
+    tex = gpu.types.GPUTexture(1)
 
+    def setTex(self,ntex):
+        self.tex.clear
+        self.tex = ntex
+        
     def clear(self):
         self.materials.clear()
         

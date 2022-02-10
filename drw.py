@@ -201,29 +201,34 @@ def draw_text(settings):
     ird = settings.mc_outer_radius
     write_circle_centered(org, ird, txt)
 
-def draw_test(settings):
+def draw_test(context, settings):
     test_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
-        uniform float ratio;
+        uniform float rad_tex;
+        uniform float dimension;
 
         in vec2 lpos;
         in vec2 uv;
         out vec4 fragColor;      
 
         void main()
-        {                  
-
-            fragColor = texture(tex,ratio*uv);
+        {          
+            vec2 uv_loc = (uv - 0.5)*2;       
+            vec2 uv_tex = ((uv_loc*dimension/rad_tex) - 1)*0.5;
+            fragColor = texture(tex,uv_tex);
 
         }
     '''
     shader = gpu.types.GPUShader(vsh, test_fsh)
     batch = setup_vsh(settings,shader)
 
-    tx = settings.mat_tex[settings.mat_selected]
+    tx = settings.gputex
     shader.uniform_sampler("tex",tx)
-    shader.uniform_float("ratio",5)
+    print("Got GPU texture of size {}x{} (format: {})".format(tx.width, tx.height, tx.format))
+
+    rds = (settings.mc_inner_radius + settings.mc_outer_radius)*0.5
+    shader.uniform_float("rad_tex",rds)
     
     batch.draw(shader) 
 
@@ -232,8 +237,8 @@ def draw_callback_px(op, context,settings):
     
     draw_main_circle(settings)  
     draw_text(settings)
-    # if settings.mat_selected >= 0:
-    #     draw_test(settings)
+    if settings.gputex and (settings.mat_selected >= 0):
+        draw_test(context,settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')

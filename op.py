@@ -3,6 +3,7 @@ import numpy as np
 from math import atan2,pi,floor
 from . drw import draw_callback_px
 from . stg import GPCOLORPICKER_settings
+import gpu
 
 settings = GPCOLORPICKER_settings()
 
@@ -127,6 +128,13 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         settings.mc_line_color = prefs.theme.line_color
         settings.text_color = prefs.theme.text_color
         settings.mat_from_active = (prefs.mat_mode == "from_active")
+        im_name = bpy.context.scene.gpmatpalette.image
+        if im_name in bpy.data.images:
+            im = bpy.data.images[im_name]
+            settings.gputex = gpu.texture.from_image(im)
+            gputex = settings.gputex
+            print("Uploaded GPU texture of size {}x{} (format: {})".format(gputex.width, gputex.height, gputex.format))
+
 
     def invoke(self, context, event):  
         # Update settings from user preferences

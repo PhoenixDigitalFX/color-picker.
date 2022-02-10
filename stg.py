@@ -24,7 +24,7 @@ class GPCOLORPICKER_settings():
         self.mat_active =  -1
         self.mat_fill_colors = []
         self.mat_line_colors = []
-        self.mat_tex = []
+        self.gputex = None
 
         self.text_color = (0.,0.,0.,1.)
 

@@ -1,4 +1,4 @@
-import json, os, bpy
+import json, os, bpy, gpu
 
 def upload_material(name, mdat):
     # Get material
@@ -39,7 +39,8 @@ def upload_image(imdata, fpath):
 
     im = bpy.data.images.load(filepath=impath, check_existing=False)
     bpy.context.scene.gpmatpalette.image = im.name
-    
+
+
     return True
 
 ### ----------------- Operator definition
