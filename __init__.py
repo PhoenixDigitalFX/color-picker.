@@ -18,7 +18,7 @@ from bpy.props import *
 from . io import GPCOLORPICKER_OT_getJSONFile
 class GPCOLORPICKER_theme(PropertyGroup):
     pie_color: FloatVectorProperty(
-            subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.4,0.4,0.4,1.))
+            subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.1,0.1,0.1,1.))
     line_color: FloatVectorProperty(
         subtype='COLOR', name="Line Color", min=0, max=1, size=4, default=(0.96,0.96,0.96,1.))
     text_color: FloatVectorProperty(

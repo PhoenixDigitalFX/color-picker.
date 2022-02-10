@@ -123,10 +123,6 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         return True
 
     def load_preferences(self, prefs):
-        settings.set_icon_scale(prefs.icon_scale)
-        settings.mc_fill_color = prefs.theme.pie_color
-        settings.mc_line_color = prefs.theme.line_color
-        settings.text_color = prefs.theme.text_color
         settings.mat_from_active = (prefs.mat_mode == "from_active")
         im_name = bpy.context.scene.gpmatpalette.image
         if im_name in bpy.data.images:
@@ -136,6 +132,11 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                 # the texture was not loaded, maybe wrong format
                 self.report({'WARNING'},f"Image {im_name} cannot be loaded as texture : wrong format")
                 settings.gpu_tex = None
+                
+        settings.mc_fill_color = prefs.theme.pie_color
+        settings.mc_line_color = prefs.theme.line_color
+        settings.text_color = prefs.theme.text_color
+        settings.set_icon_scale(prefs.icon_scale)
 
     def invoke(self, context, event):  
         # Update settings from user preferences

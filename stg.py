@@ -10,14 +10,6 @@ class GPCOLORPICKER_settings():
         self.region_dim = np.asarray([0,0])
         self.anti_aliasing_eps = 0.5
 
-        self.set_icon_scale(250)
-        self.mat_line_width = 5.
-        self.mc_line_width = 1.
-
-        self.mc_fill_color = (0.4,0.4,0.4,1.)
-        self.mc_line_color = (0.96,0.96,0.96,1.)
-        self.active_color =  (0.05,0.05,0.05,1)
-
         self.mat_from_active = True
         self.mat_nb = -1
         self.mat_selected =  -1
@@ -26,13 +18,23 @@ class GPCOLORPICKER_settings():
         self.mat_line_colors = []
         self.gpu_tex = None
 
+        self.mc_fill_color = (0.4,0.4,0.4,1.)
+        self.mc_line_color = (0.96,0.96,0.96,1.)
+        self.active_color =  (0.05,0.05,0.05,1)
         self.text_color = (0.,0.,0.,1.)
+
+        self.mat_line_width = 5.
+        self.mc_line_width = 1.
+        self.set_icon_scale(250)
 
     def set_icon_scale(self,scale):
         self.icon_scale = scale
         self.mat_centers_radius = self.icon_scale/(2*(1.2))
         self.mc_outer_radius = 0.9*self.mat_centers_radius
-        self.mc_inner_radius = 0.6*self.mc_outer_radius
+        if self.gpu_tex:
+            self.mc_inner_radius = 0.0
+        else:
+            self.mc_inner_radius = 0.6*self.mc_outer_radius
         self.interaction_radius = 0.5*self.mc_outer_radius
         self.tex_radius = 0.8*self.mat_centers_radius
 
