@@ -32,7 +32,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return -1     
 
         dt = atan2(mouse_local[1], mouse_local[0]) % (2*pi)
-        if not settings.custom_angles:
+        if not settings.useCustomAngles():
             return int(floor((dt*settings.mat_nb/pi + 1)/2)) % (settings.mat_nb)
           
         th = settings.custom_angles
@@ -150,17 +150,24 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         
         return True
 
+
     def load_preferences(self, prefs):
-        settings.mat_from_active = (prefs.mat_mode == "from_active")
-        im_name = bpy.context.scene.gpmatpalette.image
-        if im_name in bpy.data.images:
+        def load_gpu_texture():
+            im_name = bpy.context.scene.gpmatpalette.image
+            if not (im_name in bpy.data.images):
+                # no image was specified in the palette file
+                return False
             im = bpy.data.images[im_name]
             settings.gpu_tex = gpu.texture.from_image(im)
-            if (settings.gpu_tex.height == 1) and (settings.gpu_tex.width == 1):
-                # the texture was not loaded, maybe wrong format
-                self.report({'WARNING'},f"Image {im_name} cannot be loaded as texture : wrong format")
-                settings.gpu_tex = None
-                
+            if (settings.gpu_tex.height > 1) or (settings.gpu_tex.width > 1):
+                return True
+            # the texture was not loaded, maybe wrong format
+            self.report({'WARNING'},f"Image {im_name} cannot be loaded as texture : wrong format")
+            return False
+
+        settings.mat_from_active = (prefs.mat_mode == "from_active")
+        if settings.mat_from_active or (not load_gpu_texture()):
+            settings.gpu_tex = None
         settings.mc_fill_color = prefs.theme.pie_color
         settings.mc_line_color = prefs.theme.line_color
         settings.text_color = prefs.theme.text_color

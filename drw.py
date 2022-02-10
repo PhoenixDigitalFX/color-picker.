@@ -49,7 +49,7 @@ def draw_main_circle(settings):
     fsh = ifl.read()
     ifl.close()
 
-    if settings.custom_angles:
+    if settings.useCustomAngles() :
         csta_macro = "__CUSTOM_ANGLES__"
         fsh = "#define " + csta_macro + "\n" + fsh        
 
@@ -86,7 +86,7 @@ def draw_main_circle(settings):
 
     set_uniform_vector_float(shader, settings.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, settings.mat_line_colors, "mat_line_colors")
-    if settings.custom_angles:
+    if settings.useCustomAngles():
         set_uniform_vector_float(shader, settings.custom_angles, "mat_thetas")  
 
     batch.draw(shader)  
@@ -149,7 +149,7 @@ def draw_callback_px(op, context,settings):
     draw_main_circle(settings)  
     if settings.mat_selected >= 0:
         write_selected_mat_name(settings, settings.mat_selected)
-    if settings.gpu_tex:
+    if settings.useGPUTexture():
         draw_centered_texture(settings, settings.gpu_tex, settings.tex_radius)
 
     # Reset blend mode

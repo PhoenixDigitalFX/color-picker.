@@ -32,7 +32,7 @@ class GPCOLORPICKER_settings():
         self.icon_scale = scale
         self.mat_centers_radius = self.icon_scale/(2*(1.2))
         self.mc_outer_radius = 0.9*self.mat_centers_radius
-        if self.gpu_tex:
+        if not self.mat_from_active and self.gpu_tex:
             self.mc_inner_radius = 0.0
         else:
             self.mc_inner_radius = 0.6*self.mc_outer_radius
@@ -54,3 +54,9 @@ class GPCOLORPICKER_settings():
         self.mat_radius = max(self.mat_rmin,min(r_opt,self.mat_rmax))
         self.selected_radius = self.mat_radius*1.2
         return self.mat_radius
+
+    def useGPUTexture(self):
+        return (not self.mat_from_active) and self.gpu_tex
+    
+    def useCustomAngles(self):
+        return (not self.mat_from_active) and self.custom_angles
