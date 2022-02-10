@@ -17,7 +17,7 @@ class GPMatPalette(PropertyGroup):
     def hasCustomAngles(self):
         a = 0
         for m in self.materials:
-            if (m.custom_angle < 0) or (m.custom_angle <= a):
+            if (m.custom_angle < a) or (m.custom_angle > 2*math.pi):
                 return False
             a = m.custom_angle
         return True        
