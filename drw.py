@@ -4,7 +4,8 @@ from gpu_extras.batch import batch_for_shader
 import numpy as np
 from math import *
 
-vsh = '''            
+def setup_shader(settings,fragsh):
+    vsh = '''            
         uniform mat4 modelViewProjectionMatrix;
         uniform float dimension;
         uniform vec2 origin;
@@ -20,8 +21,8 @@ vsh = '''
           uv = (pos+1)*0.5;
         }
     '''
+    shader = gpu.types.GPUShader(vsh, fragsh)
 
-def setup_vsh(settings,shader):
         # Simple screen quad
     dimension = settings.mat_centers_radius + 2*settings.mat_radius
     vdata = np.asarray(((-1, 1), (-1, -1),(1, -1), (1, 1)))
@@ -36,9 +37,12 @@ def setup_vsh(settings,shader):
     shader.uniform_float("modelViewProjectionMatrix", matrix)     
     shader.uniform_float("dimension",dimension)
     shader.uniform_float("origin", settings.origin)
-    return batch 
+    return shader,batch 
 
-main_circle_fsh = '''
+
+
+def draw_main_circle(settings):    
+    main_circle_fsh = '''
         #define PI 3.1415926538
         uniform vec4 circle_color;
         uniform vec4 line_color;
@@ -137,15 +141,13 @@ main_circle_fsh = '''
           fragColor = alpha_compose(fragColor_mat, fragColor_main);           
         }
     '''
-
-def draw_main_circle(settings):      
+      
     nmat = settings.mat_nb
     if nmat <= 0:
         return    
     
     fsh = main_circle_fsh.replace("__NMAT__",str(nmat));
-    shader = gpu.types.GPUShader(vsh, fsh)
-    batch = setup_vsh(settings,shader)
+    shader, batch = setup_shader(settings,fsh)
     
     shader.uniform_float("circle_color", settings.mc_fill_color)
     shader.uniform_float("line_color", settings.mc_line_color)
@@ -177,7 +179,7 @@ def draw_main_circle(settings):
     
     batch.draw(shader)  
 
-def draw_text(settings):
+def write_selected_mat_name(settings, id_selected):
     def write_circle_centered(org, ird, text):
         font_id = 1
         blf.color(font_id, *(settings.text_color))
@@ -193,16 +195,13 @@ def draw_text(settings):
         blf.draw(font_id, text)
         gpu.state.blend_set('ALPHA')   
 
-    # Material names when selected
-    if settings.mat_selected < 0:
-        return
-    txt = settings.materials[settings.mat_selected].name
+    txt = settings.materials[id_selected].name
     org = settings.origin + 0.5*settings.region_dim
     ird = settings.mc_outer_radius
     write_circle_centered(org, ird, txt)
 
-def draw_test(context, settings):
-    test_fsh = '''
+def draw_centered_texture(settings, tx, rds):
+    centered_tex_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
         uniform float rad_tex;
@@ -227,24 +226,19 @@ def draw_test(context, settings):
             }  
         }
     '''
-    shader = gpu.types.GPUShader(vsh, test_fsh)
-    batch = setup_vsh(settings,shader)
-
-    tx = settings.gputex
+    shader, batch = setup_shader(settings,centered_tex_fsh)
     shader.uniform_sampler("tex",tx)
-
-    rds = (settings.mc_inner_radius + settings.mc_outer_radius)*0.5
-    shader.uniform_float("rad_tex",rds)
-    
+    shader.uniform_float("rad_tex",rds)    
     batch.draw(shader) 
 
 def draw_callback_px(op, context,settings):    
     gpu.state.blend_set('ALPHA')   
     
     draw_main_circle(settings)  
-    draw_text(settings)
-    if settings.gputex and (settings.mat_selected >= 0):
-        draw_test(context,settings)
+    if settings.mat_selected >= 0:
+        write_selected_mat_name(settings, settings.mat_selected)
+    if settings.gpu_tex:
+        draw_centered_texture(settings, settings.gpu_tex, settings.tex_radius)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')

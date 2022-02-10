@@ -40,7 +40,6 @@ def upload_image(imdata, fpath):
     im = bpy.data.images.load(filepath=impath, check_existing=False)
     bpy.context.scene.gpmatpalette.image = im.name
 
-
     return True
 
 ### ----------------- Operator definition

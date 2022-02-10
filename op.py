@@ -131,10 +131,11 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         im_name = bpy.context.scene.gpmatpalette.image
         if im_name in bpy.data.images:
             im = bpy.data.images[im_name]
-            settings.gputex = gpu.texture.from_image(im)
-            gputex = settings.gputex
-            print("Uploaded GPU texture of size {}x{} (format: {})".format(gputex.width, gputex.height, gputex.format))
-
+            settings.gpu_tex = gpu.texture.from_image(im)
+            if (settings.gpu_tex.height == 1) and (settings.gpu_tex.width == 1):
+                # the texture was not loaded, maybe wrong format
+                self.report({'WARNING'},f"Image {im_name} cannot be loaded as texture : wrong format")
+                settings.gpu_tex = None
 
     def invoke(self, context, event):  
         # Update settings from user preferences

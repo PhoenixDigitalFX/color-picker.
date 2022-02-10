@@ -24,7 +24,7 @@ class GPCOLORPICKER_settings():
         self.mat_active =  -1
         self.mat_fill_colors = []
         self.mat_line_colors = []
-        self.gputex = None
+        self.gpu_tex = None
 
         self.text_color = (0.,0.,0.,1.)
 
@@ -34,6 +34,7 @@ class GPCOLORPICKER_settings():
         self.mc_outer_radius = 0.9*self.mat_centers_radius
         self.mc_inner_radius = 0.6*self.mc_outer_radius
         self.interaction_radius = 0.5*self.mc_outer_radius
+        self.tex_radius = 0.8*self.mat_centers_radius
 
         self.mat_rmin = 20
         self.mat_rmax = 0.2*self.mat_centers_radius
