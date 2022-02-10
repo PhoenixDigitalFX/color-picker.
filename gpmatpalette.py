@@ -1,13 +1,22 @@
+import math
 import bpy,gpu
 from bpy.types import PropertyGroup
-from bpy.props import StringProperty, CollectionProperty, PointerProperty
+from bpy.props import *
 
 class GPMatItem(PropertyGroup):
     mat_name: StringProperty()
+    custom_angle: FloatProperty(subtype='ANGLE', default=-1)
 
 class GPMatPalette(PropertyGroup):
+    bl_idname= "scene.gpmatpalette"
     materials: CollectionProperty(type=GPMatItem)
     image: StringProperty(subtype='FILE_NAME')
+
+    def hasCustomAngles(self):
+        for m in self.materials:
+            if m.custom_angle < 0:
+                return False
+        return True        
         
     def clear(self):
         self.materials.clear()

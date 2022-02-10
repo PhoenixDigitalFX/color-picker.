@@ -93,14 +93,19 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     
     def load_from_palette(self):
         s = settings
-        palette = bpy.context.scene.gpmatpalette.materials
-        s.materials = [ bpy.data.materials[n.mat_name] for n in palette ]       
+        palette = bpy.context.scene.gpmatpalette
+        s.materials = [ bpy.data.materials[n.mat_name] for n in palette.materials ]       
         s.mat_nb = min(s.mat_nmax,len(s.materials))
         s.mat_active = -1
 
         if s.mat_nb == 0:
             self.report({'INFO'}, "No JSON file or empty file")
             return False
+        
+        if palette.hasCustomAngles():
+            s.custom_angles = [ m.custom_angle for m in palette.materials ]
+        else:
+            s.custom_angles = []
 
         return True
     

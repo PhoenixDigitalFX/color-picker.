@@ -40,17 +40,21 @@ def setup_shader(settings,fragsh):
     return shader,batch 
 
 
-
 def draw_main_circle(settings):     
     nmat = settings.mat_nb
     if nmat <= 0:
         return    
     
     ifl = open("./draw_icon.frag.glsl", 'r')
-    main_circle_fsh = ifl.read()
+    fsh = ifl.read()
     ifl.close()
 
-    fsh = main_circle_fsh.replace("__NMAT__",str(nmat));
+    if settings.custom_angles:
+        csta_macro = "__CUSTOM_ANGLES__"
+        fsh = "#define " + csta_macro + "\n" + fsh        
+
+    fsh = fsh.replace("__NMAT__",str(nmat))
+
     shader, batch = setup_shader(settings,fsh)
     
     shader.uniform_float("circle_color", settings.mc_fill_color)
@@ -67,10 +71,14 @@ def draw_main_circle(settings):
     shader.uniform_int("mat_nb", settings.mat_nb);    
     shader.uniform_int("mat_selected", settings.mat_selected);   
     shader.uniform_int("mat_active", settings.mat_active);   
+    shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
 
-    def set_uniform_vector_float(shader, data, var_name):
-        if(len(data) == 0):
+    def set_uniform_vector_float(shader, data_, var_name):
+        if(len(data_) == 0):
             return
+        data = data_
+        if isinstance(data[0],float):
+            data = [ [x] for x in data_ ]
         dim = [len(data),len(data[0])]
         buf = gpu.types.Buffer('FLOAT', dim, data)
         loc = shader.uniform_from_name(var_name)
@@ -78,9 +86,9 @@ def draw_main_circle(settings):
 
     set_uniform_vector_float(shader, settings.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, settings.mat_line_colors, "mat_line_colors")
+    if settings.custom_angles:
+        set_uniform_vector_float(shader, settings.custom_angles, "mat_thetas")  
 
-    shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
-    
     batch.draw(shader)  
 
 def write_selected_mat_name(settings, id_selected):

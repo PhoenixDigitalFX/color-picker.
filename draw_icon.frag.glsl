@@ -14,7 +14,9 @@ uniform int mat_selected;
 uniform int mat_active;
 uniform vec4 mat_fill_colors[__NMAT__];
 uniform vec4 mat_line_colors[__NMAT__];
-    
+#ifdef __CUSTOM_ANGLES__
+uniform float mat_thetas[__NMAT__];
+#endif
 uniform float aa_eps;
 in vec2 lpos;
 in vec2 uv;
@@ -46,6 +48,10 @@ vec4 alpha_compose(vec4 A, vec4 B){
     return color;
 }
 
+bool in_interval(float x, float a, float b){
+    return (x >= a) && (x <= b);
+}
+
 void main()
 {                    
     /*    MAIN CIRCLE    */
@@ -63,8 +69,26 @@ void main()
     /* find optimal circle index for current location */
     vec2 loc_pos = lpos;
     float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
+
+#ifdef __CUSTOM_ANGLES__
+    // specific case of i = 0
+    float alpha = 0.5*(mat_thetas[0] + mat_thetas[mat_nb-1]);
+    int i = 0;
+    if ( (dt >= 0.5*(mat_thetas[0] + mat_thetas[1])) 
+            && ( ( alpha > PI ) || ( dt < alpha + PI ) ) 
+            && ( ( alpha < PI ) || ( dt < alpha - PI ) )  ){
+        i = 1;
+        while( i < mat_nb - 1){
+            if( in_interval( 2*dt-mat_thetas[i], mat_thetas[i-1], mat_thetas[i+1]) ){
+                break;
+            }
+            ++i;
+        }    
+    }    
+#else
     int i = int(floor((dt*mat_nb/PI + 1)/2));
     i = (i == mat_nb) ? 0 : i;
+#endif
 
     /* get color and if circle is currently selected */
     vec4 fill_color = mat_fill_colors[i];
@@ -73,7 +97,11 @@ void main()
     bool is_active = (i == mat_active);
     
     /* compute the center of circle */
+#ifdef __CUSTOM_ANGLES__
+    float th_i = mat_thetas[i];
+#else
     float th_i = 2*PI*i/mat_nb;
+#endif
     vec2 ci = mat_centers_radius*vec2(cos(th_i),sin(th_i));
     d = length(lpos-ci);     
             

@@ -1,4 +1,4 @@
-import json, os, bpy, gpu
+import json, os, bpy, gpu, math
 
 def upload_material(name, mdat):
     # Get material
@@ -13,16 +13,22 @@ def upload_material(name, mdat):
 
     # Setting up material settings
     m = mat.grease_pencil
-    count_ignored = 0
     for k,v in mdat.items():
         if not hasattr(m, k):
-            print("Attr ignored ", k)
-            count_ignored += 1 
             continue
         setattr(m, k, v)
     
+        
     gpmatit = bpy.context.scene.gpmatpalette.materials.add()
     gpmatit.mat_name = name
+
+    if "position" in mdat.keys():
+        def posdeg2rad(deg):
+            rad = deg*math.pi/180.
+            while rad < 0:
+                rad += 2*math.pi
+            return rad
+        gpmatit.custom_angle = posdeg2rad(mdat["position"])
 
     return True
 
