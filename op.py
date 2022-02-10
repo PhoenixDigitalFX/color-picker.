@@ -29,9 +29,32 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         # Check in which section of the circle the mouse is located
         mouse_local = mouse_pos - settings.origin
         if np.linalg.norm(mouse_local) < settings.interaction_radius:
-            return -1              
+            return -1     
+
         dt = atan2(mouse_local[1], mouse_local[0]) % (2*pi)
-        return int(floor((dt*settings.mat_nb/pi + 1)/2)) % (settings.mat_nb)
+        if not settings.custom_angles:
+            return int(floor((dt*settings.mat_nb/pi + 1)/2)) % (settings.mat_nb)
+          
+        th = settings.custom_angles
+        n = settings.mat_nb
+
+        # specific case of i = 0
+        alpha = 0.5*(th[0] + th[n-1])
+        if not ( (dt >= 0.5*(th[0] + th[1])) \
+            and ( ( alpha > pi ) or ( dt < alpha + pi ) ) \
+            and ( ( alpha < pi ) or ( dt < alpha - pi ) )  ):
+            return 0
+
+        # general case : i > 0 and i < mat_nb - 1
+        i = 1
+        while( i < n - 1 ):
+            beta = 2*dt-th[i]
+            if( (beta >= th[i-1]) and (beta <= th[i+1])):
+                return i
+            i += 1
+        # case i = mat_nb-1 is handled by default
+        return n-1
+
 
     def modal(self, context, event):
         context.area.tag_redraw()
