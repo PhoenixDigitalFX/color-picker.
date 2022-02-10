@@ -71,21 +71,23 @@ void main()
     float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
 
 #ifdef __CUSTOM_ANGLES__
-    float alpha = 0.5*(mat_thetas[0] + mat_thetas[mat_nb-1]);
     int i = 0;
-    // specific case of i = 0
-    if ( (dt >= 0.5*(mat_thetas[0] + mat_thetas[1])) 
-            && ( ( alpha > PI ) || ( dt < alpha + PI ) ) 
-            && ( ( alpha < PI ) || ( dt < alpha - PI ) )  ){
-        // general case : i > 0 and i < mat_nb - 1
-        i = 1;
-        while( i < mat_nb - 1){
-            if( in_interval( 2*dt-mat_thetas[i], mat_thetas[i-1], mat_thetas[i+1]) ){
-                break;
-            }
-            ++i;
-        }    
-    } // case i = mat_nb-1 is handled by default
+    if( mat_nb > 1 ){
+        float alpha = 0.5*(mat_thetas[0] + mat_thetas[mat_nb-1]);
+        // specific case of i = 0
+        if ( (dt >= 0.5*(mat_thetas[0] + mat_thetas[1 % mat_nb])) 
+                && ( ( alpha > PI ) || ( dt < alpha + PI ) ) 
+                && ( ( alpha < PI ) || ( dt < alpha - PI ) )  ){
+            // general case : i > 0 and i < mat_nb - 1
+            i = 1;
+            while( i < mat_nb - 1){
+                if( in_interval( 2*dt-mat_thetas[i], mat_thetas[i-1], mat_thetas[i+1]) ){
+                    break;
+                }
+                ++i;
+            }    
+        } // case i = mat_nb-1 is handled by default
+    }
 #else
     int i = int(floor((dt*mat_nb/PI + 1)/2));
     i = (i == mat_nb) ? 0 : i;

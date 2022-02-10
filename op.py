@@ -38,6 +38,9 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         th = settings.custom_angles
         n = settings.mat_nb
 
+        if n < 2:
+            return 0
+
         # specific case of i = 0
         alpha = 0.5*(th[0] + th[n-1])
         if not ( (dt >= 0.5*(th[0] + th[1])) \

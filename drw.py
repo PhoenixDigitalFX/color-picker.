@@ -45,6 +45,8 @@ def draw_main_circle(settings):
     if nmat <= 0:
         return    
     
+    print("HELLLO : mat_nb ", nmat)
+    
     ifl = open("./draw_icon.frag.glsl", 'r')
     fsh = ifl.read()
     ifl.close()
@@ -72,7 +74,7 @@ def draw_main_circle(settings):
     shader.uniform_int("mat_selected", settings.mat_selected);   
     shader.uniform_int("mat_active", settings.mat_active);   
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
-
+    
     def set_uniform_vector_float(shader, data_, var_name):
         if(len(data_) == 0):
             return
