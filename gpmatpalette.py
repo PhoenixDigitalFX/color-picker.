@@ -12,10 +12,14 @@ class GPMatPalette(PropertyGroup):
     materials: CollectionProperty(type=GPMatItem)
     image: StringProperty(subtype='FILE_NAME')
 
+    # Safety check to use custom angles
+    # all materials should have one, and the angles should be in increasing order
     def hasCustomAngles(self):
+        a = 0
         for m in self.materials:
-            if m.custom_angle < 0:
+            if (m.custom_angle < 0) or (m.custom_angle <= a):
                 return False
+            a = m.custom_angle
         return True        
         
     def clear(self):
