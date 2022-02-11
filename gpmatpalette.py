@@ -7,6 +7,7 @@ class GPMatItem(PropertyGroup):
     mat_name: StringProperty()
     custom_angle: FloatProperty(subtype='ANGLE', default=-1)
     image: StringProperty(subtype='FILE_NAME')
+    layer: StringProperty()
 
     def clear(self):
         # Remove image from database

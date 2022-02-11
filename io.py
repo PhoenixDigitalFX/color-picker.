@@ -92,6 +92,9 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
             if hasImage and ("image" in mat_data.keys()):
                 gpmatit.image = upload_image(mat_data["image"], is_relative_path, fpt)
 
+            if "layer" in mat_data.keys():
+                gpmatit.layer = mat_data["layer"]
+
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences
         if prefs is None : 

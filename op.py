@@ -66,31 +66,46 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         def mat_selected_in_range():
             i = settings.mat_selected
             return (i >= 0) and (i < settings.mat_nb)
+        
+        def set_active_material(ob, stg_id, ob_id):
+            ob.active_material_index = ob_id
+
+            if settings.mat_from_active:
+                return True
+            
+            gpmp = bpy.context.scene.gpmatpalette
+            gpmt = gpmp.materials[stg_id]
+            if not gpmt.layer:
+                return True
+
+            if not gpmt.layer in ob.data.layers:
+                ob.data.layers.new(gpmt.layer, set_active=True)
+            else:
+                ob.data.layers.active = ob.data.layers[gpmt.layer]
+
+            return True
 
         def validate_selection():
-            i = settings.mat_selected
+            sid = settings.mat_selected
             if not mat_selected_in_range():
                 return True
 
             if settings.mat_from_active:
-                settings.active_obj.active_material_index = i
-                return True
-
+                return set_active_material(settings.active_obj, sid, sid)
+            
             ob_mat = settings.active_obj.data.materials                
-            mat = settings.materials[i]
-            i = ob_mat.find(mat.name)
+            mat = settings.materials[sid]
+            oid = ob_mat.find(mat.name)
 
-            if i >= 0:
+            if oid >= 0:
                 # Found material in current object
-                settings.active_obj.active_material_index = i
-                return True
+                return set_active_material(settings.active_obj, sid, oid)
             
             if settings.mat_assign:
                 # Assigning new material to current object
-                i = len(ob_mat)
+                oid = len(ob_mat)
                 ob_mat.append(mat)
-                settings.active_obj.active_material_index = i
-                return True
+                return set_active_material(settings.active_obj, sid, oid)
 
             self.report({'WARNING'}, 'Active object does not contain material')
             return False
@@ -167,7 +182,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
     def load_preferences(self, prefs):
         settings.mat_from_active = (prefs.mat_mode == "from_active")
-        settings.mat_assign = prefs.assign_mat;
+        settings.mat_assign = prefs.assign_mat
 
         if not settings.mat_from_active:
             gpmp = bpy.context.scene.gpmatpalette 
