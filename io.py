@@ -1,6 +1,6 @@
 import json, os, bpy, gpu, math
 
-def upload_image(impath, is_relative=False, fpath=""):
+def upload_image(impath, is_relative=True, fpath=""):
     fullpath = impath
     if is_relative:
         fullpath = os.path.dirname(fpath) + os.path.sep + fullpath
@@ -71,7 +71,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         is_relative_path = False
         if ("image" in data) and ("path" in data["image"]):
             im_data = data["image"]
-            is_relative_path = ("relative" in im_data) and (im_data["relative"])
+            is_relative_path = (not "relative" in im_data) or (im_data["relative"])
             gpmatpalette.image = upload_image(im_data["path"], is_relative_path, fpt)
         hasImage = not (gpmatpalette.image == "")
 
