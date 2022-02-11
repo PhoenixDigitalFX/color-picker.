@@ -5,7 +5,7 @@ bl_info = {
     "author": "Les Fées Spéciales (LFS)",
     "description": "Quickly switch between materials of the active Grease pencil object",
     "blender": (3, 0, 0),
-    "version": (1,0,1),
+    "version": (1, 1, 0),
     "location": "Press S in Draw mode with a GP object activated",
     "category": "00"
 }
@@ -78,7 +78,6 @@ classes = [ GPCOLORPICKER_OT_wheel, \
           ]
 
 def register():
-
     from . gpmatpalette import register_data
     register_data()
 
