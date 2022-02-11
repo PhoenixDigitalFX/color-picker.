@@ -18,13 +18,20 @@ Two available modes :
 ## JSON File Specification
 ROOT 
 -"materials" \[MANDATORY\] : containing the list of materials and their specification. Each material contains : 
-    --"name" of the material (if a material of the same name already exists, it will be updated with the specified parameters)
-        --- unordered list of material specification fields, all possible fields and default values are written [here](doc/base_material.json)
-        --- "image" \[OPTIONAL\] : an image to be displayed in the tool when the material is hoverred by the cursor
-        --- "layer" \[OPTIONAL\] : the name of the layer to switch to when the material is selected (only applies if the root field "image" contains a valid path)
+
+    -"name" of the material (if a material of the same name already exists, it will be updated with the specified parameters)
+
+        - unordered list of material specification fields, all possible fields and default values are written [here](doc/base_material.json)
+
+        - "image" \[OPTIONAL\] : an image to be displayed in the tool when the material is hoverred by the cursor
+
+        - "layer" \[OPTIONAL\] : the name of the layer to switch to when the material is selected (only applies if the root field "image" contains a valid path)
+
 - "image" \[OPTIONAL\] : image to be displayed in the center of the tool
-    -- "path" \[MANDATORY\] : path of the image file
-    -- "relative" \[OPTIONAL\] : whether the path is relative or absolute (default=True)
+
+    - "path" \[MANDATORY\] : path of the image file
+
+    - "relative" \[OPTIONAL\] : whether the path is relative or absolute (default=True)
 
 An example of valid JSON file can be found [here](doc/example.json)
 
