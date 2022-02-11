@@ -17,7 +17,9 @@ Two available modes :
 
 ## JSON File Specification
 - "materials" \[MANDATORY\] : containing the list of materials and their specification. 
+
 Each material contains : 
+
 -"name" of the material (if a material of the same name already exists, it will be updated with the specified parameters)
 
     - unordered list of material specification fields, all possible fields and default values are written [here](doc/base_material.json)
