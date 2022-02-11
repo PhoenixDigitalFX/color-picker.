@@ -20,7 +20,7 @@ Two available modes :
 
 Each material contains : 
 
--"name" of the material (if a material of the same name already exists, it will be updated with the specified parameters)
+- "name" of the material (if a material of the same name already exists, it will be updated with the specified parameters)
 
     - unordered list of material specification fields, all possible fields and default values are written [here](doc/base_material.json)
 
