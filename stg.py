@@ -11,6 +11,7 @@ class GPCOLORPICKER_settings():
         self.anti_aliasing_eps = 0.5
 
         self.mat_from_active = True
+        self.mat_assign = False
         self.mat_nb = -1
         self.mat_selected =  -1
         self.mat_active =  -1

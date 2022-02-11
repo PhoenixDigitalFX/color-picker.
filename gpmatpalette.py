@@ -14,7 +14,6 @@ class GPMatItem(PropertyGroup):
             bpy.data.images.remove(bpy.data.images[self.image])
         self.image = ""
 
-
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalette"
     materials: CollectionProperty(type=GPMatItem)
@@ -33,7 +32,7 @@ class GPMatPalette(PropertyGroup):
     def clear(self):
         for m in self.materials:
             m.clear()
-            
+
         self.materials.clear()
         
         # Remove image from database

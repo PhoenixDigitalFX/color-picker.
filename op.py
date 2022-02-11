@@ -62,36 +62,47 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     def modal(self, context, event):
         context.area.tag_redraw()
 
+        def mat_selected_in_range():
+            i = settings.mat_selected
+            return (i >= 0) and (i < settings.mat_nb)
+
         def validate_selection():
             i = settings.mat_selected
-            if (i < 0) or (i >= settings.mat_nb):
-                return False
+            if not mat_selected_in_range():
+                return True
 
-            if not settings.mat_from_active:
-                ob_mat = settings.active_obj.data.materials                
-                mat = settings.materials[i]
-                i = ob_mat.find(mat.name)
-                if i < 0:
-                    i = len(ob_mat)
-                    ob_mat.append(mat)
+            if settings.mat_from_active:
+                settings.active_obj.active_material_index = i
+                return True
 
-            settings.active_obj.active_material_index = i
+            ob_mat = settings.active_obj.data.materials                
+            mat = settings.materials[i]
+            i = ob_mat.find(mat.name)
+
+            if i >= 0:
+                # Found material in current object
+                settings.active_obj.active_material_index = i
+                return True
             
-            return True
+            if settings.mat_assign:
+                # Assigning new material to current object
+                i = len(ob_mat)
+                ob_mat.append(mat)
+                settings.active_obj.active_material_index = i
+                return True
+
+            self.report({'WARNING'}, 'Active object does not contain material')
+            return False
 
         if event.type == 'MOUSEMOVE':
             settings.mat_selected = self.get_selected_mat_id(event)
         
         elif ((event.type == settings.key_shortcut) \
-                and (event.value == 'RELEASE')):
+                and (event.value == 'RELEASE') and mat_selected_in_range()) \
+                    or (event.type == 'LEFTMOUSE'):
             if validate_selection():       
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-                return {'FINISHED'}
-                
-        elif (event.type == 'LEFTMOUSE'):
-            validate_selection()          
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-            return {'FINISHED'}
+                return {'FINISHED'}                
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -155,6 +166,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
     def load_preferences(self, prefs):
         settings.mat_from_active = (prefs.mat_mode == "from_active")
+        settings.mat_assign = prefs.assign_mat;
 
         if not settings.mat_from_active:
             gpmp = bpy.context.scene.gpmatpalette 
