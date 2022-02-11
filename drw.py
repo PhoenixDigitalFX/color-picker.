@@ -45,8 +45,6 @@ def draw_main_circle(settings):
     if nmat <= 0:
         return    
     
-    print("HELLLO : mat_nb ", nmat)
-    
     ifl = open("./draw_icon.frag.glsl", 'r')
     fsh = ifl.read()
     ifl.close()

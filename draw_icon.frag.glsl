@@ -105,7 +105,8 @@ void main()
 #else
     float th_i = 2*PI*i/mat_nb;
 #endif
-    vec2 ci = mat_centers_radius*vec2(cos(th_i),sin(th_i));
+    float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
+    vec2 ci = R*vec2(cos(th_i),sin(th_i));
     d = length(lpos-ci);     
             
     /* draw circle */
