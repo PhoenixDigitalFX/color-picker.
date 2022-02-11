@@ -173,6 +173,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         else:
             self.load_preferences(prefs)
 
+        settings.mat_selected = -1
         settings.active_obj = bpy.context.active_object
 
         # Loading materials 
