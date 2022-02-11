@@ -3,7 +3,7 @@ import json, os, bpy, gpu, math
 def upload_image(impath, is_relative=False, fpath=""):
     fullpath = impath
     if is_relative:
-        fullpath = os.path.dirname(fpath) + "/" + fullpath
+        fullpath = os.path.dirname(fpath) + os.path.sep + fullpath
     if not os.path.isfile(fullpath):
         print("Error : File {} not found".format(fullpath))
         return ""
