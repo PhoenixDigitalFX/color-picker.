@@ -16,7 +16,6 @@ Two available modes :
 ![Preview](doc/gcp_preview.png "Preview of the GP Color Picker")
 
 ## JSON File Specification
-:
 - "materials" \[MANDATORY\] : containing the list of materials and their specification. Each material contains : 
 
     -"name" of the material (if a material of the same name already exists, it will be updated with the specified parameters)
