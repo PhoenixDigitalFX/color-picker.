@@ -166,14 +166,14 @@ def draw_centered_texture(settings, rds):
     settings.cached_gpu_tex = tx
     settings.cached_mat_selected = sid
 
-def draw_callback_px(op, context,settings):    
+def draw_callback_px(op, context,settings): 
     gpu.state.blend_set('ALPHA')   
     
     draw_main_circle(settings)  
-    if settings.mat_selected >= 0:
-        write_selected_mat_name(settings, settings.mat_selected)
     if settings.useGPUTexture():
         draw_centered_texture(settings, settings.tex_radius)
+    if settings.mat_selected >= 0:
+        write_selected_mat_name(settings, settings.mat_selected)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
