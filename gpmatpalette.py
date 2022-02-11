@@ -31,6 +31,7 @@ class GPMatPalette(PropertyGroup):
         return True        
         
     def clear(self):
+        print("CLEARING GPMATPAL")
         for m in self.materials:
             m.clear()
 
@@ -47,7 +48,6 @@ def register_data():
     bpy.types.Scene.gpmatpalette = PointerProperty(type=GPMatPalette)
 
 def unregister_data():
-    bpy.context.scene.gpmatpalette.clear()
     bpy.utils.unregister_class(GPMatPalette)
     bpy.utils.unregister_class(GPMatItem)
     

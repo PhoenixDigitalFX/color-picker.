@@ -16,6 +16,7 @@ def upload_material(name, mdat):
     if mat is None:
         # create material
         mat = bpy.data.materials.new(name=name)
+        mat.use_fake_user = True
         bpy.data.materials.create_gpencil_data(mat)
     elif not mat.is_grease_pencil:
         print(f"Error: Material {name} exists and is not GP.")
