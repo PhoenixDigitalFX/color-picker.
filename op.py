@@ -4,6 +4,7 @@ from math import atan2,pi,floor
 from . drw import draw_callback_px, load_gpu_texture
 from . stg import GPCOLORPICKER_settings
 import gpu
+import time
 
 settings = GPCOLORPICKER_settings()
 
@@ -177,7 +178,15 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         settings.text_color = prefs.theme.text_color
         settings.set_icon_scale(prefs.icon_scale)
 
+    def check_time(self):
+        if self.timeout:
+            return
+        print("Timer : ", time.time() - self.tsart)
+        self.timeout = True
+
     def invoke(self, context, event):  
+        self.tsart = time.time()
+        self.timeout = False
         # Update settings from user preferences
         prefs = context.preferences.addons[__package__].preferences
         if prefs is None : 

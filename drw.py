@@ -177,4 +177,5 @@ def draw_callback_px(op, context,settings):
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
+    # op.check_time()
     
