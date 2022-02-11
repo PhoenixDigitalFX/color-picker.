@@ -1,4 +1,4 @@
-import blf
+import blf, bpy
 import gpu
 from gpu_extras.batch import batch_for_shader
 import numpy as np
@@ -112,7 +112,18 @@ def write_selected_mat_name(settings, id_selected):
     ird = settings.mc_outer_radius
     write_circle_centered(org, ird, txt)
 
-def draw_centered_texture(settings, tx, rds):
+def load_gpu_texture(im_name):
+    if not (im_name in bpy.data.images):
+        return None
+
+    im = bpy.data.images[im_name]
+    gpu_tex = gpu.texture.from_image(im)
+    if (gpu_tex.height > 1) or (gpu_tex.width > 1):
+        return gpu_tex
+        
+    return None
+
+def draw_centered_texture(settings, rds):
     centered_tex_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
@@ -138,10 +149,22 @@ def draw_centered_texture(settings, tx, rds):
             }  
         }
     '''
+    gpmp = bpy.context.scene.gpmatpalette
+    sid = settings.mat_selected
+    if ( sid == settings.cached_mat_selected ) :
+        tx = settings.cached_gpu_tex
+    elif ( sid == -1 ) or ( not gpmp.materials[sid].image ):
+        tx = load_gpu_texture(gpmp.image)
+    else:
+        tx = load_gpu_texture(gpmp.materials[sid].image) 
+    
     shader, batch = setup_shader(settings,centered_tex_fsh)
     shader.uniform_sampler("tex",tx)
     shader.uniform_float("rad_tex",rds)    
     batch.draw(shader) 
+
+    settings.cached_gpu_tex = tx
+    settings.cached_mat_selected = sid
 
 def draw_callback_px(op, context,settings):    
     gpu.state.blend_set('ALPHA')   
@@ -150,7 +173,7 @@ def draw_callback_px(op, context,settings):
     if settings.mat_selected >= 0:
         write_selected_mat_name(settings, settings.mat_selected)
     if settings.useGPUTexture():
-        draw_centered_texture(settings, settings.gpu_tex, settings.tex_radius)
+        draw_centered_texture(settings, settings.tex_radius)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')

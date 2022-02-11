@@ -1,7 +1,7 @@
 import bpy
 import numpy as np
 from math import atan2,pi,floor
-from . drw import draw_callback_px
+from . drw import draw_callback_px, load_gpu_texture
 from . stg import GPCOLORPICKER_settings
 import gpu
 
@@ -153,24 +153,13 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         
         return True
 
-
     def load_preferences(self, prefs):
-        def load_gpu_texture():
-            im_name = bpy.context.scene.gpmatpalette.image
-            if not (im_name in bpy.data.images):
-                # no image was specified in the palette file
-                return False
-            im = bpy.data.images[im_name]
-            settings.gpu_tex = gpu.texture.from_image(im)
-            if (settings.gpu_tex.height > 1) or (settings.gpu_tex.width > 1):
-                return True
-            # the texture was not loaded, maybe wrong format
-            self.report({'WARNING'},f"Image {im_name} cannot be loaded as texture : wrong format")
-            return False
-
         settings.mat_from_active = (prefs.mat_mode == "from_active")
-        if settings.mat_from_active or (not load_gpu_texture()):
-            settings.gpu_tex = None
+
+        if not settings.mat_from_active:
+            gpmp = bpy.context.scene.gpmatpalette 
+            settings.cached_gpu_tex = load_gpu_texture(gpmp.image)
+
         settings.mc_fill_color = prefs.theme.pie_color
         settings.mc_line_color = prefs.theme.line_color
         settings.text_color = prefs.theme.text_color
@@ -188,7 +177,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
         # Loading materials 
         if not (self.load_grease_pencil_materials()):
-            return {'CANCELLED'}      
+            return {'CANCELLED'}  
 
         # Setting modal handler
         self._handle = context.window_manager.modal_handler_add(self)

@@ -16,8 +16,10 @@ class GPCOLORPICKER_settings():
         self.mat_active =  -1
         self.mat_fill_colors = []
         self.mat_line_colors = []
-        self.gpu_tex = None
         self.custom_angles = []
+
+        self.cached_gpu_tex = None
+        self.cached_mat_selected = -1
 
         self.mc_fill_color = (0.4,0.4,0.4,1.)
         self.mc_line_color = (0.96,0.96,0.96,1.)
@@ -56,7 +58,7 @@ class GPCOLORPICKER_settings():
         return self.mat_radius
 
     def useGPUTexture(self):
-        return (not self.mat_from_active) and self.gpu_tex
+        return (not self.mat_from_active) and self.cached_gpu_tex
     
     def useCustomAngles(self):
         return (not self.mat_from_active) and self.custom_angles

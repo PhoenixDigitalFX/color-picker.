@@ -6,6 +6,14 @@ from bpy.props import *
 class GPMatItem(PropertyGroup):
     mat_name: StringProperty()
     custom_angle: FloatProperty(subtype='ANGLE', default=-1)
+    image: StringProperty(subtype='FILE_NAME')
+
+    def clear(self):
+        # Remove image from database
+        if self.image in bpy.data.images:
+            bpy.data.images.remove(bpy.data.images[self.image])
+        self.image = ""
+
 
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalette"
@@ -23,6 +31,9 @@ class GPMatPalette(PropertyGroup):
         return True        
         
     def clear(self):
+        for m in self.materials:
+            m.clear()
+            
         self.materials.clear()
         
         # Remove image from database
