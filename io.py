@@ -91,7 +91,6 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
             
             if hasImage and ("image" in mat_data.keys()):
                 gpmatit.image = upload_image(mat_data["image"], is_relative_path, fpt)
-            print(f"Loaded mat {gpmatit.mat_name}, angle {gpmatit.custom_angle}, image {gpmatit.image}")
 
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences
