@@ -224,8 +224,7 @@ def draw_main_circle(settings):
 
     batch.draw(shader)  
 
-def write_selected_mat_name(settings, id_selected):
-    def write_circle_centered(org, ird, text):
+def write_circle_centered(settings, org, ird, text):
         font_id = 1
         blf.color(font_id, *(settings.text_color))
         blf.size(font_id, settings.text_size, 72)
@@ -240,10 +239,21 @@ def write_selected_mat_name(settings, id_selected):
         blf.draw(font_id, text)
         gpu.state.blend_set('ALPHA')   
 
+def write_selected_mat_name(settings, id_selected):
     txt = settings.materials[id_selected].name
     org = settings.origin + 0.5*settings.region_dim
     ird = settings.mc_outer_radius
-    write_circle_centered(org, ird, txt)
+    write_circle_centered(settings, org, ird, txt)
+
+def write_active_palette(settings):
+    plt = bpy.context.scene.gpmatpalettes.active()
+    if not plt:
+        return
+    txt = plt.name
+    org = settings.origin + 0.5*settings.region_dim
+    org[1] -= settings.mc_outer_radius+settings.mat_radius
+    ird = settings.mc_outer_radius
+    write_circle_centered(settings, org, ird, txt)
 
 def load_gpu_texture(image):
     if not image:
@@ -313,6 +323,8 @@ def draw_callback_px(op, context,settings):
         draw_centered_texture(settings, settings.tex_radius)
     if settings.mat_selected >= 0:
         write_selected_mat_name(settings, settings.mat_selected)
+    if not settings.mat_from_active:
+        write_active_palette(settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
