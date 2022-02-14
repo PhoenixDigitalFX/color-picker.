@@ -38,7 +38,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     json_fpath: StringProperty(subtype="FILE_PATH")
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
-                            default="from_active")
+                            default="from_file")
     assign_mat: BoolProperty(name="Assign material on selection", default= True,  \
         description="Check this option if you want the materials you selected to be assigned automatically to the current object. Otherwise, selecting a material will only work if the object already has it.")
 
@@ -80,7 +80,6 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             row.prop(kmi, 'type', text="")
     
 classes = [ GPCOLORPICKER_OT_wheel, \
-            GPCOLORPICKER_OT_getJSONFile, \
             GPCOLORPICKER_theme, \
             GPCOLORPICKER_preferences
           ]
@@ -88,6 +87,9 @@ classes = [ GPCOLORPICKER_OT_wheel, \
 def register():
     from . gpmatpalette import register_data
     register_data()
+
+    from . io import register as register_ops
+    register_ops()
 
     from . palette_panel import register as register_panel
     register_panel()
@@ -116,6 +118,9 @@ def unregister():
     
     from . palette_panel import unregister as unregister_panel
     unregister_panel()
+
+    from . io import unregister as unregister_ops
+    unregister_ops()
 
     from . gpmatpalette import unregister_data
     unregister_data()

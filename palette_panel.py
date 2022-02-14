@@ -8,7 +8,6 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
                   active_propname, index):
 
         # We could write some code to decide which icon to use here...
-        remove_palette_icon = 'X'
         refresh_icon = 'FILE_REFRESH'
         toggle_visibility = 'HIDE_ON'
         
@@ -24,7 +23,8 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             col.label(text='', icon=refresh_icon)
 
             col = layout.column()
-            col.label(text='', icon=remove_palette_icon)
+            props = col.operator("scene.remove_palette", icon="X", text="")
+            props.palette_index = index
 
             col = layout.column()
             col.label(text='', icon=toggle_visibility)
@@ -47,7 +47,7 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Active palettes")
-        row.label(text="", icon="FILE_NEW")
+        row.operator("gpencil.file_load", icon="FILE_NEW", text="")
 
         row = layout.row()
         gpmp = bpy.context.scene.gpmatpalettes

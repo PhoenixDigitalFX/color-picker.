@@ -144,3 +144,43 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
+    bl_idname = "scene.remove_palette"
+    bl_label = "Remove GP Palette"
+
+    palette_index: bpy.props.IntProperty(default=-1)
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context): 
+        gpmp = context.scene.gpmatpalettes
+        npal = len(gpmp.palettes)
+        if (self.palette_index < 0) or (self.palette_index >= npal):
+            return {'CANCELLED'}
+
+        active_ind = gpmp.active_index
+
+        pal = gpmp.palettes[self.palette_index]
+        pal.clear()
+        gpmp.palettes.remove(self.palette_index)
+
+        if active_ind == npal-1:
+            gpmp.active_index = npal-2
+        elif active_ind == self.palette_index:
+            gpmp.next()
+
+        return {'FINISHED'}
+
+
+classes = [GPCOLORPICKER_OT_getJSONFile, GPCOLORPICKER_OT_removePalette]
+
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+def unregister():
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
