@@ -151,7 +151,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     def load_from_palette(self):
         s = settings
         palette = bpy.context.scene.gpmatpalettes.active()
-        s.materials = [ bpy.data.materials[n.mat_name] for n in palette.materials ]       
+        s.materials = [ bpy.data.materials[n.name] for n in palette.materials ]       
         s.mat_nb = min(s.mat_nmax,len(s.materials))
         s.mat_active = -1
 

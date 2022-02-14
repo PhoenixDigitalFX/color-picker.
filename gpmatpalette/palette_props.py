@@ -20,9 +20,9 @@ class GPMatImage(PropertyGroup):
     def file_exists(self):
         return os.path.isfile(self.path)
     
-    def load(self, path, path_prefix=""):
+    def load(self, path, path_prefix="", overload_existing=False):
         self.path = os.path.join(path_prefix, path)
-        self.reload()
+        self.reload(overload_existing)
 
     def reload(self, check_existing=False):
         im = bpy.data.images.load(filepath=self.path, check_existing=check_existing)
@@ -39,7 +39,7 @@ class GPMatImage(PropertyGroup):
         self.path = ""
 
 class GPMatItem(PropertyGroup):
-    mat_name: StringProperty()
+    name: StringProperty()
     custom_angle: FloatProperty(subtype='ANGLE', default=-1)
     image: PointerProperty(type=GPMatImage)
     layer: StringProperty()

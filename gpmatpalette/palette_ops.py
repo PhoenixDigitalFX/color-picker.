@@ -44,22 +44,26 @@ def upload_material(name, mdat):
 
 def upload_palette(pname, data, fpt, palette):
     is_relative_path = False
-    fdir = os.path.dirname(fpt)
+    fdir = ""
     if ("image" in data) and ("path" in data["image"]):
         im_data = data["image"]
         is_relative_path = ("relative" in im_data) and (im_data["relative"])
         if is_relative_path:
-            palette.image.load(im_data["path"], fdir)
-        else:
-            palette.image.load(im_data["path"])
+            fdir = os.path.dirname(fpt)
+        already_exists = (palette.image.path == im_data["path"])
+        palette.image.load(im_data["path"], fdir, already_exists)
+
     hasImage = not (palette.image is None)
 
     for name,mat_data in data["materials"].items():
         if not upload_material(name, mat_data):
             continue
-
-        gpmatit = palette.materials.add()
-        gpmatit.mat_name = name
+        
+        if not name in palette.materials:
+            gpmatit = palette.materials.add()
+            gpmatit.name = name
+        else:
+            gpmatit = palette.materials[name]
 
         if "position" in mat_data.keys():
             def posdeg2rad(deg):
@@ -70,10 +74,8 @@ def upload_palette(pname, data, fpt, palette):
             gpmatit.custom_angle = posdeg2rad(mat_data["position"])
         
         if hasImage and ("image" in mat_data.keys()):
-            if is_relative_path:
-                gpmatit.image.load(mat_data["image"], fdir)
-            else:
-                gpmatit.image.load(mat_data["image"])
+            already_exists = (gpmatit.image.path == mat_data["image"])
+            gpmatit.image.load(mat_data["image"], fdir, already_exists)
 
         if "layer" in mat_data.keys():
             gpmatit.layer = mat_data["layer"]
