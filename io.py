@@ -54,7 +54,6 @@ def upload_palette(pname, data, fpt, palette):
             palette.image.load(im_data["path"])
     hasImage = not (palette.image is None)
 
-
     for name,mat_data in data["materials"].items():
         if not upload_material(name, mat_data):
             continue
@@ -84,6 +83,7 @@ def upload_palette(pname, data, fpt, palette):
         return None
     
     palette.name = pname
+    palette.source_path = fpt
 
     return palette
 

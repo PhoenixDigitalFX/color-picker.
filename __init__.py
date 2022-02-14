@@ -89,6 +89,9 @@ def register():
     from . gpmatpalette import register_data
     register_data()
 
+    from . palette_panel import register as register_panel
+    register_panel()
+
     for cls in classes:
         bpy.utils.register_class(cls)
     
@@ -111,6 +114,9 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     
+    from . palette_panel import unregister as unregister_panel
+    unregister_panel()
+
     from . gpmatpalette import unregister_data
     unregister_data()
 

@@ -54,6 +54,7 @@ class GPMatPalette(PropertyGroup):
     name: StringProperty(default="unnamed")
     materials: CollectionProperty(type=GPMatItem)
     image: PointerProperty(type=GPMatImage)
+    source_path: StringProperty(subtype='FILE_PATH')
 
     # Safety check to use custom angles
     # all materials should have one, and the angles should be in increasing order
