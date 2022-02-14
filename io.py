@@ -1,4 +1,5 @@
 import json, os, bpy, gpu, math
+from . gpmatpalette import GPMatPalette
 
 def upload_image(impath, is_relative=True, fpath=""):
     fullpath = impath
@@ -51,6 +52,43 @@ def upload_material(name, mdat):
 
     return True
 
+def upload_palette(pname, data, fpt, palette):
+    is_relative_path = False
+    if ("image" in data) and ("path" in data["image"]):
+        im_data = data["image"]
+        is_relative_path = ("relative" in im_data) and (im_data["relative"])
+        palette.image = upload_image(im_data["path"], is_relative_path, fpt)
+    hasImage = not (palette.image == "")
+
+
+    for name,mat_data in data["materials"].items():
+        if not upload_material(name, mat_data):
+            continue
+
+        gpmatit = palette.materials.add()
+        gpmatit.mat_name = name
+
+        if "position" in mat_data.keys():
+            def posdeg2rad(deg):
+                rad = deg*math.pi/180.
+                while rad < 0:
+                    rad += 2*math.pi
+                return rad
+            gpmatit.custom_angle = posdeg2rad(mat_data["position"])
+        
+        if hasImage and ("image" in mat_data.keys()):
+            gpmatit.image = upload_image(mat_data["image"], is_relative_path, fpt)
+
+        if "layer" in mat_data.keys():
+            gpmatit.layer = mat_data["layer"]
+    
+    if len(palette.materials) == 0:
+        print("No materials in palette. Aborting upload")
+        return None
+    
+    palette.name = pname
+
+    return palette
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
@@ -80,41 +118,21 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         ifl = open(fpt, 'r')
         data = json.load(ifl)
         ifl.close()
-        
-        if not "materials" in data :
-            print("Error : {} does not contain any material".format(fnm))
-            return {'CANCELLED'}
 
-        gpmatpalette = bpy.context.scene.gpmatpalette
-        gpmatpalette.clear()
+        gpmatpalettes = bpy.context.scene.gpmatpalettes
+
         # Parse JSON
-        is_relative_path = False
-        if ("image" in data) and ("path" in data["image"]):
-            im_data = data["image"]
-            is_relative_path = ("relative" in im_data) and (im_data["relative"])
-            gpmatpalette.image = upload_image(im_data["path"], is_relative_path, fpt)
-        hasImage = not (gpmatpalette.image == "")
-
-        for name,mat_data in data["materials"].items():
-            if not upload_material(name, mat_data):
+        count = 0
+        for pname, pdata in data.items():
+            print("Uploading palette ", pname)
+            palette = gpmatpalettes.palettes.add()
+            upload_palette(pname, pdata, fpt, palette)
+            if not palette:
+                print("Nothing found in palette ", pname)
                 continue
-
-            gpmatit = gpmatpalette.materials.add()
-            gpmatit.mat_name = name
-
-            if "position" in mat_data.keys():
-                def posdeg2rad(deg):
-                    rad = deg*math.pi/180.
-                    while rad < 0:
-                        rad += 2*math.pi
-                    return rad
-                gpmatit.custom_angle = posdeg2rad(mat_data["position"])
-            
-            if hasImage and ("image" in mat_data.keys()):
-                gpmatit.image = upload_image(mat_data["image"], is_relative_path, fpt)
-
-            if "layer" in mat_data.keys():
-                gpmatit.layer = mat_data["layer"]
+            gpmatpalettes.active_index = count
+            count += 1
+        print(f"Found {count} palettes")
 
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences

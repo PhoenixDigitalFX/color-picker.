@@ -73,7 +73,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             if settings.mat_from_active:
                 return True
             
-            gpmp = bpy.context.scene.gpmatpalette
+            gpmp = bpy.context.scene.gpmatpalettes.active()
             gpmt = gpmp.materials[stg_id]
             if not gpmt.layer:
                 return True
@@ -113,6 +113,10 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':
             settings.mat_selected = self.get_selected_mat_id(event)
         
+        elif (event.type == settings.switch_key) and (event.value == 'PRESS'):
+            bpy.context.scene.gpmatpalettes.next()
+            self.load_grease_pencil_materials()
+        
         elif ((event.type == settings.key_shortcut) \
                 and (event.value == 'RELEASE') and mat_selected_in_range()) \
                     or (event.type == 'LEFTMOUSE'):
@@ -146,7 +150,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     
     def load_from_palette(self):
         s = settings
-        palette = bpy.context.scene.gpmatpalette
+        palette = bpy.context.scene.gpmatpalettes.active()
         s.materials = [ bpy.data.materials[n.mat_name] for n in palette.materials ]       
         s.mat_nb = min(s.mat_nmax,len(s.materials))
         s.mat_active = -1
@@ -185,7 +189,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         settings.mat_assign = prefs.assign_mat
 
         if not settings.mat_from_active:
-            gpmp = bpy.context.scene.gpmatpalette 
+            gpmp = bpy.context.scene.gpmatpalettes.active()
             settings.cached_gpu_tex = load_gpu_texture(gpmp.image)
 
         settings.mc_fill_color = prefs.theme.pie_color

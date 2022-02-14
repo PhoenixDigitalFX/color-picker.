@@ -282,7 +282,7 @@ def draw_centered_texture(settings, rds):
             }  
         }
     '''
-    gpmp = bpy.context.scene.gpmatpalette
+    gpmp = bpy.context.scene.gpmatpalettes.active()
     sid = settings.mat_selected
     if ( sid == settings.cached_mat_selected ) :
         tx = settings.cached_gpu_tex

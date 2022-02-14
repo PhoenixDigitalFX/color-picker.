@@ -1,4 +1,5 @@
 import math
+
 import bpy,gpu
 from bpy.types import PropertyGroup
 from bpy.props import *
@@ -16,7 +17,8 @@ class GPMatItem(PropertyGroup):
         self.image = ""
 
 class GPMatPalette(PropertyGroup):
-    bl_idname= "scene.gpmatpalette"
+    bl_idname= "scene.gpmatpalettes.palette"
+    name: StringProperty(default="unnamed")
     materials: CollectionProperty(type=GPMatItem)
     image: StringProperty(subtype='FILE_NAME')
 
@@ -31,7 +33,6 @@ class GPMatPalette(PropertyGroup):
         return True        
         
     def clear(self):
-        print("CLEARING GPMATPAL")
         for m in self.materials:
             m.clear()
 
@@ -42,12 +43,30 @@ class GPMatPalette(PropertyGroup):
             bpy.data.images.remove(bpy.data.images[self.image])
         self.image = ""
 
+class GPMatPalettes(PropertyGroup):
+    bl_idname= "scene.gpmatpalettes"
+        
+    palettes: CollectionProperty(type=GPMatPalette)
+    active_index: IntProperty(default=-1)
+
+    def active(self):
+        if (self.active_index < 0) or (self.active_index >= len(self.palettes)):
+            return None
+        return self.palettes[self.active_index]
+
+    def next(self):
+        self.active_index = (self.active_index + 1) % len(self.palettes)
+
+
+
 def register_data():
     bpy.utils.register_class(GPMatItem)
     bpy.utils.register_class(GPMatPalette)
-    bpy.types.Scene.gpmatpalette = PointerProperty(type=GPMatPalette)
+    bpy.utils.register_class(GPMatPalettes)
+    bpy.types.Scene.gpmatpalettes = PointerProperty(type=GPMatPalettes)
 
 def unregister_data():
+    bpy.utils.unregister_class(GPMatPalettes)
     bpy.utils.unregister_class(GPMatPalette)
     bpy.utils.unregister_class(GPMatItem)
     
