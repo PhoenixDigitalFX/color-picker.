@@ -35,7 +35,6 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         min=100, default=250, max=500
     )    
 
-    json_fpath: StringProperty(subtype="FILE_PATH")
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
                             default="from_file")
@@ -60,13 +59,6 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         mats = scol.box()
         mats.label(text="Materials", icon='MATERIAL')
         mats.row().prop_tabs_enum(self, "mat_mode")
-
-        if self.mat_mode == "from_file":
-            row = mats.row()
-            row.operator("gpencil.file_load", icon="FILEBROWSER", text="Load")
-            row.label(text=self.json_fpath)
-            row = mats.row()
-            row.prop(self, "assign_mat")
 
         prv = scol.box()
         prv.label(text="Keymap", icon='NONE')
