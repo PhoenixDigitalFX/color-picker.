@@ -10,6 +10,22 @@ def upload_image(impath, is_relative=True, fpath=""):
     im = bpy.data.images.load(filepath=fullpath, check_existing=False)
     return im.name
 
+def srgb_to_linearrgb(c):
+    '''from https://blender.stackexchange.com/a/158902/4979'''
+    if   c < 0:       return 0
+    elif c < 0.04045: return c/12.92
+    else:             return ((c+0.055)/1.055)**2.4
+
+def hex2rgba(hex, alpha):
+    '''from https://blender.stackexchange.com/a/158902/4979'''
+    h = hex
+    if type(h) is str:
+        h = int(h, 16)
+    r = (h & 0xff0000) >> 16
+    g = (h & 0x00ff00) >> 8
+    b = (h & 0x0000ff)
+    return tuple([srgb_to_linearrgb(c/0xff) for c in (r,g,b)] + [alpha])
+
 def upload_material(name, mdat):
     # Get material
     mat = bpy.data.materials.get(name)
@@ -27,6 +43,10 @@ def upload_material(name, mdat):
     for k,v in mdat.items():
         if not hasattr(m, k):
             continue
+        if (k.find("color") >= 0)  \
+            and isinstance(v[0], str):
+                setattr(m, k, hex2rgba(v[0],v[1]))
+                continue
         setattr(m, k, v)
 
     return True
@@ -71,7 +91,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         is_relative_path = False
         if ("image" in data) and ("path" in data["image"]):
             im_data = data["image"]
-            is_relative_path = (not "relative" in im_data) or (im_data["relative"])
+            is_relative_path = ("relative" in im_data) and (im_data["relative"])
             gpmatpalette.image = upload_image(im_data["path"], is_relative_path, fpt)
         hasImage = not (gpmatpalette.image == "")
 
