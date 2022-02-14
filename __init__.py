@@ -71,7 +71,13 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         prv = scol.box()
         prv.label(text="Keymap", icon='NONE')
         if len(addon_keymaps) > 0:
-            prv.template_keymap_item_properties(addon_keymaps[0][1])
+            kmi = addon_keymaps[0][1]
+            row = prv.row()
+            row.label(text="Press Key")
+            row.template_event_from_keymap_item(kmi)
+            row = prv.row(align=True)
+            row.prop(kmi, 'map_type', text="")
+            row.prop(kmi, 'type', text="")
     
 classes = [ GPCOLORPICKER_OT_wheel, \
             GPCOLORPICKER_OT_getJSONFile, \
