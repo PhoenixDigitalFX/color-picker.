@@ -26,8 +26,8 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             props = col.operator("scene.remove_palette", icon="X", text="")
             props.palette_index = index
 
-            col = layout.column()
-            col.label(text='', icon=toggle_visibility)
+            # col = layout.column()
+            # col.label(text='', icon=toggle_visibility)
 
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'

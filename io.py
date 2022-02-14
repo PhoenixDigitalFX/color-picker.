@@ -87,6 +87,44 @@ def upload_palette(pname, data, fpt, palette):
 
     return palette
 
+def parseJSONFile(json_file, palette_names=()):
+    if not os.path.isfile(json_file):
+        print("Error : {} path not found".format(json_file))
+        return {'CANCELLED'}
+
+    fnm = os.path.basename(json_file)
+    ext = fnm.split(os.extsep)
+    
+    if (len(ext) < 2) or (ext[-1] != "json"):
+        print("Error : {} is not a json file".format(fnm))
+        return {'CANCELLED'}
+    
+    ifl = open(json_file, 'r')
+    data = json.load(ifl)
+    ifl.close()
+
+    gpmatpalettes = bpy.context.scene.gpmatpalettes
+    palettes = gpmatpalettes.palettes
+    # Parse JSON
+    for pname, pdata in data.items():
+        if (len(palette_names) > 0) and (not pname in palette_names):
+            continue
+
+        if not pname in palettes:
+            palette = palettes.add()
+            ind = len(palettes)-1
+        else:
+            palette = palettes[pname]
+            ind = palettes.find(pname)
+
+        upload_palette(pname, pdata, json_file, palette)
+
+        if not palette:
+            print("Nothing found in palette ", pname)
+            continue
+        gpmatpalettes.active_index = ind
+
+
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     bl_idname = "gpencil.file_load"
@@ -101,36 +139,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     def execute(self, context): 
         fpt = self.filepath       
 
-        if not os.path.isfile(fpt):
-            print("Error : {} path not found".format(fpt))
-            return {'CANCELLED'}
-
-        fnm = os.path.basename(fpt)
-        ext = fnm.split(os.extsep)
-        
-        if (len(ext) < 2) or (ext[-1] != "json"):
-            print("Error : {} is not a json file".format(fnm))
-            return {'CANCELLED'}
-        
-        ifl = open(fpt, 'r')
-        data = json.load(ifl)
-        ifl.close()
-
-        gpmatpalettes = bpy.context.scene.gpmatpalettes
-        gpmatpalettes.clear()
-
-        # Parse JSON
-        count = 0
-
-        for pname, pdata in data.items():
-            print("Uploading palette ", pname)
-            palette = gpmatpalettes.palettes.add()
-            upload_palette(pname, pdata, fpt, palette)
-            if not palette:
-                print("Nothing found in palette ", pname)
-                continue
-            gpmatpalettes.active_index = count
-            count += 1
+        parseJSONFile(fpt)
 
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences
@@ -173,6 +182,31 @@ class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
             gpmp.next()
 
         return {'FINISHED'}
+
+
+class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
+    bl_idname = "scene.reload_palette"
+    bl_label = "Reload GP Palette"
+
+    palette_index: bpy.props.IntProperty(default=-1)
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context): 
+        gpmp = context.scene.gpmatpalettes
+        npal = len(gpmp.palettes)
+        if (self.palette_index < 0) or (self.palette_index >= npal):
+            return {'CANCELLED'}
+
+        fpath = gpmp.palettes[self.palette_index].source_path
+        pname = gpmp.palettes[self.palette_index].name
+
+        parseJSONFile(fpath, palette_names=(pname))
+
+        return {'FINISHED'}
+
 
 
 classes = [GPCOLORPICKER_OT_getJSONFile, GPCOLORPICKER_OT_removePalette]
