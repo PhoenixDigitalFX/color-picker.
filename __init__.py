@@ -10,14 +10,13 @@ bl_info = {
     "category": "Materials"
 }
 
-from . op import GPCOLORPICKER_OT_wheel,settings
+from . gpcolorpicker.picker_ops import GPCOLORPICKER_OT_wheel,settings
 
 addon_keymaps = [] 
 
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
-from . io import GPCOLORPICKER_OT_getJSONFile
 class GPCOLORPICKER_theme(PropertyGroup):
     pie_color: FloatVectorProperty(
             subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.1,0.1,0.1,1.))
@@ -29,12 +28,10 @@ class GPCOLORPICKER_theme(PropertyGroup):
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
-    # TODO: add keymap in prefs    
     icon_scale: IntProperty(
         name="Icon scale",
         min=100, default=250, max=500
     )    
-
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
                             default="from_file")
@@ -71,20 +68,16 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             row.prop(kmi, 'map_type', text="")
             row.prop(kmi, 'type', text="")
     
-classes = [ GPCOLORPICKER_OT_wheel, \
-            GPCOLORPICKER_theme, \
+classes = [ GPCOLORPICKER_theme, \
             GPCOLORPICKER_preferences
           ]
 
 def register():
-    from . gpmatpalette import register_data
-    register_data()
+    from . gpmatpalette import register as register_palette
+    register_palette()
 
-    from . io import register as register_ops
-    register_ops()
-
-    from . palette_panel import register as register_panel
-    register_panel()
+    from . gpcolorpicker import register as register_picker
+    register_picker()
 
     for cls in classes:
         bpy.utils.register_class(cls)
@@ -108,14 +101,11 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     
-    from . palette_panel import unregister as unregister_panel
-    unregister_panel()
+    from . gpcolorpicker import unregister as unregister_picker
+    unregister_picker()
 
-    from . io import unregister as unregister_ops
-    unregister_ops()
-
-    from . gpmatpalette import unregister_data
-    unregister_data()
+    from .gpmatpalette import unregister as unregister_palette
+    unregister_palette()
 
 if __name__ == "__main__":
     register() 

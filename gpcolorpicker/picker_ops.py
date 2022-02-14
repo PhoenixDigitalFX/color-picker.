@@ -1,8 +1,8 @@
 import bpy
 import numpy as np
 from math import atan2,pi,floor
-from . drw import draw_callback_px, load_gpu_texture
-from . stg import GPCOLORPICKER_settings
+from . picker_draw import draw_callback_px, load_gpu_texture
+from . picker_settings import GPCOLORPICKER_settings
 import gpu
 import time
 
@@ -187,15 +187,11 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     def load_preferences(self, prefs):
         settings.mat_from_active = (prefs.mat_mode == "from_active")
         settings.mat_assign = prefs.assign_mat
-
-        if not settings.mat_from_active:
-            gpmp = bpy.context.scene.gpmatpalettes.active()
-            settings.cached_gpu_tex = load_gpu_texture(gpmp.image)
-
         settings.mc_fill_color = prefs.theme.pie_color
         settings.mc_line_color = prefs.theme.line_color
         settings.text_color = prefs.theme.text_color
         settings.set_icon_scale(prefs.icon_scale)
+
 
     def check_time(self):
         if self.timeout:
@@ -207,7 +203,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         self.tsart = time.time()
         self.timeout = False
         # Update settings from user preferences
-        prefs = context.preferences.addons[__package__].preferences
+        pname = (__package__).split('.')[0]
+        prefs = context.preferences.addons[pname].preferences
         if prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
         else:
@@ -215,6 +212,14 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
         settings.mat_selected = -1
         settings.active_obj = bpy.context.active_object
+
+        # Load GPU texture if applicable
+        if not settings.mat_from_active:
+            gpmp = bpy.context.scene.gpmatpalettes.active()
+            if not gpmp:
+                self.report({'WARNING'}, "No active palette")
+                return {'CANCELLED'}
+            settings.cached_gpu_tex = load_gpu_texture(gpmp.image)
 
         # Loading materials 
         if not (self.load_grease_pencil_materials()):

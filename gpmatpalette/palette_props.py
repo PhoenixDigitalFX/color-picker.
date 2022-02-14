@@ -22,7 +22,6 @@ class GPMatImage(PropertyGroup):
     
     def load(self, path, path_prefix=""):
         self.path = os.path.join(path_prefix, path)
-        print("Loading image : ", self.path)
         self.reload()
 
     def reload(self, check_existing=False):
@@ -99,12 +98,12 @@ class GPMatPalettes(PropertyGroup):
 
 classes = [GPMatImage, GPMatItem, GPMatPalette, GPMatPalettes]
 
-def register_data():
+def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.Scene.gpmatpalettes = PointerProperty(type=GPMatPalettes)
 
-def unregister_data():
+def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     

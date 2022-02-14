@@ -1,5 +1,5 @@
 import bpy
-from . gpmatpalette import GPMatPalettes
+from . palette_props import GPMatPalettes
 
 class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
     bl_idname="GPCOLORPICKER_UL_PaletteList"
@@ -8,7 +8,6 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
                   active_propname, index):
 
         # We could write some code to decide which icon to use here...
-        refresh_icon = 'FILE_REFRESH'
         toggle_visibility = 'HIDE_ON'
         
         # Make sure your code supports all 3 layout types
@@ -20,11 +19,12 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             col.label(text=item.source_path)
 
             col = layout.column()
-            col.label(text='', icon=refresh_icon)
+            rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="")
+            rlp.palette_index = index
 
             col = layout.column()
-            props = col.operator("scene.remove_palette", icon="X", text="")
-            props.palette_index = index
+            rmp = col.operator("scene.remove_palette", icon="X", text="")
+            rmp.palette_index = index
 
             # col = layout.column()
             # col.label(text='', icon=toggle_visibility)

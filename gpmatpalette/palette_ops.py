@@ -1,5 +1,5 @@
 import json, os, bpy, gpu, math
-from . gpmatpalette import GPMatPalette
+from . palette_props import GPMatPalette
 
 def srgb_to_linearrgb(c):
     '''from https://blender.stackexchange.com/a/158902/4979'''
@@ -142,7 +142,8 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         parseJSONFile(fpt)
 
         # Update data in user preferences
-        prefs = context.preferences.addons[__package__].preferences
+        pname = (__package__).split('.')[0]
+        prefs = context.preferences.addons[pname].preferences
         if prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences")
         else:
@@ -209,7 +210,7 @@ class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
 
 
 
-classes = [GPCOLORPICKER_OT_getJSONFile, GPCOLORPICKER_OT_removePalette]
+classes = [GPCOLORPICKER_OT_getJSONFile, GPCOLORPICKER_OT_removePalette, GPCOLORPICKER_OT_reloadPalette]
 
 def register():
     for cls in classes:
