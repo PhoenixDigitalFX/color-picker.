@@ -1,16 +1,6 @@
 import json, os, bpy, gpu, math
 from . gpmatpalette import GPMatPalette
 
-def upload_image(impath, is_relative=True, fpath=""):
-    fullpath = impath
-    if is_relative:
-        fullpath = os.path.dirname(fpath) + os.path.sep + fullpath
-    if not os.path.isfile(fullpath):
-        print("Error : File {} not found".format(fullpath))
-        return ""
-    im = bpy.data.images.load(filepath=fullpath, check_existing=False)
-    return im.name
-
 def srgb_to_linearrgb(c):
     '''from https://blender.stackexchange.com/a/158902/4979'''
     if   c < 0:       return 0
@@ -54,11 +44,15 @@ def upload_material(name, mdat):
 
 def upload_palette(pname, data, fpt, palette):
     is_relative_path = False
+    fdir = os.path.dirname(fpt)
     if ("image" in data) and ("path" in data["image"]):
         im_data = data["image"]
         is_relative_path = ("relative" in im_data) and (im_data["relative"])
-        palette.image = upload_image(im_data["path"], is_relative_path, fpt)
-    hasImage = not (palette.image == "")
+        if is_relative_path:
+            palette.image.load(im_data["path"], fdir)
+        else:
+            palette.image.load(im_data["path"])
+    hasImage = not (palette.image is None)
 
 
     for name,mat_data in data["materials"].items():
@@ -77,7 +71,10 @@ def upload_palette(pname, data, fpt, palette):
             gpmatit.custom_angle = posdeg2rad(mat_data["position"])
         
         if hasImage and ("image" in mat_data.keys()):
-            gpmatit.image = upload_image(mat_data["image"], is_relative_path, fpt)
+            if is_relative_path:
+                gpmatit.image.load(mat_data["image"], fdir)
+            else:
+                gpmatit.image.load(mat_data["image"])
 
         if "layer" in mat_data.keys():
             gpmatit.layer = mat_data["layer"]
@@ -120,9 +117,11 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         ifl.close()
 
         gpmatpalettes = bpy.context.scene.gpmatpalettes
+        gpmatpalettes.clear()
 
         # Parse JSON
         count = 0
+
         for pname, pdata in data.items():
             print("Uploading palette ", pname)
             palette = gpmatpalettes.palettes.add()
@@ -132,7 +131,6 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
                 continue
             gpmatpalettes.active_index = count
             count += 1
-        print(f"Found {count} palettes")
 
         # Update data in user preferences
         prefs = context.preferences.addons[__package__].preferences

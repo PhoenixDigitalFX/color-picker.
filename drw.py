@@ -245,11 +245,14 @@ def write_selected_mat_name(settings, id_selected):
     ird = settings.mc_outer_radius
     write_circle_centered(org, ird, txt)
 
-def load_gpu_texture(im_name):
-    if not (im_name in bpy.data.images):
+def load_gpu_texture(image):
+    if not image:
+        return None 
+
+    im = image.get()
+    if not im:
         return None
 
-    im = bpy.data.images[im_name]
     gpu_tex = gpu.texture.from_image(im)
     if (gpu_tex.height > 1) or (gpu_tex.width > 1):
         return gpu_tex
@@ -290,6 +293,9 @@ def draw_centered_texture(settings, rds):
         tx = load_gpu_texture(gpmp.image)
     else:
         tx = load_gpu_texture(gpmp.materials[sid].image) 
+    
+    if not tx:
+        return
     
     shader, batch = setup_shader(settings,centered_tex_fsh)
     shader.uniform_sampler("tex",tx)
