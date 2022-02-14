@@ -3,7 +3,7 @@ from math import floor, ceil, pi, sin, asin
 
 class GPCOLORPICKER_settings():
     def __init__(self): 
-        self.key_shortcut = 'S'
+        self.key_shortcut = 'A'
         self.switch_key = 'TAB'
         self.origin = np.asarray([0,0])
         self.active_obj = None

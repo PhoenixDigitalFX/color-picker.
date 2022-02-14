@@ -12,6 +12,8 @@ bl_info = {
 
 from . op import GPCOLORPICKER_OT_wheel,settings
 
+addon_keymaps = [] 
+
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
@@ -67,10 +69,10 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             row.prop(self, "assign_mat")
 
         prv = scol.box()
-        prv.label(text="Preview", icon='NONE')
+        prv.label(text="Keymap", icon='NONE')
+        if len(addon_keymaps) > 0:
+            prv.template_keymap_item_properties(addon_keymaps[0][1])
     
-
-addon_keymaps = [] 
 classes = [ GPCOLORPICKER_OT_wheel, \
             GPCOLORPICKER_OT_getJSONFile, \
             GPCOLORPICKER_theme, \
