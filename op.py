@@ -139,7 +139,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return False
 
         s.materials = [ m.material for k,m in s.active_obj.material_slots.items() \
-                                    if m.material.is_grease_pencil ]       
+                                    if (m.material) and (m.material.is_grease_pencil) ]       
         s.mat_nb = min(s.mat_nmax,len(s.materials))
         s.mat_active = s.active_obj.active_material_index
 
