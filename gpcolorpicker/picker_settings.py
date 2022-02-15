@@ -37,20 +37,18 @@ class GPCOLORPICKER_settings():
         self.icon_scale = scale
         self.mat_centers_radius = self.icon_scale/(2*(1.2))
         self.mc_outer_radius = 0.9*self.mat_centers_radius
-        if self.useGPUTexture():
-            self.mc_inner_radius = 0.0
-        else:
-            self.mc_inner_radius = 0.6*self.mc_outer_radius
+        self.mc_inner_radius = 0.6*self.mc_outer_radius
         self.interaction_radius = 0.5*self.mc_outer_radius
-        self.tex_radius = 0.8*self.mat_centers_radius
 
-        self.mat_rmin = 20
-        self.mat_rmax = 0.2*self.mat_centers_radius
+        self.mat_rmin = 5
+        self.mat_rmax = 0.1*self.mat_centers_radius
         self.mat_radius = self.mat_rmax
 
         self.selected_radius = 1.2*self.mat_radius
         self.mat_nmax = floor(pi/asin(self.mat_rmin/self.mat_centers_radius))
         self.text_size = ceil(0.08*self.icon_scale)
+        self.tex_radius = self.mat_centers_radius-self.mat_radius
+
 
     def load_mat_radius(self):
         if self.mat_nb <= 1:
@@ -58,6 +56,7 @@ class GPCOLORPICKER_settings():
         r_opt = 0.8*self.mat_centers_radius*sin(pi/self.mat_nb)
         self.mat_radius = max(self.mat_rmin,min(r_opt,self.mat_rmax))
         self.selected_radius = self.mat_radius*1.2
+        self.tex_radius = self.mat_centers_radius-self.mat_radius
         return self.mat_radius
 
     def useGPUTexture(self):

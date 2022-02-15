@@ -30,7 +30,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
     icon_scale: IntProperty(
         name="Icon scale",
-        min=100, default=250, max=500
+        min=100, default=460, max=800
     )    
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \

@@ -42,11 +42,13 @@ def setup_shader(settings,fragsh):
 
 main_circle_fsh = '''
 #define PI 3.1415926538
+#ifdef __DRAW_MAIN_CIRCLE__
 uniform vec4 circle_color;
 uniform vec4 line_color;
 uniform float inner_radius;
 uniform float outer_radius;
 uniform float line_width;
+#endif
 uniform float selected_radius;
 uniform vec4 active_color;
 uniform float mat_radius;
@@ -97,9 +99,10 @@ bool in_interval(float x, float a, float b){
 
 void main()
 {                    
-    /*    MAIN CIRCLE    */
     float d = length(lpos);
 
+    /*    MAIN CIRCLE    */
+#ifdef __DRAW_MAIN_CIRCLE__
     vec4 fill_color_ = circle_color;
     vec4 stroke_color = line_color;
 
@@ -107,6 +110,9 @@ void main()
     stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
 
     vec4 fragColor_main = alpha_compose(stroke_color, fill_color_);     
+#else
+    vec4 fragColor_main = vec4(0.);
+#endif
 
     /*    MATERIALS CIRCLES    */
     /* find optimal circle index for current location */
@@ -176,11 +182,15 @@ def draw_main_circle(settings):
     nmat = settings.mat_nb
     if nmat <= 0:
         return    
-    
+
     # ifl = open("draw_icon.frag.glsl", 'r')
     # fsh = ifl.read()
     # ifl.close()
     fsh = main_circle_fsh
+
+    if not settings.useGPUTexture():
+        mc_macro = "__MAIN_CIRCLE__"
+        fsh = "#define " + mc_macro + "\n" + fsh  
 
     if settings.useCustomAngles() :
         csta_macro = "__CUSTOM_ANGLES__"
@@ -190,11 +200,12 @@ def draw_main_circle(settings):
 
     shader, batch = setup_shader(settings,fsh)
     
-    shader.uniform_float("circle_color", settings.mc_fill_color)
-    shader.uniform_float("line_color", settings.mc_line_color)
-    shader.uniform_float("inner_radius", settings.mc_inner_radius)
-    shader.uniform_float("outer_radius", settings.mc_outer_radius)
-    shader.uniform_float("line_width", settings.mc_line_width)
+    if not settings.useGPUTexture():
+        shader.uniform_float("circle_color", settings.mc_fill_color)
+        shader.uniform_float("line_color", settings.mc_line_color)
+        shader.uniform_float("inner_radius", settings.mc_inner_radius)
+        shader.uniform_float("outer_radius", settings.mc_outer_radius)
+        shader.uniform_float("line_width", settings.mc_line_width)
 
     shader.uniform_float("selected_radius", settings.selected_radius)
     shader.uniform_float("active_color", settings.active_color)
@@ -251,7 +262,7 @@ def write_active_palette(settings):
         return
     txt = plt.name
     org = settings.origin + 0.5*settings.region_dim
-    org[1] -= settings.mc_outer_radius+settings.mat_radius
+    org[1] = org[1] - (settings.mat_centers_radius+2*settings.mat_radius)
     ird = settings.mc_outer_radius
     write_circle_centered(settings, org, ird, txt)
 
@@ -300,7 +311,7 @@ def draw_centered_texture(settings, rds):
     if (gpmp.name == settings.cached_palette_name) and \
          (sid == settings.cached_mat_selected) :
         tx = settings.cached_gpu_tex
-    elif ( sid == -1 ) or ( not gpmp.materials[sid].image ):
+    elif ( sid == -1 ) or ( gpmp.materials[sid].image.isempty() ):
         tx = load_gpu_texture(gpmp.image)
     else:
         tx = load_gpu_texture(gpmp.materials[sid].image) 
@@ -319,10 +330,10 @@ def draw_centered_texture(settings, rds):
 
 def draw_callback_px(op, context,settings): 
     gpu.state.blend_set('ALPHA')   
-    
-    draw_main_circle(settings)  
+
     if settings.useGPUTexture():
         draw_centered_texture(settings, settings.tex_radius)
+    draw_main_circle(settings)  
     # if settings.mat_selected >= 0:
         # write_selected_mat_name(settings, settings.mat_selected)
     if not settings.mat_from_active:

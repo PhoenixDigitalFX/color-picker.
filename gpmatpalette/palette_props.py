@@ -32,6 +32,9 @@ class GPMatImage(PropertyGroup):
         if not self.is_registered(): 
             return
         bpy.data.images.remove(bpy.data.images[self.name])
+    
+    def isempty(self):
+        return (self.name == "")
 
     def clear(self):
         self.remove()
