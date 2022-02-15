@@ -79,7 +79,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                 return True
 
             if not gpmt.layer in ob.data.layers:
-                ob.data.layers.new(gpmt.layer, set_active=True)
+                bpy.ops.gpencil.layer_add()
+                ob.data.layers.active.info = gpmt.layer
             else:
                 ob.data.layers.active = ob.data.layers[gpmt.layer]
 
