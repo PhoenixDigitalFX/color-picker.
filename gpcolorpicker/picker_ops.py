@@ -220,6 +220,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                 self.report({'WARNING'}, "No active palette")
                 return {'CANCELLED'}
             settings.cached_gpu_tex = load_gpu_texture(gpmp.image)
+            settings.cached_palette_name = gpmp.name
 
         # Loading materials 
         if not (self.load_grease_pencil_materials()):

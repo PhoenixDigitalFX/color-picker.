@@ -297,7 +297,8 @@ def draw_centered_texture(settings, rds):
     '''
     gpmp = bpy.context.scene.gpmatpalettes.active()
     sid = settings.mat_selected
-    if ( sid == settings.cached_mat_selected ) :
+    if (gpmp.name == settings.cached_palette_name) and \
+         (sid == settings.cached_mat_selected) :
         tx = settings.cached_gpu_tex
     elif ( sid == -1 ) or ( not gpmp.materials[sid].image ):
         tx = load_gpu_texture(gpmp.image)
@@ -314,6 +315,7 @@ def draw_centered_texture(settings, rds):
 
     settings.cached_gpu_tex = tx
     settings.cached_mat_selected = sid
+    settings.cached_palette_name = gpmp.name
 
 def draw_callback_px(op, context,settings): 
     gpu.state.blend_set('ALPHA')   
@@ -321,8 +323,8 @@ def draw_callback_px(op, context,settings):
     draw_main_circle(settings)  
     if settings.useGPUTexture():
         draw_centered_texture(settings, settings.tex_radius)
-    if settings.mat_selected >= 0:
-        write_selected_mat_name(settings, settings.mat_selected)
+    # if settings.mat_selected >= 0:
+        # write_selected_mat_name(settings, settings.mat_selected)
     if not settings.mat_from_active:
         write_active_palette(settings)
 

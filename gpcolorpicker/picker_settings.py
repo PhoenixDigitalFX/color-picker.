@@ -22,6 +22,7 @@ class GPCOLORPICKER_settings():
 
         self.cached_gpu_tex = None
         self.cached_mat_selected = -1
+        self.cached_palette_name = ""
 
         self.mc_fill_color = (0.4,0.4,0.4,1.)
         self.mc_line_color = (0.96,0.96,0.96,1.)
