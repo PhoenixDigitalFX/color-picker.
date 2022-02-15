@@ -189,7 +189,7 @@ def draw_main_circle(settings):
     fsh = main_circle_fsh
 
     if not settings.useGPUTexture():
-        mc_macro = "__MAIN_CIRCLE__"
+        mc_macro = "__DRAW_MAIN_CIRCLE__"
         fsh = "#define " + mc_macro + "\n" + fsh  
 
     if settings.useCustomAngles() :
@@ -197,6 +197,8 @@ def draw_main_circle(settings):
         fsh = "#define " + csta_macro + "\n" + fsh        
 
     fsh = fsh.replace("__NMAT__",str(nmat))
+
+    print(fsh)
 
     shader, batch = setup_shader(settings,fsh)
     
