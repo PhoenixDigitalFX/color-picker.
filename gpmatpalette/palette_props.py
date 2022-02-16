@@ -61,11 +61,6 @@ class GPMatPalette(PropertyGroup):
     def has_custom_angles(self):
         return all([ (m.custom_angle >= 0) for m in self.materials ])
     
-    def sort_by_angle(self):
-        if not self.has_custom_angles():
-            return
-        # self.materials = sorted(self.materials, key=lambda mat: mat.custom_angle)
-        
     def clear(self):
         for m in self.materials:
             m.clear()

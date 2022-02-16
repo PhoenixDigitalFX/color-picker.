@@ -75,7 +75,7 @@ def upload_palette(pname, data, fpt, palette):
     
     if custom_angle:
         mat_pos = sorted(mat_pos, key=lambda m:m[1])
-        
+
     for name, mpos in mat_pos:
         mat_data = data["materials"][name]
         if not upload_material(name, mat_data):
@@ -99,9 +99,6 @@ def upload_palette(pname, data, fpt, palette):
     if len(palette.materials) == 0:
         print("No materials in palette. Aborting upload")
         return None
-
-    if palette.has_custom_angles():
-        palette.sort_by_angle()
     
     palette.name = pname
     palette.source_path = fpt
