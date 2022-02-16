@@ -55,29 +55,7 @@ def upload_palette(pname, data, fpt, palette):
 
     hasImage = not (palette.image is None)
 
-    mat_pos = []    
-    custom_angle = True
     for name,mat_data in data["materials"].items():
-        if not upload_material(name, mat_data):
-            continue
-        
-        if "position" in mat_data.keys():
-            def posdeg2rad(deg):
-                rad = deg*math.pi/180.
-                while rad < 0:
-                    rad += 2*math.pi
-                return rad
-            angle = posdeg2rad(mat_data["position"])
-        else:
-            custom_angle = False
-            angle = -1
-        mat_pos.append( (name, angle) )
-    
-    if custom_angle:
-        mat_pos = sorted(mat_pos, key=lambda m:m[1])
-        
-    for name, mpos in mat_pos:
-        mat_data = data["materials"][name]
         if not upload_material(name, mat_data):
             continue
         
@@ -87,7 +65,13 @@ def upload_palette(pname, data, fpt, palette):
         else:
             gpmatit = palette.materials[name]
 
-        gpmatit.custom_angle = mpos
+        if "position" in mat_data.keys():
+            def posdeg2rad(deg):
+                rad = deg*math.pi/180.
+                while rad < 0:
+                    rad += 2*math.pi
+                return rad
+            gpmatit.custom_angle = posdeg2rad(mat_data["position"])
         
         if hasImage and ("image" in mat_data.keys()):
             already_exists = (gpmatit.image.path == mat_data["image"])
