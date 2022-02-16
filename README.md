@@ -15,7 +15,8 @@ Two available modes :
 * Press A. The active palette should appear as an icon. 
 * You can switch between palettes using Tab.
 * Select a material : you've added that material to the active GP object and made it the active material.
-![Load File](doc/load-file-instructions.png "Loading a JSON file from the Blender interface")
+
+![Load File](doc/load_file_instructions.png "Loading a JSON file from the Blender interface")
 
 # Picker FROM_ACTIVE 
 * Select a Grease Pencil object,
