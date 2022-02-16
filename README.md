@@ -7,6 +7,17 @@ Two available modes :
 
 ## Workflow 
 
+# Picker FROM_FILE
+* Go to Properties > Scene > Grease Pencil palettes, and click on the *Load File* icon.
+* Select the JSON file you want to import, the palettes should appear in the list on the panel
+* You can use the buttons in the list to reload or remove a certain palette. You can also click on a palette to make it *active*
+* Select a Grease Pencil object, switch to draw mode.
+* Press A. The active palette should appear as an icon. 
+* You can switch between palettes using Tab.
+* Select a material : you've added that material to the active GP object and made it the active material.
+![Load File](doc/load-file-instructions.png "Loading a JSON file from the Blender interface")
+
+# Picker FROM_ACTIVE 
 * Select a Grease Pencil object,
 * Switch to Draw Mode,
 * Press S. The list of materials now appear in a wheel-like menu.
