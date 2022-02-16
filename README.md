@@ -21,7 +21,7 @@ Two available modes :
 ### Picker FROM_ACTIVE 
 * Select a Grease Pencil object,
 * Switch to Draw Mode,
-* Press S. The list of materials now appear in a wheel-like menu.
+* Press A. The list of materials now appear in a wheel-like menu.
 * Press Tab to switch current palette (if multiple palettes).
 * Left-click on one of the materials to make it active,
 * Or right-click (or press ESC) to cancel the operation
