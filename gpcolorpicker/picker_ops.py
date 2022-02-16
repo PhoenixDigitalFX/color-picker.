@@ -160,7 +160,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             self.report({'INFO'}, "No JSON file or empty file")
             return False
         
-        if palette.hasCustomAngles():
+        if palette.has_custom_angles():
             s.custom_angles = [ m.custom_angle for m in palette.materials ]
         else:
             s.custom_angles = []
