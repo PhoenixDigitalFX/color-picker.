@@ -56,15 +56,17 @@ class GPMatPalette(PropertyGroup):
     name: StringProperty(default="unnamed")
     materials: CollectionProperty(type=GPMatItem)
     image: PointerProperty(type=GPMatImage)
-    source_path: StringProperty(subtype='FILE_PATH')  
+    source_path: StringProperty(subtype='FILE_PATH')
 
-    def has_custom_angles(self):
-        return all([ (m.custom_angle >= 0) for m in self.materials ])
-    
-    def sort_by_angle(self):
-        if not self.has_custom_angles():
-            return
-        # self.materials = sorted(self.materials, key=lambda mat: mat.custom_angle)
+    # Safety check to use custom angles
+    # all materials should have one, and the angles should be in increasing order
+    def hasCustomAngles(self):
+        a = 0
+        for m in self.materials:
+            if (m.custom_angle < a) or (m.custom_angle > 2*math.pi):
+                return False
+            a = m.custom_angle
+        return True        
         
     def clear(self):
         for m in self.materials:

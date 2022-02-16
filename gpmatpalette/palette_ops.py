@@ -83,9 +83,6 @@ def upload_palette(pname, data, fpt, palette):
     if len(palette.materials) == 0:
         print("No materials in palette. Aborting upload")
         return None
-
-    if palette.has_custom_angles():
-        palette.sort_by_angle()
     
     palette.name = pname
     palette.source_path = fpt

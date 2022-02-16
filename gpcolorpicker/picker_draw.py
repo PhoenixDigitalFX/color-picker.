@@ -198,6 +198,8 @@ def draw_main_circle(settings):
 
     fsh = fsh.replace("__NMAT__",str(nmat))
 
+    print(fsh)
+
     shader, batch = setup_shader(settings,fsh)
     
     if not settings.useGPUTexture():
