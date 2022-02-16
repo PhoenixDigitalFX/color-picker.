@@ -1,4 +1,4 @@
-## Grease Pencil Color Picker
+# Grease Pencil Color Picker
 
 Blender add-on to quickly switch between materials of an active Grease pencil object.
 Two available modes : 
