@@ -118,15 +118,17 @@ void main()
     /* find optimal circle index for current location */
     vec2 loc_pos = lpos;
     float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
-
 #ifdef __CUSTOM_ANGLES__
     int i = 0;
+    if( dt < 0 ){
+        dt += 2*PI;
+    }
     if( mat_nb > 1 ){
-        float alpha = 0.5*(mat_thetas[0] + mat_thetas[mat_nb-1]);
-        // specific case of i = 0
-        if ( (dt >= 0.5*(mat_thetas[0] + mat_thetas[1 % mat_nb])) 
-                && ( ( alpha > PI ) || ( dt < alpha + PI ) ) 
-                && ( ( alpha < PI ) || ( dt < alpha - PI ) )  ){
+        // specific case of i = 0          
+        float th0 = mat_thetas[0];
+        vec2 c0 = mat_centers_radius*vec2(cos(th0),sin(th0));
+        bool in_first_interval = (aa_circle(mat_radius, length(lpos-c0), aa_eps) > 0);
+        if ( !in_first_interval ){
             // general case : i > 0 and i < mat_nb - 1
             i = 1;
             while( i < mat_nb - 1){
