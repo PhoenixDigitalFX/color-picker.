@@ -46,15 +46,15 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         alpha = 0.5*(th[0] + th[n-1]-2*pi)
         beta = 0.5*(th[0] + th[1])
         dt_pos = dt
-
         if (dt_pos < 0):
-            dt_pos += 2*pi
+            dt_pos += 2*pi            
         if (alpha < 0):
             alpha += 2*pi
+
         if (alpha < beta):
-            if (dt >= alpha) and (dt <= beta):
+            if (dt_pos >= alpha) and (dt_pos <= beta):
                 return 0
-        elif (dt <= beta) or (dt >= alpha):
+        elif (dt_pos <= beta) or (dt_pos >= alpha):
             return 0
 
         # general case : i > 0 and i < mat_nb - 1

@@ -124,10 +124,14 @@ void main()
         dt += 2*PI;
     }
     if( mat_nb > 1 ){
-        // specific case of i = 0          
-        float th0 = mat_thetas[0];
-        vec2 c0 = mat_centers_radius*vec2(cos(th0),sin(th0));
-        bool in_first_interval = (aa_circle(mat_radius, length(lpos-c0), aa_eps) > 0);
+        // specific case of i = 0       
+        float alpha = 0.5*(mat_thetas[0] + mat_thetas[mat_nb-1] - 2*PI);
+        alpha = (alpha < 0)?(alpha + 2*PI):alpha;
+        float beta = 0.5*(mat_thetas[0] + mat_thetas[1 % mat_nb]);
+
+        bool in_first_interval = ((alpha < beta) && in_interval(dt, alpha, beta) );
+        in_first_interval = in_first_interval || ((alpha >= beta) && ( (dt <= beta) || (dt >= alpha) ));
+
         if ( !in_first_interval ){
             // general case : i > 0 and i < mat_nb - 1
             i = 1;
