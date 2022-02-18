@@ -80,7 +80,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             bpy.context.scene.gpmatpalettes.next()
             self.load_grease_pencil_materials()
         
-        elif ((event.type == 'A') \
+        elif ((event.type == self.invoke_key) \
                 and (event.value == 'RELEASE') and mat_selected_in_range()) \
                     or (event.type == 'LEFTMOUSE'):
             if validate_selection():   
@@ -162,6 +162,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         pname = (__package__).split('.')[0]
         prefs = context.preferences.addons[pname].preferences
         self.settings = GPCOLORPICKER_settings(prefs)  
+
+        self.invoke_key = event.type
 
         # Update settings from user preferences
         if prefs is None : 

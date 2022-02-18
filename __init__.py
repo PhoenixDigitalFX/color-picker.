@@ -60,9 +60,6 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             kmi = addon_keymaps[0][1]
             row = prv.row()
             row.label(text="Press Key")
-            row.template_event_from_keymap_item(kmi)
-            row = prv.row(align=True)
-            row.prop(kmi, 'map_type', text="")
             row.prop(kmi, 'type', text="")
     
 classes = [ GPCOLORPICKER_theme, \
@@ -81,11 +78,16 @@ def register():
     
 
 def unregister():        
+    # Remove the hotkey
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     
     from . gpcolorpicker import unregister as unregister_picker
-    unregister_picker(addon_keymaps)
+    unregister_picker()
 
     from .gpmatpalette import unregister as unregister_palette
     unregister_palette()

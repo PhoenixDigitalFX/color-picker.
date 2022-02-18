@@ -8,7 +8,6 @@ def register(addon_keymaps):
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Add the hotkey
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     if kc:
@@ -17,12 +16,6 @@ def register(addon_keymaps):
                                     type=default_invoke_key, value='PRESS')
         addon_keymaps.append((km, kmi))
 
-
-def unregister(addon_keymaps):        
-    # Remove the hotkey
-    for km, kmi in addon_keymaps:
-        km.keymap_items.remove(kmi)
-    addon_keymaps.clear()
-
+def unregister():        
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
