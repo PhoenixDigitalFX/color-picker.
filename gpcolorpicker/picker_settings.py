@@ -49,7 +49,6 @@ class GPCOLORPICKER_settings():
         self.text_size = ceil(0.08*self.icon_scale)
         self.tex_radius = self.mat_centers_radius-self.mat_radius
 
-
     def load_mat_radius(self):
         if self.mat_nb <= 1:
             return self.mat_rmax

@@ -1,7 +1,8 @@
 import bpy
-from . picker_ops import GPCOLORPICKER_OT_wheel,settings
+from . picker_ops import GPCOLORPICKER_OT_wheel
 
 classes = [GPCOLORPICKER_OT_wheel]
+default_invoke_key = "A"
 
 def register(addon_keymaps):
     for cls in classes:
@@ -13,7 +14,7 @@ def register(addon_keymaps):
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new(GPCOLORPICKER_OT_wheel.bl_idname, \
-                                    type=settings.key_shortcut, value='PRESS')
+                                    type=default_invoke_key, value='PRESS')
         addon_keymaps.append((km, kmi))
 
 

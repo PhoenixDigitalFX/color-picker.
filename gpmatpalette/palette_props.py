@@ -75,6 +75,9 @@ class GPMatPalette(PropertyGroup):
         self.materials.clear()
         self.image.clear()
 
+    def count(self):
+        return len(self.materials)
+
 def update_palette_active_index(self,context):
     if self.active_index == -1:
         return
@@ -109,6 +112,9 @@ class GPMatPalettes(PropertyGroup):
         self.next()
         while not self.palettes[self.active_index].visible:
             self.next()
+
+    def count(self):
+        return len(self.palettes)
 
     def clear(self):
         for p in self.palettes:
