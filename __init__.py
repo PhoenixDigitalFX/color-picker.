@@ -10,10 +10,6 @@ bl_info = {
     "category": "Materials"
 }
 
-from . gpcolorpicker.picker_ops import GPCOLORPICKER_OT_wheel,settings
-
-addon_keymaps = [] 
-
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
@@ -80,24 +76,10 @@ def register():
     register_picker()
 
     for cls in classes:
-        bpy.utils.register_class(cls)
-    
-    # Add the hotkey
-    wm = bpy.context.window_manager
-    kc = wm.keyconfigs.addon
-    if kc:
-        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
-        kmi = km.keymap_items.new(GPCOLORPICKER_OT_wheel.bl_idname, \
-                                    type=settings.key_shortcut, value='PRESS')
-        addon_keymaps.append((km, kmi))
+        bpy.utils.register_class(cls)    
     
 
 def unregister():        
-    # Remove the hotkey
-    for km, kmi in addon_keymaps:
-        km.keymap_items.remove(kmi)
-    addon_keymaps.clear()
-
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
     
