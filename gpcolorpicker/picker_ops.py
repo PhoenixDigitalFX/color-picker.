@@ -129,11 +129,13 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         elif ((event.type == settings.key_shortcut) \
                 and (event.value == 'RELEASE') and mat_selected_in_range()) \
                     or (event.type == 'LEFTMOUSE'):
-            if validate_selection():       
+            if validate_selection():   
+                self.report({'INFO'}, "GP color picking finished")    
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
                 return {'FINISHED'}                
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.report({'INFO'}, "GP color picking cancelled")
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'CANCELLED'}
 
@@ -236,8 +238,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return {'CANCELLED'}  
 
         # Setting modal handler
-        self._handle = context.window_manager.modal_handler_add(self)
-        if not self._handle:
+        mhandle = context.window_manager.modal_handler_add(self)
+        if not mhandle:
             return {'CANCELLED'}  
 
         # Get mouse position
