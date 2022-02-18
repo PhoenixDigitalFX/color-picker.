@@ -75,11 +75,20 @@ class GPMatPalette(PropertyGroup):
         self.materials.clear()
         self.image.clear()
 
+def update_palette_active_index(self,context):
+    if self.active_index == -1:
+        return
+    if self.palettes[self.active_index].visible:
+        return
+    if not any([p.visible for p in self.palettes]):
+        self.active_index = -1
+        return
+    self.next()
 class GPMatPalettes(PropertyGroup):
     bl_idname= "scene.gpmatpalettes"
         
     palettes: CollectionProperty(type=GPMatPalette)
-    active_index: IntProperty(default=-1)
+    active_index: IntProperty(default=-1, update=update_palette_active_index)
 
     def __init__(self):
         self.palettes.clear()

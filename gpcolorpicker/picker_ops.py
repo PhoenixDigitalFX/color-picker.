@@ -123,7 +123,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             settings.mat_selected = self.get_selected_mat_id(event)
         
         elif (event.type == settings.switch_key) and (event.value == 'PRESS'):
-            bpy.context.scene.gpmatpalettes.nextVisible()
+            bpy.context.scene.gpmatpalettes.next()
             self.load_grease_pencil_materials()
         
         elif ((event.type == settings.key_shortcut) \

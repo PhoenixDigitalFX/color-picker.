@@ -232,6 +232,9 @@ class GPCOLORPICKER_OT_togglePaletteVisibility(bpy.types.Operator):
         pal = gpmp.palettes[self.palette_index]
         pal.visible = not pal.visible
 
+        if gpmp.active_index == self.palette_index:
+            gpmp.next()
+
         return {'FINISHED'}
 
 
