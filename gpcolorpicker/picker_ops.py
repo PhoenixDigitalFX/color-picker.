@@ -2,7 +2,7 @@ import bpy
 import numpy as np
 from . picker_draw import draw_callback_px
 from . picker_settings import GPCOLORPICKER_settings
-from . picker_interactions import get_selected_mat_id, init_cached_data
+from . picker_interactions import get_selected_mat_id, CachedData
 import time
 
 
@@ -23,7 +23,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         context.area.tag_redraw()
 
         def mat_selected_in_range():
-            i = self.settings.mat_selected
+            i = self.mat_selected
             return (i >= 0) and (i < self.settings.mat_nb)
         
         def set_active_material(ob, stg_id, ob_id):
@@ -71,29 +71,26 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return False
 
         if event.type == 'MOUSEMOVE':
-            self.settings.mat_selected = get_selected_mat_id(event,self.settings.region_dim, self.settings.origin, self.settings.mat_nb, \
+            self.mat_selected = get_selected_mat_id(event,self.settings.region_dim, self.settings.origin, self.settings.mat_nb, \
                                              self.settings.interaction_radius, self.settings.custom_angles)
         
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
             bpy.context.scene.gpmatpalettes.next()
-            self.load_grease_pencil_materials()
+            self.cached_data.refresh_materials()
         
         elif ((event.type == self.invoke_key) \
-                and (event.value == 'RELEASE') and mat_selected_in_range()) \
+                and (event.value == 'RELEASE') and (self.mat_selected != -1)) \
                     or (event.type == 'LEFTMOUSE'):
             if validate_selection():   
-                self.report({'INFO'}, "GP color picking finished")    
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
                 return {'FINISHED'}                
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            self.report({'INFO'}, "GP color picking cancelled")
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'CANCELLED'}
 
         return {'RUNNING_MODAL'}
     
-
     def check_time(self):
         if self.timeout:
             return
@@ -117,15 +114,14 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
         # Get event related data
         self.invoke_key = event.type
-        region = bpy.context.region
-        self.region_dim = np.asarray([region.width,region.height])
+        self.region_dim = np.asarray([bpy.context.region.width,bpy.context.region.height])
         self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
 
         self.mat_selected = -1
         self.active_obj = bpy.context.active_object
 
         # Init Cached Data
-        self.cached_data = init_cached_data(not self.settings.mat_from_active)
+        self.cached_data = CachedData(not self.settings.mat_from_active)
         if self.cached_data.mat_nb == 0:
             self.report({'WARNING'}, "No material to pick")
 
