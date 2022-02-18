@@ -10,17 +10,20 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
         # Make sure your code supports all 3 layout types
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             col = layout.column()
-            col.label(text=item.name)
+            if item.visible:
+                col.label(text=item.name)
+            else:
+                col.label(text='~' + item.name)
 
             col = layout.column()
             col.label(text=item.source_path)
 
             col = layout.column()
-            rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="")
+            rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="", emboss=False)
             rlp.palette_index = index
 
             col = layout.column()
-            rmp = col.operator("scene.remove_palette", icon="X", text="")
+            rmp = col.operator("scene.remove_palette", icon="X", text="", emboss=False)
             rmp.palette_index = index
 
             col = layout.column()
@@ -28,12 +31,9 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
                 tpv_icon = 'HIDE_OFF'
             else:
                 tpv_icon = 'HIDE_ON'
-            tpv = col.operator("scene.toggle_pal_visibility", icon=tpv_icon, text="")
+            tpv = col.operator("scene.toggle_pal_visibility", icon=tpv_icon, text="", emboss=False)
             tpv.palette_index = index
 
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text="")
 
 
 
