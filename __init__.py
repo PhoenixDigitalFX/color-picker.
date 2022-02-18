@@ -10,6 +10,7 @@ bl_info = {
     "category": "Materials"
 }
 
+addon_keymaps = [] 
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
@@ -73,7 +74,7 @@ def register():
     register_palette()
 
     from . gpcolorpicker import register as register_picker
-    register_picker()
+    register_picker(addon_keymaps)
 
     for cls in classes:
         bpy.utils.register_class(cls)    
@@ -84,7 +85,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
     
     from . gpcolorpicker import unregister as unregister_picker
-    unregister_picker()
+    unregister_picker(addon_keymaps)
 
     from .gpmatpalette import unregister as unregister_palette
     unregister_palette()

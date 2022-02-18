@@ -2,9 +2,8 @@ import bpy
 from . picker_ops import GPCOLORPICKER_OT_wheel,settings
 
 classes = [GPCOLORPICKER_OT_wheel]
-addon_keymaps = [] 
 
-def register():
+def register(addon_keymaps):
     for cls in classes:
         bpy.utils.register_class(cls)
 
@@ -18,7 +17,7 @@ def register():
         addon_keymaps.append((km, kmi))
 
 
-def unregister():        
+def unregister(addon_keymaps):        
     # Remove the hotkey
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
