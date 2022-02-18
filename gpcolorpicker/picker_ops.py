@@ -1,10 +1,8 @@
 import bpy
 import numpy as np
-from math import atan2,pi,floor
-from . picker_draw import draw_callback_px, load_gpu_texture
+from . picker_draw import draw_callback_px
 from . picker_settings import GPCOLORPICKER_settings
-from . picker_interactions import get_selected_mat_id
-import gpu
+from . picker_interactions import get_selected_mat_id, init_cached_data
 import time
 
 
@@ -94,60 +92,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return {'CANCELLED'}
 
         return {'RUNNING_MODAL'}
-
-    def load_active_materials(self):
-        s = self.settings
-
-        if s.active_obj is None:
-            # Should be avoided by poll function but who knows
-            self.report({'ERROR'}, "No active object")
-            return False
-
-        s.materials = [ m.material for k,m in s.active_obj.material_slots.items() \
-                                    if (m.material) and (m.material.is_grease_pencil) ]       
-        s.mat_nb = min(s.mat_nmax,len(s.materials))
-        s.mat_active = s.active_obj.active_material_index
-
-        if s.mat_nb == 0:
-            self.report({'INFO'}, "No material in the active object")
-            return False
-        return True
     
-    def load_from_palette(self):
-        s = self.settings
-        palette = bpy.context.scene.gpmatpalettes.active()
-        s.materials = [ bpy.data.materials[n.name] for n in palette.materials ]       
-        s.mat_nb = min(s.mat_nmax,len(s.materials))
-        s.mat_active = -1
-
-        if s.mat_nb == 0:
-            self.report({'INFO'}, "No JSON file or empty file")
-            return False
-        
-        if palette.hasCustomAngles():
-            s.custom_angles = [ m.custom_angle for m in palette.materials ]
-        else:
-            s.custom_angles = []
-
-        return True
-    
-    def load_grease_pencil_materials(self):
-        s = self.settings
-
-        if s.mat_from_active:
-            flag = self.load_active_materials()
-        else:
-            flag = self.load_from_palette()
-
-        if not flag:
-            return False
-
-        s.load_mat_radius()
-        mat_gp = [ m.grease_pencil for m in s.materials ]
-        s.mat_fill_colors = [ m.fill_color if m.show_fill else ([0.,0.,0.,0.]) for m in mat_gp ]
-        s.mat_line_colors = [ m.color if m.show_stroke else ([0.,0.,0.,0.]) for m in mat_gp ] 
-        
-        return True
 
     def check_time(self):
         if self.timeout:
@@ -159,41 +104,36 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         self.tsart = time.time()
         self.timeout = False
 
+        gpmp = bpy.context.scene.gpmatpalettes.active()
+        if (not self.settings.mat_from_active) and (not gpmp):
+            self.report({'WARNING'}, "No active palette")
+            return {'CANCELLED'}
+
         pname = (__package__).split('.')[0]
         prefs = context.preferences.addons[pname].preferences
-        self.settings = GPCOLORPICKER_settings(prefs)  
-
-        self.invoke_key = event.type
-
-        # Update settings from user preferences
         if prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
+        self.settings = GPCOLORPICKER_settings(prefs)  
 
-        self.settings.mat_selected = -1
-        self.settings.active_obj = bpy.context.active_object
+        # Get event related data
+        self.invoke_key = event.type
+        region = bpy.context.region
+        self.region_dim = np.asarray([region.width,region.height])
+        self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
 
-        # Load GPU texture if applicable
-        if not self.settings.mat_from_active:
-            gpmp = bpy.context.scene.gpmatpalettes.active()
-            if not gpmp:
-                self.report({'WARNING'}, "No active palette")
-                return {'CANCELLED'}
-            self.settings.cached_gpu_tex = load_gpu_texture(gpmp.image)
-            self.settings.cached_palette_name = gpmp.name
+        self.mat_selected = -1
+        self.active_obj = bpy.context.active_object
 
-        # Loading materials 
-        if not (self.load_grease_pencil_materials()):
-            return {'CANCELLED'}  
+        # Init Cached Data
+        self.cached_data = init_cached_data(not self.settings.mat_from_active)
+        if self.cached_data.mat_nb == 0:
+            self.report({'WARNING'}, "No material to pick")
 
-        # Setting modal handler
+        # Setting handlers
         mhandle = context.window_manager.modal_handler_add(self)
         if not mhandle:
             return {'CANCELLED'}  
 
-        # Get mouse position
-        region = bpy.context.region
-        self.settings.region_dim = np.asarray([region.width,region.height])
-        self.settings.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.settings.region_dim  
         self._handle = context.space_data.draw_handler_add(draw_callback_px, (self,context,self.settings), \
                                                         'WINDOW', 'POST_PIXEL')
         return {'RUNNING_MODAL'}    
