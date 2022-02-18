@@ -213,9 +213,32 @@ class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class GPCOLORPICKER_OT_togglePaletteVisibility(bpy.types.Operator):
+    bl_idname = "scene.toggle_pal_visibility"
+    bl_label= "Toggle Palette Visibility"
+
+    palette_index: bpy.props.IntProperty(default=-1)
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context): 
+        gpmp = context.scene.gpmatpalettes
+        npal = len(gpmp.palettes)
+        if (self.palette_index < 0) or (self.palette_index >= npal):
+            return {'CANCELLED'}
+
+        pal = gpmp.palettes[self.palette_index]
+        pal.visible = not pal.visible
+
+        return {'FINISHED'}
 
 
-classes = [GPCOLORPICKER_OT_getJSONFile, GPCOLORPICKER_OT_removePalette, GPCOLORPICKER_OT_reloadPalette]
+classes = [GPCOLORPICKER_OT_getJSONFile, \
+            GPCOLORPICKER_OT_removePalette, \
+            GPCOLORPICKER_OT_reloadPalette, \
+            GPCOLORPICKER_OT_togglePaletteVisibility]
 
 def register():
     for cls in classes:

@@ -57,6 +57,7 @@ class GPMatPalette(PropertyGroup):
     materials: CollectionProperty(type=GPMatItem)
     image: PointerProperty(type=GPMatImage)
     source_path: StringProperty(subtype='FILE_PATH')
+    visible: BoolProperty(default=True)
 
     # Safety check to use custom angles
     # all materials should have one, and the angles should be in increasing order
@@ -91,6 +92,14 @@ class GPMatPalettes(PropertyGroup):
 
     def next(self):
         self.active_index = (self.active_index + 1) % len(self.palettes)
+
+    def nextVisible(self):
+        if not any([p.visible for p in self.palettes]):
+            return
+
+        self.next()
+        while not self.palettes[self.active_index].visible:
+            self.next()
 
     def clear(self):
         for p in self.palettes:

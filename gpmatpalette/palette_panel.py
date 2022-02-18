@@ -7,9 +7,6 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):
 
-        # We could write some code to decide which icon to use here...
-        toggle_visibility = 'HIDE_ON'
-        
         # Make sure your code supports all 3 layout types
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             col = layout.column()
@@ -26,8 +23,13 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             rmp = col.operator("scene.remove_palette", icon="X", text="")
             rmp.palette_index = index
 
-            # col = layout.column()
-            # col.label(text='', icon=toggle_visibility)
+            col = layout.column()
+            if item.visible:
+                tpv_icon = 'HIDE_OFF'
+            else:
+                tpv_icon = 'HIDE_ON'
+            tpv = col.operator("scene.toggle_pal_visibility", icon=tpv_icon, text="")
+            tpv.palette_index = index
 
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
