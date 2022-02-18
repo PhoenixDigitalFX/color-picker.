@@ -12,9 +12,6 @@ import time
 class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     bl_idname = "gpencil.color_pick"
     bl_label = "GP Color Picker"  
-    
-    def __init__(self): 
-        self.settings = GPCOLORPICKER_settings()  
 
     @classmethod
     def poll(cls, context):
@@ -83,7 +80,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             bpy.context.scene.gpmatpalettes.next()
             self.load_grease_pencil_materials()
         
-        elif ((event.type == self.settings.key_shortcut) \
+        elif ((event.type == 'A') \
                 and (event.value == 'RELEASE') and mat_selected_in_range()) \
                     or (event.type == 'LEFTMOUSE'):
             if validate_selection():   
@@ -152,15 +149,6 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         
         return True
 
-    def load_preferences(self, prefs):
-        self.settings.mat_from_active = (prefs.mat_mode == "from_active")
-        self.settings.mat_assign = prefs.assign_mat
-        self.settings.mc_fill_color = prefs.theme.pie_color
-        self.settings.mc_line_color = prefs.theme.line_color
-        self.settings.text_color = prefs.theme.text_color
-        self.settings.set_icon_scale(prefs.icon_scale)
-
-
     def check_time(self):
         if self.timeout:
             return
@@ -170,13 +158,14 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     def invoke(self, context, event):  
         self.tsart = time.time()
         self.timeout = False
-        # Update settings from user preferences
+
         pname = (__package__).split('.')[0]
         prefs = context.preferences.addons[pname].preferences
+        self.settings = GPCOLORPICKER_settings(prefs)  
+
+        # Update settings from user preferences
         if prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
-        else:
-            self.load_preferences(prefs)
 
         self.settings.mat_selected = -1
         self.settings.active_obj = bpy.context.active_object
