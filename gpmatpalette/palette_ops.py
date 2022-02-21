@@ -1,4 +1,5 @@
 import json, os, bpy, gpu, math
+from posixpath import relpath
 from . palette_props import GPMatPalette
 
 def srgb_to_linearrgb(c):
@@ -126,6 +127,47 @@ def parseJSONFile(json_file, palette_names=()):
             continue
         gpmatpalettes.active_index = ind
 
+variables_notex = ["alignment_mode", "alignment_rotation","color","fill_color","fill_style","flip","ghost", \
+            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
+            "show_fill", "show_stroke", "stroke_image", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+
+def get_material_data(mat):
+    def parse_attr(attr):
+        dtp = [int, float, bool, str]
+        if (attr is None) or any([isinstance(attr, t) for t in dtp]):
+            return attr
+        return [attr[k] for k in range(len(attr))]
+
+    mdat = { v:parse_attr(getattr(mat,v)) for v in variables_notex }
+
+    return mdat
+
+def writeJSONfile(json_file, palette_names=()):
+    gpmp = bpy.context.scene.gpmatpalettes.palettes
+    pal_dct = {}
+
+    for pname,pdata in gpmp.items():
+        pal_dct[pname] = { "materials":{} }
+        mat_dct = pal_dct[pname]["materials"]
+        dat_mats = bpy.data.materials
+
+        if not pdata.image.isempty():
+            # todo : deal with relative and absolute path in a better way
+            imname = os.path.basename(pdata.image.path)
+            relpath = True
+            pal_dct[pname]["image"] = {"path":imname, "relative":relpath}
+        
+        for mname, mdata in pdata.materials.items():            
+            mat_dct[mname] = get_material_data(dat_mats[mname])
+
+            if mdata.custom_angle >= 0:
+                mat_dct[mname]["position"] = mdata.custom_angle*180/math.pi
+
+            if not mdata.image.isempty():
+                mat_dct[mname]["image"] = os.path.basename(mdata.image.path)
+
+            if mdata.layer:
+                mat_dct[mname]["layer"] = mdata.layer
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
@@ -156,7 +198,24 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+class GPCOLORPICKER_OT_savePalette(bpy.types.Operator):
+    bl_idname = "gpencil.file_export"
+    bl_label = "Save Palette"    
 
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        return (context.scene.gpmatpalette.active())
+
+    def execute(self, context): 
+        fpt = self.filepath      
+        writeJSONfile(fpt)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
     bl_idname = "scene.remove_palette"
     bl_label = "Remove GP Palette"

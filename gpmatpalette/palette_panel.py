@@ -35,8 +35,6 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             tpv.palette_index = index
 
 
-
-
 class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
     bl_label="Grease Pencil palettes"
     bl_idname="SCENE_PT_gppalette"
@@ -57,6 +55,10 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
                         dataptr=gpmp, propname="palettes", \
                         active_dataptr=gpmp, active_propname="active_index", \
                         )
+        
+        row = layout.row()
+        row.label(text="Active palettes")
+        row.operator("gpencil.file_load", icon="FILE_NEW", text="")
 
 
 
