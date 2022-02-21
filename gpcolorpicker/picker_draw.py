@@ -337,11 +337,11 @@ def draw_centered_texture(settings, rds):
 def draw_callback_px(op, context,settings): 
     gpu.state.blend_set('ALPHA')   
 
+    if settings.mat_selected >= 0:
+        write_selected_mat_name(settings, settings.mat_selected)
     if settings.useGPUTexture():
         draw_centered_texture(settings, settings.tex_radius)
     draw_main_circle(settings)  
-    if settings.mat_selected >= 0:
-        write_selected_mat_name(settings, settings.mat_selected)
     if not settings.mat_from_active:
         write_active_palette(settings)
 
