@@ -1,5 +1,4 @@
-import numpy as np
-from math import floor, ceil, pi, sin, asin
+from math import ceil
 
 class GPCOLORPICKER_settings():
     def __init__(self, prefs = None):
@@ -26,25 +25,6 @@ class GPCOLORPICKER_settings():
             self.text_color = (0.,0.,0.,1.)
             self.set_icon_scale(250)
 
-        # # OLD
-        # self.origin = np.asarray([0,0])
-        # self.region_dim = np.asarray([0,0])
-
-        # # context 
-        # self.active_obj = None
-        # self.materials = []
-        # self.mat_nb = -1
-        # self.mat_selected =  -1
-        # self.mat_active =  -1
-        # self.mat_fill_colors = []
-        # self.mat_line_colors = []
-        # self.custom_angles = []
-
-        # # cached
-        # self.cached_gpu_tex = None
-        # self.cached_mat_selected = -1
-        # self.cached_palette_name = ""
-
     def set_icon_scale(self,scale):
         self.icon_scale = scale
         self.mat_centers_radius = self.icon_scale/(2*(1.2))
@@ -52,26 +32,8 @@ class GPCOLORPICKER_settings():
         self.mc_inner_radius = 0.6*self.mc_outer_radius
         self.interaction_radius = 0.5*self.mc_outer_radius
 
-        self.mat_rmin = 5
-        self.mat_rmax = 0.1*self.mat_centers_radius
-        self.mat_radius = self.mat_rmax
+        self.mat_radius = 0.1*self.mat_centers_radius
 
         self.selected_radius = 1.2*self.mat_radius
-        self.mat_nmax = floor(pi/asin(self.mat_rmin/self.mat_centers_radius))
         self.text_size = ceil(0.08*self.icon_scale)
         self.tex_radius = self.mat_centers_radius-self.mat_radius
-
-    def load_mat_radius(self):
-        if self.mat_nb <= 1:
-            return self.mat_rmax
-        r_opt = 0.8*self.mat_centers_radius*sin(pi/self.mat_nb)
-        self.mat_radius = max(self.mat_rmin,min(r_opt,self.mat_rmax))
-        self.selected_radius = self.mat_radius*1.2
-        self.tex_radius = self.mat_centers_radius-self.mat_radius
-        return self.mat_radius
-
-    # def useGPUTexture(self):
-    #     return (not self.mat_from_active) and self.cached_gpu_tex
-    
-    # def useCustomAngles(self):
-    #     return (not self.mat_from_active) and self.custom_angles
