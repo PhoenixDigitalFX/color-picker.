@@ -3,6 +3,12 @@ import numpy as np
 import bpy
 from . picker_draw import load_gpu_texture
 
+def get_mouse_arg(event, region_dim, origin):
+    # Find mouse position
+    mouse_pos = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*region_dim
+    mouse_local = mouse_pos - origin
+    
+    return atan2(mouse_local[1], mouse_local[0]) % (2*pi)
 
 def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, custom_angles = []):
     if nmt < 1:
@@ -93,6 +99,7 @@ class CachedData:
         transp = [0.,0.,0.,0.]
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
+    
         
     def use_gpu_texture(self):
         return self.from_palette and self.gpu_texture

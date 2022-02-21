@@ -1,8 +1,10 @@
+from calendar import c
 import bpy
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
-from .. gpcolorpicker.picker_interactions import get_selected_mat_id, CachedData
+from .. gpcolorpicker.picker_interactions import *
 from .. gpcolorpicker.picker_draw import draw_callback_px
+from . paledit_maths import angle_boundaries, is_in_boundaries
 import time
 
 ### ----------------- Operator definition
@@ -14,6 +16,28 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
     def poll(cls, context):
         return True
 
+    def write_cache_in_palette(self, context):
+        pal = context.scene.gpmatpalettes.active()
+        cache = self.cached_data
+        if not cache.from_palette:
+            return
+
+        pal.materials.foreach_set("custom_angle", cache.custom_angles)
+
+    def move_custom_angle(self, mti, nth):
+        cache = self.cached_data
+        nmt = cache.mat_nb
+        if (nmt == 0) or (mti < 0) or (mti >= nmt):
+            return
+        
+        if not cache.use_custom_angles():
+            cache.custom_angles = [ i*2*pi/nmt for i in range(nmt) ]
+
+        R = self.settings.mat_centers_radius
+        r = self.settings.mat_radius + self.settings.mat_line_width
+
+        if is_in_boundaries(R, r, cache.custom_angles, mti, nth):
+            cache.custom_angles[mti] = nth
 
     def modal(self, context, event):
         context.area.tag_redraw()  
@@ -23,16 +47,27 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             return (i >= 0) and (i < self.cached_data.mat_nb)
 
         if event.type == 'MOUSEMOVE':
-            self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
-                                             self.settings.interaction_radius, self.cached_data.custom_angles)
+            if self.is_mat_dragged:
+                dt = get_mouse_arg(event, self.region_dim, self.origin)
+                self.move_custom_angle(self.mat_selected, dt)
+            else:
+                self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
+                                 self.settings.interaction_radius, self.cached_data.custom_angles)
 
-        elif (event.type == 'LEFTMOUSE'):
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-            return {'FINISHED'}
+        elif (event.type == 'LEFTMOUSE') and (event.value == 'PRESS'):
+            if mat_selected_in_range():
+                self.is_mat_dragged = True
 
+        elif (event.type == 'LEFTMOUSE') and (event.value == 'RELEASE'):
+            self.is_mat_dragged = False
+            self.write_cache_in_palette(context)
+            
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
             bpy.context.scene.gpmatpalettes.next()
             self.cached_data.refresh()
+            self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
+                              self.settings.interaction_radius, self.cached_data.custom_angles)
+
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -60,6 +95,8 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
 
         self.mat_selected = -1
+        self.cur_arg = 0
+        self.is_mat_dragged = False
 
         # Init Cached Data
         self.cached_data = CachedData(not self.settings.mat_from_active)
