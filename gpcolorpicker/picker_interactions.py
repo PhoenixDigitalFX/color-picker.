@@ -60,29 +60,44 @@ def get_material_from_id(mat_id, from_palette = True):
     if not from_palette:
         ob = bpy.context.active_object
         
-
 class CachedData:
+    # gpu_texture = None
+    # pal_active = -1
+    # mat_cached = -1
+    # materials = []
+    # mat_nb = 0
+    # custom_angles = []
+    # mat_active = -1
+    # mat_fill_colors = []
+    # mat_line_colors = []
+
+
     def __init__(self, from_palette=True):
         self.from_palette = from_palette
-        if from_palette:
-            self.refresh_gpudat
         
+        self.refresh_gpudat()        
         self.refresh_materials()
 
     def refresh_gpudat(self):
-        gpmp = bpy.context.scene.gpmatpalettes.active()
-        self.gpu_texture = load_gpu_texture(gpmp.image)
-        self.pal_active = gpmp.name 
-        self.mat_cached = -1
+        if self.from_palette:
+            gpmp = bpy.context.scene.gpmatpalettes.active()
+            self.gpu_texture = load_gpu_texture(gpmp.image)
+            self.pal_active = gpmp.name 
+            self.mat_cached = -1
+        else:
+            self.gpu_texture = None
+            self.pal_active = -1
+            self.mat_cached = -1
     
     def refresh_materials(self):
         if self.from_palette:
             gpmp = bpy.context.scene.gpmatpalettes.active()
-            self.materials = [ bpy.data.materials[n.name] for n in self.materials ]       
+            self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
             self.mat_nb = len(self.materials)
+            self.mat_active = -1
 
             if gpmp.hasCustomAngles():
-                self.custom_angles = [ m.custom_angle for m in self.materials ]
+                self.custom_angles = [ m.custom_angle for m in gpmp.materials ]
         else:
             ob = bpy.context.active_object
             self.materials = [ m.material for k,m in ob.material_slots.items() \
@@ -95,3 +110,8 @@ class CachedData:
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
         
+    def use_gpu_texture(self):
+        return self.from_palette and self.gpu_texture
+
+    def use_custom_angles(self):
+        return self.from_palette and self.custom_angles

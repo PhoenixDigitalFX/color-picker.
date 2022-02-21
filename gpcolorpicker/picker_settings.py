@@ -26,24 +26,24 @@ class GPCOLORPICKER_settings():
             self.text_color = (0.,0.,0.,1.)
             self.set_icon_scale(250)
 
-        # OLD
-        self.origin = np.asarray([0,0])
-        self.region_dim = np.asarray([0,0])
+        # # OLD
+        # self.origin = np.asarray([0,0])
+        # self.region_dim = np.asarray([0,0])
 
-        # context 
-        self.active_obj = None
-        self.materials = []
-        self.mat_nb = -1
-        self.mat_selected =  -1
-        self.mat_active =  -1
-        self.mat_fill_colors = []
-        self.mat_line_colors = []
-        self.custom_angles = []
+        # # context 
+        # self.active_obj = None
+        # self.materials = []
+        # self.mat_nb = -1
+        # self.mat_selected =  -1
+        # self.mat_active =  -1
+        # self.mat_fill_colors = []
+        # self.mat_line_colors = []
+        # self.custom_angles = []
 
-        # cached
-        self.cached_gpu_tex = None
-        self.cached_mat_selected = -1
-        self.cached_palette_name = ""
+        # # cached
+        # self.cached_gpu_tex = None
+        # self.cached_mat_selected = -1
+        # self.cached_palette_name = ""
 
     def set_icon_scale(self,scale):
         self.icon_scale = scale
@@ -70,8 +70,8 @@ class GPCOLORPICKER_settings():
         self.tex_radius = self.mat_centers_radius-self.mat_radius
         return self.mat_radius
 
-    def useGPUTexture(self):
-        return (not self.mat_from_active) and self.cached_gpu_tex
+    # def useGPUTexture(self):
+    #     return (not self.mat_from_active) and self.cached_gpu_tex
     
-    def useCustomAngles(self):
-        return (not self.mat_from_active) and self.custom_angles
+    # def useCustomAngles(self):
+    #     return (not self.mat_from_active) and self.custom_angles

@@ -20,19 +20,19 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
 
     def modal(self, context, event):
-        context.area.tag_redraw()
+        context.area.tag_redraw()  
 
         def mat_selected_in_range():
             i = self.mat_selected
-            return (i >= 0) and (i < self.settings.mat_nb)
+            return (i >= 0) and (i < self.cached_data.mat_nb)
         
         def set_active_material(ob, stg_id, ob_id):
             ob.active_material_index = ob_id
 
-            if self.settings.mat_from_active:
+            if not self.cached_data.from_palette:
                 return True
             
-            gpmp = bpy.context.scene.gpmatpalettes.active()
+            gpmp = context.scene.gpmatpalettes.active()
             gpmt = gpmp.materials[stg_id]
             if not gpmt.layer:
                 return True
@@ -46,36 +46,37 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             return True
 
         def validate_selection():
-            sid = self.settings.mat_selected
             if not mat_selected_in_range():
                 return True
 
-            if self.settings.mat_from_active:
-                return set_active_material(self.settings.active_obj, sid, sid)
+            sid = self.mat_selected
+            if not self.cached_data.from_palette:
+                return set_active_material(self.active_obj, sid, sid)
             
-            ob_mat = self.settings.active_obj.data.materials                
-            mat = self.settings.materials[sid]
+            ob_mat = self.active_obj.data.materials                
+            mat = self.cached_data.materials[sid]
             oid = ob_mat.find(mat.name)
 
             if oid >= 0:
                 # Found material in current object
-                return set_active_material(self.settings.active_obj, sid, oid)
+                return set_active_material(self.active_obj, sid, oid)
             
             if self.settings.mat_assign:
                 # Assigning new material to current object
                 oid = len(ob_mat)
                 ob_mat.append(mat)
-                return set_active_material(self.settings.active_obj, sid, oid)
+                return set_active_material(self.active_obj, sid, oid)
 
             self.report({'WARNING'}, 'Active object does not contain material')
             return False
 
         if event.type == 'MOUSEMOVE':
-            self.mat_selected = get_selected_mat_id(event,self.settings.region_dim, self.settings.origin, self.settings.mat_nb, \
-                                             self.settings.interaction_radius, self.settings.custom_angles)
+            self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
+                                             self.settings.interaction_radius, self.cached_data.custom_angles)
         
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
             bpy.context.scene.gpmatpalettes.next()
+            self.cached_data.refresh_gpudat()
             self.cached_data.refresh_materials()
         
         elif ((event.type == self.invoke_key) \
@@ -101,24 +102,24 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         self.tsart = time.time()
         self.timeout = False
 
-        gpmp = bpy.context.scene.gpmatpalettes.active()
-        if (not self.settings.mat_from_active) and (not gpmp):
-            self.report({'WARNING'}, "No active palette")
-            return {'CANCELLED'}
-
         pname = (__package__).split('.')[0]
         prefs = context.preferences.addons[pname].preferences
         if prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
         self.settings = GPCOLORPICKER_settings(prefs)  
 
+        gpmp = context.scene.gpmatpalettes.active()
+        if (not self.settings.mat_from_active) and (not gpmp):
+            self.report({'WARNING'}, "No active palette")
+            return {'CANCELLED'}
+
         # Get event related data
         self.invoke_key = event.type
-        self.region_dim = np.asarray([bpy.context.region.width,bpy.context.region.height])
+        self.region_dim = np.asarray([context.region.width,context.region.height])
         self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
 
         self.mat_selected = -1
-        self.active_obj = bpy.context.active_object
+        self.active_obj = context.active_object
 
         # Init Cached Data
         self.cached_data = CachedData(not self.settings.mat_from_active)
@@ -130,6 +131,6 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         if not mhandle:
             return {'CANCELLED'}  
 
-        self._handle = context.space_data.draw_handler_add(draw_callback_px, (self,context,self.settings), \
+        self._handle = context.space_data.draw_handler_add(draw_callback_px, (self,context,self.cached_data,self.settings), \
                                                         'WINDOW', 'POST_PIXEL')
         return {'RUNNING_MODAL'}    
