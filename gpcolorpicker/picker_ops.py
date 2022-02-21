@@ -76,9 +76,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
             bpy.context.scene.gpmatpalettes.next()
-            self.cached_data.refresh_gpudat()
-            self.cached_data.refresh_materials()
-        
+            self.cached_data.refresh()
+
         elif ((event.type == self.invoke_key) \
                 and (event.value == 'RELEASE') and (self.mat_selected != -1)) \
                     or (event.type == 'LEFTMOUSE'):

@@ -61,37 +61,17 @@ def get_material_from_id(mat_id, from_palette = True):
         ob = bpy.context.active_object
         
 class CachedData:
-    # gpu_texture = None
-    # pal_active = -1
-    # mat_cached = -1
-    # materials = []
-    # mat_nb = 0
-    # custom_angles = []
-    # mat_active = -1
-    # mat_fill_colors = []
-    # mat_line_colors = []
-
-
     def __init__(self, from_palette=True):
         self.from_palette = from_palette
-        
-        self.refresh_gpudat()        
-        self.refresh_materials()
+        self.refresh()        
 
-    def refresh_gpudat(self):
+    def refresh(self):
         if self.from_palette:
             gpmp = bpy.context.scene.gpmatpalettes.active()
             self.gpu_texture = load_gpu_texture(gpmp.image)
             self.pal_active = gpmp.name 
             self.mat_cached = -1
-        else:
-            self.gpu_texture = None
-            self.pal_active = -1
-            self.mat_cached = -1
-    
-    def refresh_materials(self):
-        if self.from_palette:
-            gpmp = bpy.context.scene.gpmatpalettes.active()
+
             self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
             self.mat_nb = len(self.materials)
             self.mat_active = -1
@@ -99,6 +79,10 @@ class CachedData:
             if gpmp.hasCustomAngles():
                 self.custom_angles = [ m.custom_angle for m in gpmp.materials ]
         else:
+            self.gpu_texture = None
+            self.pal_active = -1
+            self.mat_cached = -1
+    
             ob = bpy.context.active_object
             self.materials = [ m.material for k,m in ob.material_slots.items() \
                                         if (m.material) and (m.material.is_grease_pencil) ]       
