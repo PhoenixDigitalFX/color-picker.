@@ -5,7 +5,7 @@ import numpy as np
 from math import *
 import os
 
-def setup_shader(settings,fragsh):
+def setup_shader(op, settings, fragsh):
     vsh = '''            
         uniform mat4 modelViewProjectionMatrix;
         uniform float dimension;
@@ -37,7 +37,7 @@ def setup_shader(settings,fragsh):
     matrix = gpu.matrix.get_projection_matrix()*gpu.matrix.get_model_view_matrix()
     shader.uniform_float("modelViewProjectionMatrix", matrix)     
     shader.uniform_float("dimension",dimension)
-    shader.uniform_float("origin", settings.origin)
+    shader.uniform_float("origin", op.origin)
     return shader,batch 
 
 main_circle_fsh = '''
@@ -184,29 +184,26 @@ void main()
 }
 '''
 
-def draw_main_circle(settings):     
-    nmat = settings.mat_nb
+def draw_main_circle(op, cache, settings):     
+    nmat = cache.mat_nb
     if nmat <= 0:
         return    
 
-    # ifl = open("draw_icon.frag.glsl", 'r')
-    # fsh = ifl.read()
-    # ifl.close()
     fsh = main_circle_fsh
 
-    if not settings.useGPUTexture():
+    if not cache.use_gpu_texture():
         mc_macro = "__DRAW_MAIN_CIRCLE__"
         fsh = "#define " + mc_macro + "\n" + fsh  
 
-    if settings.useCustomAngles() :
+    if cache.use_custom_angles() :
         csta_macro = "__CUSTOM_ANGLES__"
         fsh = "#define " + csta_macro + "\n" + fsh        
 
     fsh = fsh.replace("__NMAT__",str(nmat))
 
-    shader, batch = setup_shader(settings,fsh)
+    shader, batch = setup_shader(op, settings, fsh)
     
-    if not settings.useGPUTexture():
+    if not cache.use_gpu_texture():
         shader.uniform_float("circle_color", settings.mc_fill_color)
         shader.uniform_float("line_color", settings.mc_line_color)
         shader.uniform_float("inner_radius", settings.mc_inner_radius)
@@ -218,9 +215,6 @@ def draw_main_circle(settings):
     shader.uniform_float("mat_radius", settings.mat_radius)
     shader.uniform_float("mat_line_width", settings.mat_line_width)
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius); 
-    shader.uniform_int("mat_nb", settings.mat_nb);    
-    shader.uniform_int("mat_selected", settings.mat_selected);   
-    shader.uniform_int("mat_active", settings.mat_active);   
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
     def set_uniform_vector_float(shader, data_, var_name):
@@ -234,10 +228,13 @@ def draw_main_circle(settings):
         loc = shader.uniform_from_name(var_name)
         shader.uniform_vector_float(loc, buf, dim[1], dim[0])
 
-    set_uniform_vector_float(shader, settings.mat_fill_colors, "mat_fill_colors")
-    set_uniform_vector_float(shader, settings.mat_line_colors, "mat_line_colors")
-    if settings.useCustomAngles():
-        set_uniform_vector_float(shader, settings.custom_angles, "mat_thetas")  
+    shader.uniform_int("mat_selected", op.mat_selected);   
+    shader.uniform_int("mat_nb", nmat);    
+    shader.uniform_int("mat_active", cache.mat_active);   
+    set_uniform_vector_float(shader, cache.mat_fill_colors, "mat_fill_colors")
+    set_uniform_vector_float(shader, cache.mat_line_colors, "mat_line_colors")
+    if cache.use_custom_angles() :
+        set_uniform_vector_float(shader, cache.custom_angles, "mat_thetas")  
 
     batch.draw(shader)  
 
@@ -256,18 +253,18 @@ def write_circle_centered(settings, org, ird, text):
         blf.draw(font_id, text)
         gpu.state.blend_set('ALPHA')   
 
-def write_selected_mat_name(settings, id_selected):
-    txt = settings.materials[id_selected].name
-    org = settings.origin + 0.5*settings.region_dim
+def write_selected_mat_name(op, cache, settings):
+    txt = cache.materials[op.mat_selected].name
+    org = op.origin + 0.5*op.region_dim
     ird = settings.mc_outer_radius
     write_circle_centered(settings, org, ird, txt)
 
-def write_active_palette(settings):
-    plt = bpy.context.scene.gpmatpalettes.active()
+def write_active_palette(op, context, settings):
+    plt = context.scene.gpmatpalettes.active()
     if not plt:
         return
     txt = plt.name
-    org = settings.origin + 0.5*settings.region_dim
+    org = op.origin + 0.5*op.region_dim
     org[1] = org[1] - (settings.mat_centers_radius+2*settings.mat_radius)
     ird = settings.mc_outer_radius
     write_circle_centered(settings, org, ird, txt)
@@ -286,7 +283,7 @@ def load_gpu_texture(image):
         
     return None
 
-def draw_centered_texture(settings, rds):
+def draw_centered_texture(op, context, cache, settings):
     centered_tex_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
@@ -312,11 +309,11 @@ def draw_centered_texture(settings, rds):
             }  
         }
     '''
-    gpmp = bpy.context.scene.gpmatpalettes.active()
-    sid = settings.mat_selected
-    if (gpmp.name == settings.cached_palette_name) and \
-         (sid == settings.cached_mat_selected) :
-        tx = settings.cached_gpu_tex
+    gpmp = context.scene.gpmatpalettes.active()
+    sid = op.mat_selected
+    if (gpmp.name == cache.pal_active) and \
+         (sid == cache.mat_cached) :
+        tx = cache.gpu_texture
     elif ( sid == -1 ) or ( gpmp.materials[sid].image.isempty() ):
         tx = load_gpu_texture(gpmp.image)
     else:
@@ -324,26 +321,30 @@ def draw_centered_texture(settings, rds):
     
     if not tx:
         return
-    
-    shader, batch = setup_shader(settings,centered_tex_fsh)
+
+    rds = settings.tex_radius    
+    shader, batch = setup_shader(op, settings, centered_tex_fsh)
     shader.uniform_sampler("tex",tx)
     shader.uniform_float("rad_tex",rds)    
     batch.draw(shader) 
 
-    settings.cached_gpu_tex = tx
-    settings.cached_mat_selected = sid
-    settings.cached_palette_name = gpmp.name
+    cache.gpu_tex = tx
+    cache.mat_cached = sid
+    cache.pal_active = gpmp.name
 
-def draw_callback_px(op, context,settings): 
+def draw_callback_px(op, context, cache, settings): 
     gpu.state.blend_set('ALPHA')   
 
-    if settings.mat_selected >= 0:
-        write_selected_mat_name(settings, settings.mat_selected)
-    if settings.useGPUTexture():
-        draw_centered_texture(settings, settings.tex_radius)
-    draw_main_circle(settings)  
-    if not settings.mat_from_active:
-        write_active_palette(settings)
+    if op.mat_selected >= 0:
+        write_selected_mat_name(op, cache, settings)
+        
+    if cache.use_gpu_texture():
+        draw_centered_texture(op, context, cache, settings)
+
+    draw_main_circle(op, cache, settings)  
+
+    if cache.from_palette:
+        write_active_palette(op, context, settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
