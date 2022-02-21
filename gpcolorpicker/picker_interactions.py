@@ -52,13 +52,6 @@ def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, cust
         i += 1
     # case i = mat_nb-1 is handled by default
     return nmt-1
-
-def get_material_from_id(mat_id, from_palette = True):
-    if mat_id == -1:
-        return None
-    
-    if not from_palette:
-        ob = bpy.context.active_object
         
 class CachedData:
     def __init__(self, from_palette=True):
