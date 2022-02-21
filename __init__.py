@@ -73,6 +73,9 @@ def register():
     from . gpcolorpicker import register as register_picker
     register_picker(addon_keymaps)
 
+    from . gppaletteeditor import register as register_editor
+    register_editor(addon_keymaps)
+
     for cls in classes:
         bpy.utils.register_class(cls)    
     
@@ -85,6 +88,9 @@ def unregister():
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    
+    from . gppaletteeditor import unregister as unregister_editor
+    unregister_editor()
     
     from . gpcolorpicker import unregister as unregister_picker
     unregister_picker()
