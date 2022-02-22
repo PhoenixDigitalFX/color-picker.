@@ -47,6 +47,7 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Active palettes")
+        row.operator("scene.export_palette", icon="EXPORT", text="")
         row.operator("gpencil.file_load", icon="FILE_NEW", text="")
 
         row = layout.row()
@@ -55,10 +56,6 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
                         dataptr=gpmp, propname="palettes", \
                         active_dataptr=gpmp, active_propname="active_index", \
                         )
-        
-        row = layout.row()
-        row.label(text="Active palettes")
-        row.operator("gpencil.file_load", icon="FILE_NEW", text="")
 
 
 

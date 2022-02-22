@@ -142,14 +142,14 @@ def get_material_data(mat):
 
     return mdat
 
-def writeJSONfile(json_file, palette_names=()):
+def get_palettes_content():
     gpmp = bpy.context.scene.gpmatpalettes.palettes
     pal_dct = {}
 
     for pname,pdata in gpmp.items():
         pal_dct[pname] = { "materials":{} }
         mat_dct = pal_dct[pname]["materials"]
-        dat_mats = bpy.data.materials
+        dat_mats = [m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil]
 
         if not pdata.image.isempty():
             # todo : deal with relative and absolute path in a better way
@@ -168,6 +168,8 @@ def writeJSONfile(json_file, palette_names=()):
 
             if mdata.layer:
                 mat_dct[mname]["layer"] = mdata.layer
+    return pal_dct
+
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
@@ -198,19 +200,22 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
-class GPCOLORPICKER_OT_savePalette(bpy.types.Operator):
-    bl_idname = "gpencil.file_export"
-    bl_label = "Save Palette"    
+class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
+    bl_idname = "scene.export_palette"
+    bl_label = "Export Palette"    
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
     def poll(cls, context):
-        return (context.scene.gpmatpalette.active())
+        return (context.scene.gpmatpalettes.active())
 
     def execute(self, context): 
-        fpt = self.filepath      
-        writeJSONfile(fpt)
+        fpt = self.filepath            
+        data = get_palettes_content()
+        # Directly from dictionary
+        with open(fpt, 'w') as outfile:
+            json.dump(data, outfile, indent=4)
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -296,8 +301,8 @@ class GPCOLORPICKER_OT_togglePaletteVisibility(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
 classes = [GPCOLORPICKER_OT_getJSONFile, \
+            GPCOLORPICKER_OT_exportPalette, \
             GPCOLORPICKER_OT_removePalette, \
             GPCOLORPICKER_OT_reloadPalette, \
             GPCOLORPICKER_OT_togglePaletteVisibility]
