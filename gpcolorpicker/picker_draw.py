@@ -173,7 +173,7 @@ void main()
 
     if( is_active ){
         vec4 act_color = active_color;
-        float act_rds = mat_centers_radius + mat_radius + mat_line_width*2;
+        float act_rds = mat_centers_radius + radius + mat_line_width*2.5;
         vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
         float act_dst = length(lpos-act_ctr);
         act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);

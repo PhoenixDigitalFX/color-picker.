@@ -59,6 +59,8 @@ class CachedData:
         self.refresh()        
 
     def refresh(self):
+        ob = bpy.context.active_object        
+
         if self.from_palette:
             gpmp = bpy.context.scene.gpmatpalettes.active()
             self.gpu_texture = load_gpu_texture(gpmp.image)
@@ -67,7 +69,12 @@ class CachedData:
 
             self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
             self.mat_nb = len(self.materials)
-            self.mat_active = -1
+
+            nmact = ob.active_material.name   
+            if nmact in gpmp.materials:
+                self.mat_active = list(gpmp.materials.keys()).index(nmact)
+            else:        
+                self.mat_active = -1
 
             if gpmp.hasCustomAngles():
                 self.custom_angles = [ m.custom_angle for m in gpmp.materials ]
@@ -76,7 +83,6 @@ class CachedData:
             self.pal_active = -1
             self.mat_cached = -1
     
-            ob = bpy.context.active_object
             self.materials = [ m.material for k,m in ob.material_slots.items() \
                                         if (m.material) and (m.material.is_grease_pencil) ]       
             self.mat_nb = len(self.materials)
