@@ -147,9 +147,8 @@ def get_palettes_content():
     pal_dct = {}
 
     for pname,pdata in gpmp.items():
-        pal_dct[pname] = { "materials":{} }
-        mat_dct = pal_dct[pname]["materials"]
-        dat_mats = [m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil]
+        pal_dct[pname] = {}
+        dat_mats = {m.name:m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil}
 
         if not pdata.image.isempty():
             # todo : deal with relative and absolute path in a better way
@@ -157,7 +156,9 @@ def get_palettes_content():
             relpath = True
             pal_dct[pname]["image"] = {"path":imname, "relative":relpath}
         
-        for mname, mdata in pdata.materials.items():            
+        pal_dct[pname]["materials"] = {}
+        mat_dct = pal_dct[pname]["materials"]
+        for mname, mdata in pdata.materials.items(): 
             mat_dct[mname] = get_material_data(dat_mats[mname])
 
             if mdata.custom_angle >= 0:
