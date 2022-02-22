@@ -86,6 +86,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                     or (event.type == 'LEFTMOUSE'):
             if validate_selection():   
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+                bpy.ops.ed.undo_push()
                 return {'FINISHED'}                
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
