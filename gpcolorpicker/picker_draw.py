@@ -256,6 +256,8 @@ def write_circle_centered(settings, org, ird, text):
 def write_selected_mat_name(op, cache, settings):
     txt = cache.materials[op.mat_selected].name
     org = op.origin + 0.5*op.region_dim
+    org[1] = org[1] - (settings.mat_centers_radius+2*settings.mat_radius)
+    org[1] = org[1] - settings.text_size
     ird = settings.mc_outer_radius
     write_circle_centered(settings, org, ird, txt)
 
