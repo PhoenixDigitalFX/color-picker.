@@ -85,25 +85,19 @@ float aa_donut(float rds0, float rds1, float dst, float eps){
 
 float aa_seg( vec2 s0, vec2 s1, vec2 p, float wdt, float eps){
     float lgt = length(s0-s1);
-    vec2 udr = (s0-s1)/lgt;
+    vec2 udr = (s1-s0)/lgt;
     vec2 lp = p - s0;
     float prj = dot(lp, udr);
+    float alpha = 1.;
 
-    /*float asg = smoothstep(lgt+eps, lgt-eps, prj);   
-    if(asg == 0.){
+    alpha *= smoothstep(-eps, eps, prj);  
+    alpha *= smoothstep(lgt+eps, lgt-eps, prj);  
+    if( alpha == 0.){
         return 0.;
-    }*/
-    if( (prj < 0) || (prj > lgt) ){
-        return 0;
     }
     
     float d = length(prj*udr - lp);
-    if( d > wdt ){
-        return 0.;
-    }
-    return 1.;
-
-    //return asg*smoothstep(wdt+eps, wdt-eps, d);
+    return alpha*smoothstep(wdt+eps, wdt-eps, d);
 }
 
 vec4 alpha_compose(vec4 A, vec4 B){
@@ -142,8 +136,8 @@ void main()
     /* find optimal circle index for current location */
     vec2 loc_pos = lpos;
     float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
-#ifdef __CUSTOM_ANGLES__
     int i = 0;
+#ifdef __CUSTOM_ANGLES__
     if( dt < 0 ){
         dt += 2*PI;
     }
@@ -168,7 +162,7 @@ void main()
         } // case i = mat_nb-1 is handled by default
     }
 #else
-    int i = int(floor((dt*mat_nb/PI + 1)/2));
+    i = int(floor((dt*mat_nb/PI + 1)/2));
     i = (i == mat_nb) ? 0 : i;
 #endif
 
@@ -208,9 +202,9 @@ void main()
 
 #ifdef __CUSTOM_LINES__
     /* draw line */
-    vec2 s0 = mat_centers_radius*vec2(cos(th_i),sin(th_i));
-    vec2 s1 =  vec2(0,0);
-    vec4 fragColor_line = vec4(1.);
+    vec2 s0 = 50*vec2(cos(th_i),sin(th_i));
+    vec2 s1 = (R-radius)*vec2(cos(th_i),sin(th_i));
+    vec4 fragColor_line = vec4(0., 1., 0.,1.);
     fragColor_line.a *= aa_seg(s0, s1, lpos, line_width, aa_eps);
     fragColor = alpha_compose(fragColor, fragColor_line);
 #endif        
