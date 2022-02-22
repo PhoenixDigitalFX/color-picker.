@@ -59,7 +59,8 @@ class CachedData:
         self.refresh()        
 
     def refresh(self):
-        ob = bpy.context.active_object        
+        ob = bpy.context.active_object      
+        self.custom_angles = []  
 
         if self.from_palette:
             gpmp = bpy.context.scene.gpmatpalettes.active()
