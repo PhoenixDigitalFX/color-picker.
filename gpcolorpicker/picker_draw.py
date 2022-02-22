@@ -47,8 +47,8 @@ uniform vec4 circle_color;
 uniform vec4 line_color;
 uniform float inner_radius;
 uniform float outer_radius;
-uniform float line_width;
 #endif
+uniform float line_width;
 uniform float selected_radius;
 uniform vec4 active_color;
 uniform float mat_radius;
@@ -82,6 +82,30 @@ float aa_donut(float rds0, float rds1, float dst, float eps){
     float a1 = aa_circle(rds1, dst, eps);
     return a0*(1-a1);
 }
+
+float aa_seg( vec2 s0, vec2 s1, vec2 p, float wdt, float eps){
+    float lgt = length(s0-s1);
+    vec2 udr = (s0-s1)/lgt;
+    vec2 lp = p - s0;
+    float prj = dot(lp, udr);
+
+    /*float asg = smoothstep(lgt+eps, lgt-eps, prj);   
+    if(asg == 0.){
+        return 0.;
+    }*/
+    if( (prj < 0) || (prj > lgt) ){
+        return 0;
+    }
+    
+    float d = length(prj*udr - lp);
+    if( d > wdt ){
+        return 0.;
+    }
+    return 1.;
+
+    //return asg*smoothstep(wdt+eps, wdt-eps, d);
+}
+
 vec4 alpha_compose(vec4 A, vec4 B){
     /* A over B */
     vec4 color = vec4(0.);
@@ -180,7 +204,17 @@ void main()
         fragColor_mat = alpha_compose(act_color, fragColor_mat);
     }
 
-    fragColor = alpha_compose(fragColor_mat, fragColor_main);           
+    fragColor = alpha_compose(fragColor_mat, fragColor_main);   
+
+#ifdef __CUSTOM_LINES__
+    /* draw line */
+    vec2 s0 = mat_centers_radius*vec2(cos(th_i),sin(th_i));
+    vec2 s1 =  vec2(0,0);
+    vec4 fragColor_line = vec4(1.);
+    fragColor_line.a *= aa_seg(s0, s1, lpos, line_width, aa_eps);
+    fragColor = alpha_compose(fragColor, fragColor_line);
+#endif        
+
 }
 '''
 
@@ -199,6 +233,10 @@ def draw_main_circle(op, cache, settings):
         csta_macro = "__CUSTOM_ANGLES__"
         fsh = "#define " + csta_macro + "\n" + fsh        
 
+
+    csta_macro = "__CUSTOM_LINES__"
+    fsh = "#define " + csta_macro + "\n" + fsh       
+
     fsh = fsh.replace("__NMAT__",str(nmat))
 
     shader, batch = setup_shader(op, settings, fsh)
@@ -208,8 +246,7 @@ def draw_main_circle(op, cache, settings):
         shader.uniform_float("line_color", settings.mc_line_color)
         shader.uniform_float("inner_radius", settings.mc_inner_radius)
         shader.uniform_float("outer_radius", settings.mc_outer_radius)
-        shader.uniform_float("line_width", settings.mc_line_width)
-
+    shader.uniform_float("line_width", settings.mc_line_width)
     shader.uniform_float("selected_radius", settings.selected_radius)
     shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
