@@ -5,7 +5,27 @@ from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from .. gpcolorpicker.picker_interactions import *
 from .. gpcolorpicker.picker_draw import draw_callback_px
 from . paledit_maths import angle_boundaries, is_in_boundaries
-import time
+from . paledit_interactions import *
+
+class GPCOLORPICKER_OT_moveMaterialOrigin(bpy.types.Operator):
+    bl_idname = "gpencil.move_mat_origin"
+    bl_label = "GP Palette Editor : move material origin"  
+
+    my_float: bpy.props.FloatProperty(name="Some Floating Point")
+    my_bool: bpy.props.BoolProperty(name="Toggle Option")
+    my_string: bpy.props.StringProperty(name="String Value")
+
+    def execute(self, context):
+        message = (
+            "Popup Values: %f, %d, '%s'" %
+            (self.my_float, self.my_bool, self.my_string)
+        )
+        self.report({'INFO'}, message)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
@@ -41,39 +61,66 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
     def modal(self, context, event):
         context.area.tag_redraw()  
+        # Find mouse position
+        mouse_pos = np.asarray([event.mouse_region_x,event.mouse_region_y])
+        mouse_local = mouse_pos - 0.5*self.region_dim - self.origin
 
-        def mat_selected_in_range():
-            i = self.mat_selected
-            return (i >= 0) and (i < self.cached_data.mat_nb)
+        # def mat_selected_in_range():
+        #     i = self.mat_selected
+        #     return (i >= 0) and (i < self.cached_data.mat_nb)
 
         if event.type == 'MOUSEMOVE':
-            if self.is_mat_dragged:
-                dt = get_mouse_arg(event, self.region_dim, self.origin)
-                self.move_custom_angle(self.mat_selected, dt)
+            if self.running_interaction:
+                self.running_interaction.run(mouse_local)
             else:
-                self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
-                                 self.settings.interaction_radius, self.cached_data.custom_angles)
+                for itar in self.interaction_areas:
+                    if itar.is_in_selection():
+                        itar.display_selection(mouse_local)
+
+            # if self.is_mat_dragged:
+            #     dt = get_mouse_arg(event, self.region_dim, self.origin)
+            #     self.move_custom_angle(self.mat_selected, dt)
+            # else:
+            #     self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
+            #                      self.settings.interaction_radius, self.cached_data.custom_angles)
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'PRESS'):
-            if mat_selected_in_range():
-                self.is_mat_dragged = True
+            for itar in self.interaction_areas:
+                if itar.is_in_selection():
+                    itar.start_running()
+                    self.running_interaction = itar
+                    break
+
+            # if mat_selected_in_range():
+            #     self.is_mat_dragged = True
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'RELEASE'):
-            self.is_mat_dragged = False
-            self.write_cache_in_palette(context)
+            if self.running_interaction:
+                self.running_interaction.stop_running()
+                self.running_interaction = None
+            # self.is_mat_dragged = False
+            # self.write_cache_in_palette(context)
             
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
+            if self.running_interaction:
+                self.running_interaction.cancel_run()
+                self.running_interaction = None
+
             bpy.context.scene.gpmatpalettes.next()
             self.cached_data.refresh()
             self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
                               self.settings.interaction_radius, self.cached_data.custom_angles)
-
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'CANCELLED'}
         
         return {'RUNNING_MODAL'}
+
+    def init_interaction_areas(self, context):
+        self.interaction_areas = []
+        gpmp = context.scene.gpmatpalettes.active()
+        self.interaction_areas.append([ MoveMaterialAngleInteraction(m) for m in gpmp.materials])
 
     def invoke(self, context, event):  
         self.report({'INFO'}, "Entering palette edit mode")
@@ -103,6 +150,10 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         if self.cached_data.mat_nb == 0:
             self.report({'WARNING'}, "No material to pick")
 
+        # Init interactions areas
+        self.init_interaction_areas(context)
+        self.running_interaction = None
+
         # Setting handlers
         mhandle = context.window_manager.modal_handler_add(self)
         if not mhandle:
@@ -112,3 +163,14 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                                 (self,context,self.cached_data,self.settings), \
                                                         'WINDOW', 'POST_PIXEL')
         return {'RUNNING_MODAL'}    
+
+
+classes = [GPCOLORPICKER_OT_paletteEditor, GPCOLORPICKER_OT_moveMaterialOrigin]
+
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+
+def unregister():
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)

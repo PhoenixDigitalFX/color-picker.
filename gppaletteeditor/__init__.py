@@ -1,12 +1,11 @@
 import bpy
 from . paledit_ops import GPCOLORPICKER_OT_paletteEditor
 
-classes = [GPCOLORPICKER_OT_paletteEditor]
 default_invoke_key = "A"
 
 def register(addon_keymaps):
-    for cls in classes:
-        bpy.utils.register_class(cls)
+    from . paledit_ops import register as register_ops
+    register_ops()
 
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
@@ -17,5 +16,5 @@ def register(addon_keymaps):
         addon_keymaps.append((km, kmi))
 
 def unregister():        
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+    from . paledit_ops import unregister as unregister_ops
+    unregister_ops()
