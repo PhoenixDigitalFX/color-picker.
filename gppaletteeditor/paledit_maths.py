@@ -15,7 +15,6 @@ def angle_boundaries(R, r, angles, mti):
 
     return low,hgh
 
-
 def is_in_boundaries(R, r, angles, mti, a):
     nmt = len(angles)
 

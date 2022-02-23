@@ -112,6 +112,10 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                               self.settings.interaction_radius, self.cached_data.custom_angles)
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            if self.running_interaction:
+                self.running_interaction.cancel_run()
+                self.running_interaction = None
+
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'CANCELLED'}
         
@@ -120,7 +124,9 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
     def init_interaction_areas(self, context):
         self.interaction_areas = []
         gpmp = context.scene.gpmatpalettes.active()
-        self.interaction_areas.append([ MoveMaterialAngleInteraction(m) for m in gpmp.materials])
+        
+        for i in range(cache.mat_nb):
+            self.interaction_areas.append(MoveMaterialAngleInteraction(m))
 
     def invoke(self, context, event):  
         self.report({'INFO'}, "Entering palette edit mode")
