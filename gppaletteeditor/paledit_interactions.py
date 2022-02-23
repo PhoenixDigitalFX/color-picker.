@@ -69,3 +69,21 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
     def stop_running(self, op, cache, settings, context):
         self.refresh_position(cache, settings)
         op.write_cache_in_palette(context)
+    
+class MoveMaterialPickerInteraction(RadialInteractionArea):
+    def __init__(self, op, cache, settings, id):
+        self.id = id
+        self.refresh_position(cache, settings)
+
+    def refresh_position(self, cache, settings):
+        if not cache.use_custom_angles():
+            self.th = self.id*2*pi/cache.mat_nb
+        else:
+            self.th = cache.custom_angles[self.id]
+        udir = np.asarray([cos(self.th),sin(self.th)])
+        self.org = settings.mat_centers_radius*udir
+        self.rds = settings.selected_radius + settings.mat_line_width
+    
+    def stop_running(self, op, cache, settings, context):
+        self.refresh_position(cache, settings)
+        op.write_cache_in_palette(context)

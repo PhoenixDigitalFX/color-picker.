@@ -7,6 +7,7 @@ class GPCOLORPICKER_settings():
         self.active_color =  (0.01,0.01,0.01,1)
         self.mat_line_width = 5.
         self.mc_line_width = 1.
+        self.pickline_width = 1.
         self.anti_aliasing_eps = 0.5
 
         # From user preferences

@@ -66,7 +66,8 @@ class CachedData:
 
     def refresh(self):
         ob = bpy.context.active_object      
-        self.custom_angles = []  
+        self.custom_angles = []    
+        self.pick_origins = []  
 
         if self.from_palette:
             gpmp = bpy.context.scene.gpmatpalettes.active()
@@ -76,7 +77,7 @@ class CachedData:
 
             self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
             self.mat_nb = len(self.materials)
-
+            
             nmact = ob.active_material.name   
             if nmact in gpmp.materials:
                 self.mat_active = list(gpmp.materials.keys()).index(nmact)
@@ -85,6 +86,10 @@ class CachedData:
 
             if gpmp.hasCustomAngles():
                 self.custom_angles = [ m.custom_angle for m in gpmp.materials ]
+            
+            if gpmp.hasPickLines():
+                self.pick_origins = [ m.pick_origin for m in gpmp.materials ]
+            
         else:
             self.gpu_texture = None
             self.pal_active = -1
@@ -106,3 +111,6 @@ class CachedData:
 
     def use_custom_angles(self):
         return self.from_palette and self.custom_angles
+
+    def use_pick_lines(self):
+        return self.from_palette and self.pick_origins

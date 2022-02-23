@@ -103,7 +103,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
         self.mat_selected = -1
         self.cur_arg = 0
-        self.is_mat_dragged = False
+        self.is_mat_dragged = False    
 
         # Init Cached Data
         self.cached_data = CachedData(not self.settings.mat_from_active)

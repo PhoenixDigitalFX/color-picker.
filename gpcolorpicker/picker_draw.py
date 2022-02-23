@@ -47,8 +47,8 @@ uniform vec4 circle_color;
 uniform vec4 line_color;
 uniform float inner_radius;
 uniform float outer_radius;
-#endif
 uniform float line_width;
+#endif
 uniform float selected_radius;
 uniform vec4 active_color;
 uniform float mat_radius;
@@ -61,6 +61,10 @@ uniform vec4 mat_fill_colors[__NMAT__];
 uniform vec4 mat_line_colors[__NMAT__];
 #ifdef __CUSTOM_ANGLES__
 uniform float mat_thetas[__NMAT__];
+#endif
+#ifdef __CUSTOM_LINES__
+uniform vec3 mat_origins[__NMAT__];
+uniform float pickline_width;
 #endif
 uniform float aa_eps;
 in vec2 lpos;
@@ -202,10 +206,13 @@ void main()
 
 #ifdef __CUSTOM_LINES__
     /* draw line */
-    vec2 s0 = 50*vec2(cos(th_i),sin(th_i));
+    if( mat_origins[i].z == 0 ){
+        return;
+    }
+    vec2 s0 = mat_origins[i].xy;
     vec2 s1 = (R-radius)*vec2(cos(th_i),sin(th_i));
     vec4 fragColor_line = vec4(0., 1., 0.,1.);
-    fragColor_line.a *= aa_seg(s0, s1, lpos, line_width, aa_eps);
+    fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
     fragColor = alpha_compose(fragColor, fragColor_line);
 #endif        
 
@@ -227,9 +234,9 @@ def draw_main_circle(op, cache, settings):
         csta_macro = "__CUSTOM_ANGLES__"
         fsh = "#define " + csta_macro + "\n" + fsh        
 
-
-    csta_macro = "__CUSTOM_LINES__"
-    fsh = "#define " + csta_macro + "\n" + fsh       
+    if cache.use_pick_lines():
+        csta_macro = "__CUSTOM_LINES__"
+        fsh = "#define " + csta_macro + "\n" + fsh       
 
     fsh = fsh.replace("__NMAT__",str(nmat))
 
@@ -240,7 +247,7 @@ def draw_main_circle(op, cache, settings):
         shader.uniform_float("line_color", settings.mc_line_color)
         shader.uniform_float("inner_radius", settings.mc_inner_radius)
         shader.uniform_float("outer_radius", settings.mc_outer_radius)
-    shader.uniform_float("line_width", settings.mc_line_width)
+        shader.uniform_float("line_width", settings.mc_line_width)
     shader.uniform_float("selected_radius", settings.selected_radius)
     shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
@@ -265,7 +272,10 @@ def draw_main_circle(op, cache, settings):
     set_uniform_vector_float(shader, cache.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, cache.mat_line_colors, "mat_line_colors")
     if cache.use_custom_angles() :
-        set_uniform_vector_float(shader, cache.custom_angles, "mat_thetas")  
+        set_uniform_vector_float(shader, cache.custom_angles, "mat_thetas") 
+    if cache.use_pick_lines(): 
+        set_uniform_vector_float(shader, cache.pick_origins, "mat_origins")
+        shader.uniform_float("pickline_width", settings.pickline_width)
 
     batch.draw(shader)  
 

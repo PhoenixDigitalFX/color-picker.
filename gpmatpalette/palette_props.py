@@ -1,4 +1,5 @@
 import math
+from this import d
 import bpy,gpu,os
 from bpy.types import PropertyGroup
 from bpy.props import *
@@ -44,12 +45,16 @@ class GPMatImage(PropertyGroup):
 class GPMatItem(PropertyGroup):
     name: StringProperty()
     custom_angle: FloatProperty(subtype='ANGLE', default=-1)
+    pick_origin: FloatVectorProperty(size=3, subtype="XYZ")
     image: PointerProperty(type=GPMatImage)
     layer: StringProperty()
 
     def clear(self):
         # Remove image from database
         self.image.clear()
+    
+    def has_pick_line(self):
+        return self.pick_origin.z > 0
 
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
@@ -68,6 +73,9 @@ class GPMatPalette(PropertyGroup):
                 return False
             a = m.custom_angle
         return True        
+    
+    def hasPickLines(self):
+        return any([m.has_pick_line() for m in self.materials])
         
     def clear(self):
         for m in self.materials:
