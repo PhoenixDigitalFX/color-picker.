@@ -74,16 +74,35 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.id = id
         self.refresh_position(cache, settings)
+    
+    def init_org(self, cache, settings, i, set_active=False):
+        nmt = cache.mat_nb
+        th = i*2*pi/nmt
+        if cache.use_custom_angles():
+            th = cache.custom_angles[i]
+        R = settings.mat_centers_radius - settings.mat_radius
+        return R*np.asarray([cos(th), sin(th)])
 
     def refresh_position(self, cache, settings):
-        if not cache.use_custom_angles():
-            self.th = self.id*2*pi/cache.mat_nb
+        if (not cache.use_pick_lines()) or (cache.pick_origins[self.id].z == 0):
+            self.org = self.init_org(cache, settings, self.id, True)
         else:
-            self.th = cache.custom_angles[self.id]
-        udir = np.asarray([cos(self.th),sin(self.th)])
-        self.org = settings.mat_centers_radius*udir
-        self.rds = settings.selected_radius + settings.mat_line_width
+            o = cache.pick_origins[self.id]
+            self.org = np.asarray([o.x, o.y])
+        self.rds = settings.mat_radius*0.5
+        pass
     
+    def is_in_boundaries(self, settings, pos):
+        return len(pos) < settings.mat_centers_radius
+
+    def run(self, op, cache, settings, pos):
+        nmt = cache.mat_nb
+        if not cache.use_pick_lines():
+            cache.pick_origins = [ self.init_org(cache, settings, i) for i in range(nmt) ]
+        
+        if self.is_in_boundaries(settings, pos):
+            cache.pick_origins[self.id] = pos
+
     def stop_running(self, op, cache, settings, context):
         self.refresh_position(cache, settings)
         op.write_cache_in_palette(context)

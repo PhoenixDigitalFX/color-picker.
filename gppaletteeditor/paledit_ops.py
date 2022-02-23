@@ -3,7 +3,7 @@ import bpy
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from .. gpcolorpicker.picker_interactions import *
-from .. gpcolorpicker.picker_draw import draw_callback_px
+from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
 
 ### ----------------- Operator definition
@@ -71,15 +71,18 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 self.running_interaction = None
 
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-            return {'CANCELLED'}
+            return {'FINISHED'}
         
         return {'RUNNING_MODAL'}
 
     def init_interaction_areas(self, context):
-        self.interaction_areas = []
+        self.mat_selected = -1
         cache = self.cached_data
         stgs = self.settings
-        for i in range(self.cached_data.mat_nb):
+
+        self.interaction_areas = []
+        for i in range(self.cached_data.mat_nb):         
+            self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
             self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
 
     def invoke(self, context, event):  
@@ -101,9 +104,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         self.region_dim = np.asarray([context.region.width,context.region.height])
         self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
 
-        self.mat_selected = -1
-        self.cur_arg = 0
-        self.is_mat_dragged = False    
+        self.mat_selected = -1  
 
         # Init Cached Data
         self.cached_data = CachedData(not self.settings.mat_from_active)
