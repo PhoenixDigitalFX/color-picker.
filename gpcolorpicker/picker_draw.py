@@ -163,14 +163,13 @@ void main()
         }
 
         /* Pick lines */
-        if( mat_origins[i].z == 0 ){
-            return;
+        if( mat_origins[i].z != 0 ){
+            vec2 s0 = mat_origins[i].xy;
+            vec2 s1 = (R-mat_radius)*vec2(cos(th_i),sin(th_i));
+            vec4 fragColor_line = vec4(0., 1., 0.,1.);
+            fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
+            fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
         }
-        vec2 s0 = mat_origins[i].xy;
-        vec2 s1 = (R-mat_radius)*vec2(cos(th_i),sin(th_i));
-        vec4 fragColor_line = vec4(0., 1., 0.,1.);
-        fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
-        fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
 
         fragColor = alpha_compose(fragColor_mat, fragColor);
     }

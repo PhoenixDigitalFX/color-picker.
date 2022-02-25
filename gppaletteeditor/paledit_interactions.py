@@ -39,7 +39,7 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         self.refresh_position(cache, settings)
 
     def refresh_position(self, cache, settings):
-        self.th = cache.get_mat_angle(self.id)
+        self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
         self.org = settings.mat_centers_radius*udir
         self.rds = settings.selected_radius + settings.mat_line_width
@@ -71,11 +71,11 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.refresh_position(cache, settings)
 
         R = settings.mat_centers_radius - settings.mat_radius
-        c_pos = pol2cart(R, cache.get_mat_angle(id))
+        c_pos = pol2cart(R, cache.angles[self.id])
         print(f"Mat {cache.materials[self.id].name} : init origin {self.org}, center {c_pos}")
     
     def init_org(self, cache, settings, i, init_z=True):
-        th = cache.get_mat_angle(i)
+        th = cache.angles[i]
         R = settings.mat_centers_radius - settings.mat_radius
         org = pol2cart(R,th)
         if init_z:
@@ -83,7 +83,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         return org
 
     def refresh_position(self, cache, settings):
-        if (not cache.use_pick_lines()) or (cache.pick_origins[self.id][2] == 0):
+        if (cache.pick_origins[self.id][2] == 0):
             self.org = self.init_org(cache, settings, self.id, False)
         else:
             o = cache.pick_origins[self.id]
@@ -91,14 +91,9 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.rds = settings.mat_radius*0.5
     
     def is_in_boundaries(self, settings, pos):
-        return True
         return len(pos) < settings.mat_centers_radius
 
     def run(self, op, cache, settings, pos):
-        nmt = cache.mat_nb
-        if not cache.use_pick_lines():
-            cache.pick_origins = [ self.init_org(cache, settings, i) for i in range(nmt) ]
-        
         if self.is_in_boundaries(settings, pos):
             cache.pick_origins[self.id][0:2] = pos
             cache.pick_origins[self.id][2] = 1
@@ -107,7 +102,5 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.refresh_position(cache, settings)
         op.write_cache_in_palette(context)
 
-        c_org = False
-        if cache.use_pick_lines():
-            c_org = cache.pick_origins[self.id]
+        c_org = cache.pick_origins[self.id]
         print(f"Mat {cache.materials[self.id].name} : moved origin to {self.org}, cache {c_org}")
