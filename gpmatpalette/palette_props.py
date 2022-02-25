@@ -64,6 +64,9 @@ class GPMatItem(PropertyGroup):
     def has_pick_line(self):
         return self.pos_in_picker.has_pick_line
     
+    def is_angle_movable(self):
+        return self.pos_in_picker.is_angle_movable
+    
     def get_angle(self, only_if_not_movable = False):
         if only_if_not_movable and self.pos_in_picker.is_angle_movable:
             return -1
@@ -130,6 +133,8 @@ class GPMatPalette(PropertyGroup):
         old_id = self.count()
         if name in self.materials:
             old_id = self.materials.find(name)
+            if old_id < index:
+                index = index - 1
         else:
             matit = self.materials.add()
             matit.name = name

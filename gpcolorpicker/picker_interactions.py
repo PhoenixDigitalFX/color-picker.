@@ -78,7 +78,8 @@ class CachedData:
             else:        
                 self.mat_active = -1
 
-            self.angles = [ m.pos_in_picker.angle for m in gpmp.materials ]
+            self.angles = [ m.get_angle() for m in gpmp.materials ]
+            self.is_custom_angle = [ not m.is_angle_movable() for m in gpmp.materials ]
             self.pick_origins = [ np.asarray(m.get_origin(True))\
                                      for m in gpmp.materials]           
             

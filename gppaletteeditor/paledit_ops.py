@@ -16,19 +16,22 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         return True
 
     def write_cache_in_palette(self, context):
-        pal = context.scene.gpmatpalettes.active()
         cache = self.cached_data
         if not cache.from_palette:
             return
 
+        pal = context.scene.gpmatpalettes.active()
         nmt = cache.mat_nb
         for i in range(nmt):
-            mpos = pal.materials[i].pos_in_picker
-            mpos.has_pick_line = (cache.pick_origins[i][2] > 0)
-            if mpos.has_pick_line :
-                mpos.ox = cache.pick_origins[i][0]
-                mpos.oy = cache.pick_origins[i][1]
-            mpos.angle = cache.angles[i]
+            mname = cache.materials[i].name
+
+            a = cache.angles[i]
+            if cache.is_custom_angle[i] and (a != pal.materials[mname].get_angle()):
+                pal.set_material_by_angle(mname, a)
+            
+            if (cache.pick_origins[i][2] > 0):
+                matit = pal.materials[mname]
+                matit.set_origin(cache.pick_origins[i][0:2])
 
     def modal(self, context, event):
         context.area.tag_redraw()  

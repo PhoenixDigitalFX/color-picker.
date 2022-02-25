@@ -52,14 +52,10 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         op.mat_selected = self.id
 
     def run(self, op, cache, settings, pos):
-        nmt = cache.mat_nb
         nth = atan2(pos[1], pos[0]) % (2*pi)
-
-        R = settings.mat_centers_radius
-        r = settings.mat_radius + settings.mat_line_width
         
-        if is_in_boundaries(R, r, cache.angles, self.id, nth):
-            cache.angles[self.id] = nth
+        cache.angles[self.id] = nth
+        cache.is_custom_angle[self.id] = True
     
     def stop_running(self, op, cache, settings, context):
         self.refresh_position(cache, settings)
