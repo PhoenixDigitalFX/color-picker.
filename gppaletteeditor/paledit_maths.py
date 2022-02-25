@@ -1,4 +1,5 @@
-from math import pi
+from math import pi, cos, sin
+import numpy as np
 
 def angle_boundaries(R, r, angles, mti):
     nmt = len(angles)
@@ -31,3 +32,6 @@ def is_in_boundaries(R, r, angles, mti, a):
         hgh = a < 2*pi
 
     return hgh and low
+
+def pol2cart(R=1., th=0.):
+    return R*np.asarray([cos(th), sin(th)])

@@ -41,11 +41,16 @@ class GPMatImage(PropertyGroup):
         self.remove()
         self.name = ""
         self.path = ""
+    
+class GPMatPosInPicker(PropertyGroup):
+    ox : FloatProperty(default=0)
+    oy : FloatProperty(default=0)
+    has_pick_line: BoolProperty(default=False)
 
 class GPMatItem(PropertyGroup):
     name: StringProperty()
     custom_angle: FloatProperty(subtype='ANGLE', default=-1)
-    pick_origin: FloatVectorProperty(size=3, subtype="XYZ")
+    pos_in_picker: PointerProperty(type=GPMatPosInPicker)
     image: PointerProperty(type=GPMatImage)
     layer: StringProperty()
 
@@ -54,7 +59,7 @@ class GPMatItem(PropertyGroup):
         self.image.clear()
     
     def has_pick_line(self):
-        return self.pick_origin.z > 0
+        return self.pos_in_picker.has_pick_line
 
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
@@ -131,7 +136,7 @@ class GPMatPalettes(PropertyGroup):
         self.palettes.clear()
         self.active_index = -1
 
-classes = [GPMatImage, GPMatItem, GPMatPalette, GPMatPalettes]
+classes = [GPMatImage, GPMatPosInPicker, GPMatItem, GPMatPalette, GPMatPalettes]
 
 def register():
     for cls in classes:

@@ -21,6 +21,14 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         if not cache.from_palette:
             return
 
+        nmt = cache.mat_nb
+        for i in range(nmt):
+            mpos = pal.materials[i].pos_in_picker
+            mpos.has_pick_line = (cache.pick_origins[i][2] > 0)
+            if mpos.has_pick_line :
+                mpos.ox = cache.pick_origins[i][0]
+                mpos.oy = cache.pick_origins[i][1]
+
         pal.materials.foreach_set("custom_angle", cache.custom_angles)
 
     def modal(self, context, event):

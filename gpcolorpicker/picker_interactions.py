@@ -88,7 +88,8 @@ class CachedData:
                 self.custom_angles = [ m.custom_angle for m in gpmp.materials ]
             
             if gpmp.hasPickLines():
-                self.pick_origins = [ m.pick_origin for m in gpmp.materials ]
+                self.pick_origins = [ np.asarray([m.pos_in_picker.ox, m.pos_in_picker.oy, int(m.pos_in_picker.has_pick_line)]) \
+                                    for m in gpmp.materials ]
             
         else:
             self.gpu_texture = None
@@ -105,7 +106,13 @@ class CachedData:
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
     
-        
+    def get_mat_angle(self, id):
+        if (id < 0) or (id > self.mat_nb-1):
+            return -1
+        if self.use_custom_angles():
+            return self.custom_angles[id]
+        return id*2*pi/self.mat_nb
+
     def use_gpu_texture(self):
         return self.from_palette and self.gpu_texture
 
