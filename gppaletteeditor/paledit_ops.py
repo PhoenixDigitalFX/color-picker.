@@ -28,8 +28,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             if mpos.has_pick_line :
                 mpos.ox = cache.pick_origins[i][0]
                 mpos.oy = cache.pick_origins[i][1]
-
-        pal.materials.foreach_set("custom_angle", cache.custom_angles)
+            mpos.angle = cache.angles[i]
 
     def modal(self, context, event):
         context.area.tag_redraw()  
@@ -71,7 +70,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             self.cached_data.refresh()
             self.init_interaction_areas(context)
             self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
-                              self.settings.interaction_radius, self.cached_data.custom_angles)
+                              self.settings.interaction_radius, self.cached_data.angles)
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             if self.running_interaction:

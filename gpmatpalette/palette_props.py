@@ -1,8 +1,9 @@
-import math
-from this import d
 import bpy,gpu,os
 from bpy.types import PropertyGroup
 from bpy.props import *
+import numpy as np
+import math
+from . palette_maths import get_unset_intervals
 
 class GPMatImage(PropertyGroup):
     name: StringProperty(subtype='FILE_NAME')
@@ -46,10 +47,21 @@ class GPMatPosInPicker(PropertyGroup):
     ox : FloatProperty(default=0)
     oy : FloatProperty(default=0)
     has_pick_line: BoolProperty(default=False)
+    angle: FloatProperty(subtype="ANGLE", default=-1)
+    is_angle_movable: BoolProperty(default=True)
+
+    def set_origin(self, origin, auto=False):
+        self.ox = origin[0]
+        self.oy = origin[1]
+        self.has_pick_line = not auto
+    
+    def get_origin(self, with_bool = False):
+        if with_bool:
+            return [self.ox, self.oy, self.has_pick_line]
+        return [self.ox, self.oy]
 
 class GPMatItem(PropertyGroup):
     name: StringProperty()
-    custom_angle: FloatProperty(subtype='ANGLE', default=-1)
     pos_in_picker: PointerProperty(type=GPMatPosInPicker)
     image: PointerProperty(type=GPMatImage)
     layer: StringProperty()
@@ -60,7 +72,6 @@ class GPMatItem(PropertyGroup):
     
     def has_pick_line(self):
         return self.pos_in_picker.has_pick_line
-
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
     name: StringProperty(default="unnamed")
@@ -69,18 +80,20 @@ class GPMatPalette(PropertyGroup):
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
 
-    # Safety check to use custom angles
-    # all materials should have one, and the angles should be in increasing order
-    def hasCustomAngles(self):
-        a = 0
-        for m in self.materials:
-            if (m.custom_angle < a) or (m.custom_angle > 2*math.pi):
-                return False
-            a = m.custom_angle
-        return True        
-    
-    def hasPickLines(self):
-        return any([m.has_pick_line() for m in self.materials])
+    def get_sorted_angles(self):
+        # TODO : actually sort the angles
+        return [(m.pos_in_picker.angle, i) for i,m in enumerate(self.materials)]
+
+    def autocomp_positions(self):
+        sorted_angles = self.get_sorted_angles()
+        angles_to_set = get_unset_intervals(sorted_angles)
+        for (a, b, ids) in angles_to_set:
+            b_ = b
+            if a > b:
+                b_ += 2*math.pi
+            angles = np.linspace(a,b_,len(ids)+2)[1:-1]
+            for i,mat_id in enumerate(ids):
+                self.materials[mat_id].pos_in_picker.angle= angles[i] % (2*math.pi)
         
     def clear(self):
         for m in self.materials:

@@ -1,22 +1,5 @@
 import json, os, bpy, gpu, math
-from posixpath import relpath
-from . palette_props import GPMatPalette
-
-def srgb_to_linearrgb(c):
-    '''from https://blender.stackexchange.com/a/158902/4979'''
-    if   c < 0:       return 0
-    elif c < 0.04045: return c/12.92
-    else:             return ((c+0.055)/1.055)**2.4
-
-def hex2rgba(hex, alpha):
-    '''from https://blender.stackexchange.com/a/158902/4979'''
-    h = hex
-    if type(h) is str:
-        h = int(h, 16)
-    r = (h & 0xff0000) >> 16
-    g = (h & 0x00ff00) >> 8
-    b = (h & 0x0000ff)
-    return tuple([srgb_to_linearrgb(c/0xff) for c in (r,g,b)] + [alpha])
+from . palette_maths import hex2rgba
 
 def upload_material(name, mdat):
     # Get material
@@ -72,7 +55,11 @@ def upload_palette(pname, data, fpt, palette):
                 while rad < 0:
                     rad += 2*math.pi
                 return rad
-            gpmatit.custom_angle = posdeg2rad(mat_data["position"])
+            gpmatit.pos_in_picker.angle = posdeg2rad(mat_data["position"])
+            gpmatit.pos_in_picker.is_angle_movable = False
+
+        if "origin" in mat_data.keys():
+            gpmatit.pos_in_picker.set_origin(mat_data["origin"])
         
         if hasImage and ("image" in mat_data.keys()):
             already_exists = (gpmatit.image.path == mat_data["image"])
@@ -84,7 +71,8 @@ def upload_palette(pname, data, fpt, palette):
     if len(palette.materials) == 0:
         print("No materials in palette. Aborting upload")
         return None
-    
+
+    palette.autocomp_positions()   
     palette.name = pname
     palette.source_path = fpt
 
@@ -161,8 +149,10 @@ def get_palettes_content():
         for mname, mdata in pdata.materials.items(): 
             mat_dct[mname] = get_material_data(dat_mats[mname])
 
-            if mdata.custom_angle >= 0:
-                mat_dct[mname]["position"] = mdata.custom_angle*180/math.pi
+            mat_dct[mname]["position"] = mdata.pos_in_picker.angle*180/math.pi
+
+            if not mdata.pos_in_picker.has_pick_line:
+                mat_dct[mname]["origin"] = mdata.pos_in_picker.get_origin()
 
             if not mdata.image.isempty():
                 mat_dct[mname]["image"] = os.path.basename(mdata.image.path)

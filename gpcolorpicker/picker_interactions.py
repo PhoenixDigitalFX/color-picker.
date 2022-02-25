@@ -10,7 +10,8 @@ def get_mouse_arg(event, region_dim, origin):
     
     return atan2(mouse_local[1], mouse_local[0]) % (2*pi)
 
-def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, custom_angles = []):
+def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, mat_angles):
+    # TODO : adapt this to deal with unsorted angles list
     if nmt < 1:
         return -1
 
@@ -26,18 +27,13 @@ def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, cust
         return 0    
 
     dt = atan2(mouse_local[1], mouse_local[0]) % (2*pi)
-    if len(custom_angles) == 0:
-        return int(floor((dt*nmt/pi + 1)/2)) % (nmt)
-        
-    # Custom angles
-    th = custom_angles
 
     # specific case of i = 0
-    alpha = 0.5*(th[0] + th[nmt-1]-2*pi)        
+    alpha = 0.5*(mat_angles[0] + mat_angles[nmt-1]-2*pi)        
     if (alpha < 0):
         alpha += 2*pi
 
-    beta = 0.5*(th[0] + th[1])
+    beta = 0.5*(mat_angles[0] + mat_angles[1])
 
     dt_pos = dt
     if (dt_pos < 0):
@@ -52,8 +48,8 @@ def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, cust
     # general case : i > 0 and i < mat_nb - 1
     i = 1
     while( i < nmt - 1 ):
-        beta = 2*dt-th[i]
-        if( (beta >= th[i-1]) and (beta <= th[i+1])):
+        beta = 2*dt-mat_angles[i]
+        if( (beta >= mat_angles[i-1]) and (beta <= mat_angles[i+1])):
             return i
         i += 1
     # case i = mat_nb-1 is handled by default
@@ -65,9 +61,7 @@ class CachedData:
         self.refresh()        
 
     def refresh(self):
-        ob = bpy.context.active_object      
-        self.custom_angles = []    
-        self.pick_origins = []  
+        ob = bpy.context.active_object   
 
         if self.from_palette:
             gpmp = bpy.context.scene.gpmatpalettes.active()
@@ -84,12 +78,9 @@ class CachedData:
             else:        
                 self.mat_active = -1
 
-            if gpmp.hasCustomAngles():
-                self.custom_angles = [ m.custom_angle for m in gpmp.materials ]
-            
-            if gpmp.hasPickLines():
-                self.pick_origins = [ np.asarray([m.pos_in_picker.ox, m.pos_in_picker.oy, int(m.pos_in_picker.has_pick_line)]) \
-                                    for m in gpmp.materials ]
+            self.angles = [ m.pos_in_picker.angle for m in gpmp.materials ]
+            self.pick_origins = [ np.asarray(m.pos_in_picker.get_origin(True))\
+                                     for m in gpmp.materials]           
             
         else:
             self.gpu_texture = None
@@ -100,24 +91,13 @@ class CachedData:
                                         if (m.material) and (m.material.is_grease_pencil) ]       
             self.mat_nb = len(self.materials)
             self.mat_active = ob.active_material_index
+            self.angles = np.linspace(0,2*pi,self.mat_nb+1)[:-1]  
+            self.pick_origins= self.mat_nb*[np.asarray([0,0,0])]
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
-    
-    def get_mat_angle(self, id):
-        if (id < 0) or (id > self.mat_nb-1):
-            return -1
-        if self.use_custom_angles():
-            return self.custom_angles[id]
-        return id*2*pi/self.mat_nb
 
     def use_gpu_texture(self):
         return self.from_palette and self.gpu_texture
-
-    def use_custom_angles(self):
-        return self.from_palette and self.custom_angles
-
-    def use_pick_lines(self):
-        return self.from_palette and self.pick_origins

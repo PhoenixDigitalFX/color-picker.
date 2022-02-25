@@ -59,13 +59,9 @@ uniform int mat_selected;
 uniform int mat_active;
 uniform vec4 mat_fill_colors[__NMAT__];
 uniform vec4 mat_line_colors[__NMAT__];
-#ifdef __CUSTOM_ANGLES__
 uniform float mat_thetas[__NMAT__];
-#endif
-#ifdef __CUSTOM_LINES__
 uniform vec3 mat_origins[__NMAT__];
 uniform float pickline_width;
-#endif
 uniform float aa_eps;
 in vec2 lpos;
 in vec2 uv;
@@ -122,6 +118,7 @@ bool in_interval(float x, float a, float b){
 void main()
 {                    
     float d = length(lpos);
+    fragColor = vec4(0.);
 
     /*    MAIN CIRCLE    */
 #ifdef __DRAW_MAIN_CIRCLE__
@@ -132,98 +129,51 @@ void main()
     stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
 
     vec4 fragColor_main = alpha_compose(stroke_color, fill_color_);     
-#else
-    vec4 fragColor_main = vec4(0.);
+    fragColor = alpha_compose(fragColor_main, fragColor);
 #endif
 
     /*    MATERIALS CIRCLES    */
-    /* find optimal circle index for current location */
-    vec2 loc_pos = lpos;
-    float dt = mod(atan(loc_pos.y, loc_pos.x),2*PI);
-    int i = 0;
-#ifdef __CUSTOM_ANGLES__
-    if( dt < 0 ){
-        dt += 2*PI;
-    }
-    if( mat_nb > 1 ){
-        // specific case of i = 0       
-        float alpha = 0.5*(mat_thetas[0] + mat_thetas[mat_nb-1] - 2*PI);
-        alpha = (alpha < 0)?(alpha + 2*PI):alpha;
-        float beta = 0.5*(mat_thetas[0] + mat_thetas[1 % mat_nb]);
+    for(int i = 0; i < mat_nb; ++i){
+        /* get color and if circle is currently selected */
+        vec4 fill_color = mat_fill_colors[i];
+        vec4 line_color = mat_line_colors[i];
+        bool is_selected = (i == mat_selected);
+        bool is_active = (i == mat_active);
 
-        bool in_first_interval = ((alpha < beta) && in_interval(dt, alpha, beta) );
-        in_first_interval = in_first_interval || ((alpha >= beta) && ( (dt <= beta) || (dt >= alpha) ));
+        /* compute the center of circle */
+        float th_i = mat_thetas[i];
+        float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
+        vec2 ci = R*vec2(cos(th_i),sin(th_i));
+        d = length(lpos-ci);     
 
-        if ( !in_first_interval ){
-            // general case : i > 0 and i < mat_nb - 1
-            i = 1;
-            while( i < mat_nb - 1){
-                if( in_interval( 2*dt-mat_thetas[i], mat_thetas[i-1], mat_thetas[i+1]) ){
-                    break;
-                }
-                ++i;
-            }    
-        } // case i = mat_nb-1 is handled by default
-    }
-#else
-    i = int(floor((dt*mat_nb/PI + 1)/2));
-    i = (i == mat_nb) ? 0 : i;
-#endif
+        /* draw circle */
+        float radius = is_selected?selected_radius:mat_radius;
+        fill_color.a *= aa_circle(radius, d, aa_eps);
+        line_color.a *= aa_contour(radius, mat_line_width, d, aa_eps);
 
-    /* get color and if circle is currently selected */
-    vec4 fill_color = mat_fill_colors[i];
-    vec4 line_color = mat_line_colors[i];
-    bool is_selected = (i == mat_selected);
-    bool is_active = (i == mat_active);
-    
-    /* compute the center of circle */
-#ifdef __CUSTOM_ANGLES__
-    float th_i = mat_thetas[i];
-#else
-    float th_i = 2*PI*i/mat_nb;
-#endif
-    float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
-    vec2 ci = R*vec2(cos(th_i),sin(th_i));
-    d = length(lpos-ci);     
-            
-    /* draw circle */
-    float radius = is_selected?selected_radius:mat_radius;
-    fill_color.a *= aa_circle(radius, d, aa_eps);
-    line_color.a *= aa_contour(radius, mat_line_width, d, aa_eps);
+        vec4 fragColor_mat = alpha_compose(line_color, fill_color);
 
-    vec4 fragColor_mat = alpha_compose(line_color, fill_color);
+        if( is_active ){
+            vec4 act_color = active_color;
+            float act_rds = mat_centers_radius + radius + mat_line_width*2.5;
+            vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
+            float act_dst = length(lpos-act_ctr);
+            act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
+            fragColor_mat = alpha_compose(act_color, fragColor_mat);
+        }
 
-    if( is_active ){
-        vec4 act_color = active_color;
-        float act_rds = mat_centers_radius + radius + mat_line_width*2.5;
-        vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
-        float act_dst = length(lpos-act_ctr);
-        act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
-        fragColor_mat = alpha_compose(act_color, fragColor_mat);
-    }
-
-    fragColor = alpha_compose(fragColor_mat, fragColor_main);   
-
-#ifdef __CUSTOM_LINES__
-    /* draw line */
-
-    for(int j = 0; j < mat_nb; ++j){
-        if( mat_origins[j].z == 0 ){
+        /* Pick lines */
+        if( mat_origins[i].z == 0 ){
             return;
         }
-        vec2 s0 = mat_origins[j].xy;
-#ifdef __CUSTOM_ANGLES__
-        float th_j = mat_thetas[j];
-#else
-        float th_j = 2*PI*j/mat_nb;
-#endif
-        vec2 s1 = (R-mat_radius)*vec2(cos(th_j),sin(th_j));
+        vec2 s0 = mat_origins[i].xy;
+        vec2 s1 = (R-mat_radius)*vec2(cos(th_i),sin(th_i));
         vec4 fragColor_line = vec4(0., 1., 0.,1.);
         fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
-        fragColor = alpha_compose(fragColor, fragColor_line);
-    }
-#endif        
+        fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
 
+        fragColor = alpha_compose(fragColor_mat, fragColor);
+    }
 }
 '''
 
@@ -238,16 +188,7 @@ def draw_main_circle(op, cache, settings):
         mc_macro = "__DRAW_MAIN_CIRCLE__"
         fsh = "#define " + mc_macro + "\n" + fsh  
 
-    if cache.use_custom_angles() :
-        csta_macro = "__CUSTOM_ANGLES__"
-        fsh = "#define " + csta_macro + "\n" + fsh        
-
-    if cache.use_pick_lines():
-        csta_macro = "__CUSTOM_LINES__"
-        fsh = "#define " + csta_macro + "\n" + fsh       
-
     fsh = fsh.replace("__NMAT__",str(nmat))
-
     shader, batch = setup_shader(op, settings, fsh)
     
     if not cache.use_gpu_texture():
@@ -260,8 +201,9 @@ def draw_main_circle(op, cache, settings):
     shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
     shader.uniform_float("mat_line_width", settings.mat_line_width)
-    shader.uniform_float("mat_centers_radius", settings.mat_centers_radius); 
+    shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
+    shader.uniform_float("pickline_width", settings.pickline_width)
     
     def set_uniform_vector_float(shader, data_, var_name):
         if(len(data_) == 0):
@@ -279,11 +221,8 @@ def draw_main_circle(op, cache, settings):
     shader.uniform_int("mat_active", cache.mat_active);   
     set_uniform_vector_float(shader, cache.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, cache.mat_line_colors, "mat_line_colors")
-    if cache.use_custom_angles() :
-        set_uniform_vector_float(shader, cache.custom_angles, "mat_thetas") 
-    if cache.use_pick_lines(): 
-        set_uniform_vector_float(shader, cache.pick_origins, "mat_origins")
-        shader.uniform_float("pickline_width", settings.pickline_width)
+    set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
+    set_uniform_vector_float(shader, cache.pick_origins, "mat_origins")
 
     batch.draw(shader)  
 
