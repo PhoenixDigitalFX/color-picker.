@@ -50,15 +50,6 @@ class GPMatPosInPicker(PropertyGroup):
     angle: FloatProperty(subtype="ANGLE", default=-1)
     is_angle_movable: BoolProperty(default=True)
 
-    def set_origin(self, origin, auto=False):
-        self.ox = origin[0]
-        self.oy = origin[1]
-        self.has_pick_line = not auto
-    
-    def get_origin(self, with_bool = False):
-        if with_bool:
-            return [self.ox, self.oy, self.has_pick_line]
-        return [self.ox, self.oy]
 
 class GPMatItem(PropertyGroup):
     name: StringProperty()
@@ -72,6 +63,29 @@ class GPMatItem(PropertyGroup):
     
     def has_pick_line(self):
         return self.pos_in_picker.has_pick_line
+    
+    def get_angle(self, only_if_not_movable = False):
+        if only_if_not_movable and self.pos_in_picker.is_angle_movable:
+            return -1
+        return self.pos_in_picker.angle
+    
+    def set_angle(self, a, auto=False):
+        self.pos_in_picker.angle = a
+        self.pos_in_picker.is_angle_movable = auto
+
+    def set_origin(self, origin, auto=False):
+        pp = self.pos_in_picker
+        pp.ox = origin[0]
+        pp.oy = origin[1]
+        pp.has_pick_line = not auto
+    
+    def get_origin(self, with_bool = False):
+        pp = self.pos_in_picker
+        if with_bool:
+            return [pp.ox, pp.oy, pp.has_pick_line]
+        return [pp.ox, pp.oy]
+
+
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
     name: StringProperty(default="unnamed")
@@ -80,21 +94,49 @@ class GPMatPalette(PropertyGroup):
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
 
-    def get_sorted_angles(self):
-        # TODO : actually sort the angles
-        return [(m.pos_in_picker.angle, i) for i,m in enumerate(self.materials)]
-
     def autocomp_positions(self):
-        sorted_angles = self.get_sorted_angles()
-        angles_to_set = get_unset_intervals(sorted_angles)
+        angles = [(m.get_angle(True), i) for i,m in enumerate(self.materials)]
+        angles_to_set = get_unset_intervals(angles)
         for (a, b, ids) in angles_to_set:
             b_ = b
-            if a > b:
+            if a >= b:
                 b_ += 2*math.pi
             angles = np.linspace(a,b_,len(ids)+2)[1:-1]
             for i,mat_id in enumerate(ids):
-                self.materials[mat_id].pos_in_picker.angle= angles[i] % (2*math.pi)
+                a = angles[i] % (2*math.pi)
+                self.materials[mat_id].set_angle(a, auto=True)
         
+        for m in self.materials:
+            if m.pos_in_picker.has_pick_line:
+                continue
+            a = m.get_angle()
+            m.set_origin([math.cos(a), math.sin(a)], auto=True)
+    
+    def get_index_by_angle(self, angle):
+        ind = 0
+        for m in self.materials:
+            a = m.pos_in_picker.angle
+            if (a >= angle):
+                return ind
+            ind += 1
+        return ind
+    
+    def set_material_by_angle(self, name, angle, auto=False):
+        ind = self.get_index_by_angle(angle)
+        matit = self.set_material(name, ind)
+        matit.set_angle(angle, auto)
+
+    def set_material(self, name, index = -1):
+        old_id = self.count()
+        if name in self.materials:
+            old_id = self.materials.find(name)
+        else:
+            matit = self.materials.add()
+            matit.name = name
+        if (index >= 0) and (index != old_id):
+            self.materials.move(old_id, index)
+        return self.materials[name]
+
     def clear(self):
         for m in self.materials:
             m.clear()

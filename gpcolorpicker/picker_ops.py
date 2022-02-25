@@ -129,9 +129,6 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         if self.cached_data.mat_nb == 0:
             self.report({'WARNING'}, "No material to pick")
 
-        print("cached materials ", [ (mat.name, angle) \
-                                for mat,angle in zip(self.cached_data.materials, self.cached_data.angles)])
-
         # Setting handlers
         mhandle = context.window_manager.modal_handler_add(self)
         if not mhandle:

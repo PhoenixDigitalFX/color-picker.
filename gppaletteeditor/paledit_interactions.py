@@ -72,8 +72,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
 
         R = settings.mat_centers_radius - settings.mat_radius
         c_pos = pol2cart(R, cache.angles[self.id])
-        print(f"Mat {cache.materials[self.id].name} : init origin {self.org}, center {c_pos}")
-    
+
     def init_org(self, cache, settings, i, init_z=True):
         th = cache.angles[i]
         R = settings.mat_centers_radius - settings.mat_radius
@@ -101,6 +100,3 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
     def stop_running(self, op, cache, settings, context):
         self.refresh_position(cache, settings)
         op.write_cache_in_palette(context)
-
-        c_org = cache.pick_origins[self.id]
-        print(f"Mat {cache.materials[self.id].name} : moved origin to {self.org}, cache {c_org}")

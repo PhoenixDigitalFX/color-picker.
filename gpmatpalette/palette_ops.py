@@ -43,23 +43,19 @@ def upload_palette(pname, data, fpt, palette):
         if not upload_material(name, mat_data):
             continue
         
-        if not name in palette.materials:
-            gpmatit = palette.materials.add()
-            gpmatit.name = name
-        else:
-            gpmatit = palette.materials[name]
-
         if "position" in mat_data.keys():
             def posdeg2rad(deg):
                 rad = deg*math.pi/180.
                 while rad < 0:
                     rad += 2*math.pi
                 return rad
-            gpmatit.pos_in_picker.angle = posdeg2rad(mat_data["position"])
-            gpmatit.pos_in_picker.is_angle_movable = False
+            angle = posdeg2rad(mat_data["position"])
+            gpmatit = palette.set_material_by_angle(name, angle)
+        else:
+            gpmatit = palette.set_material(name)
 
         if "origin" in mat_data.keys():
-            gpmatit.pos_in_picker.set_origin(mat_data["origin"])
+            gpmatit.set_origin(mat_data["origin"])
         
         if hasImage and ("image" in mat_data.keys()):
             already_exists = (gpmatit.image.path == mat_data["image"])
@@ -152,7 +148,7 @@ def get_palettes_content():
             mat_dct[mname]["position"] = mdata.pos_in_picker.angle*180/math.pi
 
             if not mdata.pos_in_picker.has_pick_line:
-                mat_dct[mname]["origin"] = mdata.pos_in_picker.get_origin()
+                mat_dct[mname]["origin"] = mdata.get_origin()
 
             if not mdata.image.isempty():
                 mat_dct[mname]["image"] = os.path.basename(mdata.image.path)

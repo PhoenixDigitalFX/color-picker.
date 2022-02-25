@@ -218,6 +218,7 @@ def draw_main_circle(op, cache, settings):
     shader.uniform_int("mat_selected", op.mat_selected);   
     shader.uniform_int("mat_nb", nmat);    
     shader.uniform_int("mat_active", cache.mat_active);   
+    
     set_uniform_vector_float(shader, cache.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, cache.mat_line_colors, "mat_line_colors")
     set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
