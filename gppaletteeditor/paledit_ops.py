@@ -1,9 +1,51 @@
-from calendar import c
 import bpy
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
+
+class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
+    bl_idname = "gpencil.add_mat_palette"
+    bl_label = "GP Add Material to Palette"
+    bl_property = "mat_name"
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.gpmatpalettes.active()
+    
+    mat_name: bpy.props.StringProperty(name="New Material Name")
+
+    def execute(self, context):
+        if (not (self.mat_name in bpy.data.materials)) \
+            or (not (bpy.data.materials[self.mat_name].is_grease_pencil)) :
+            print("Invalid value")
+            return {'CANCELLED'}
+
+        print("Got Material ", self.mat_name)
+        
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        row.prop_search(self, "mat_name", bpy.data, "materials")
+        
+        row = layout.row()
+        gpmp = context.scene.gpmatpalettes.active()
+        if not self.mat_name:
+            row.label(text="No material selected")
+        elif not (self.mat_name in bpy.data.materials):
+            row.label(text="Material not found") 
+        elif not (bpy.data.materials[self.mat_name].is_grease_pencil):
+            row.label(text="Material is not Grease Pencil")
+        elif self.mat_name in gpmp.materials:
+            row.label(text="Already in current palette")           
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
@@ -46,12 +88,12 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':
             if self.running_interaction:
                 self.running_interaction.run(self, cache, stgs, mouse_local)
-            elif itsel and itsel.is_in_selection(mouse_local):
+            elif itsel and itsel.is_in_selection(self, cache, stgs, mouse_local):
                 itsel.display_in_selection(self, cache, stgs, mouse_local)
             else:
                 itsel = None                        
                 for itar in self.interaction_areas:
-                    if (not itsel) and (itar.is_in_selection(mouse_local)):
+                    if (not itsel) and (itar.is_in_selection(self, cache, stgs, mouse_local)):
                         itar.display_in_selection(self, cache, stgs, mouse_local)
                         self.interaction_in_selection = itar
                     else:
@@ -89,6 +131,8 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
     def init_interaction_areas(self, context):
         self.mat_selected = -1
         self.origin_selected = -1
+        self.add_mat_cursor = -1
+
         cache = self.cached_data
         stgs = self.settings
 
@@ -96,6 +140,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         for i in range(self.cached_data.mat_nb):         
             self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
             self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
+        self.interaction_areas.append(AddMaterialPickerInteraction(self, cache, stgs))
 
     def invoke(self, context, event):  
         self.report({'INFO'}, "Entering palette edit mode")
@@ -137,7 +182,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         return {'RUNNING_MODAL'}    
 
 
-classes = [GPCOLORPICKER_OT_paletteEditor]
+classes = [GPCOLORPICKER_OT_paletteEditor, GPCOLORPICKER_OT_addMaterialInPalette]
 
 def register():
     for cls in classes:
