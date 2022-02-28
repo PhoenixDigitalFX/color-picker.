@@ -70,6 +70,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.id = id
         self.overall_rds = settings.mat_centers_radius - settings.mat_radius
+        self.name = cache.materials[self.id].name
         self.refresh_position(cache, settings)
 
     def init_org(self, cache, _, i, init_z=True):

@@ -41,22 +41,26 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         cache = self.cached_data
         stgs = self.settings
 
+        itsel = self.interaction_in_selection
+
         if event.type == 'MOUSEMOVE':
             if self.running_interaction:
                 self.running_interaction.run(self, cache, stgs, mouse_local)
+            elif itsel and itsel.is_in_selection(mouse_local):
+                itsel.display_in_selection(self, cache, stgs, mouse_local)
             else:
+                itsel = None                        
                 for itar in self.interaction_areas:
-                    if itar.is_in_selection(mouse_local):
+                    if (not itsel) and (itar.is_in_selection(mouse_local)):
                         itar.display_in_selection(self, cache, stgs, mouse_local)
+                        self.interaction_in_selection = itar
                     else:
                         itar.display_not_in_selection(self, cache, stgs, mouse_local)
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'PRESS'):
-            for itar in self.interaction_areas:
-                if itar.is_in_selection(mouse_local):
-                    itar.start_running(self, cache, stgs, context)
-                    self.running_interaction = itar
-                    break
+            if itsel:
+                itsel.start_running(self, cache, stgs, context)
+                self.running_interaction = itsel
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'RELEASE'):
             if self.running_interaction:
@@ -67,7 +71,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             if self.running_interaction:
                 self.running_interaction.cancel_run(self, cache, stgs, context)
                 self.running_interaction = None
-
+            self.interaction_in_selection = None
             bpy.context.scene.gpmatpalettes.next()
             self.cached_data.refresh()
             self.init_interaction_areas(context)
@@ -76,7 +80,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             if self.running_interaction:
                 self.running_interaction.cancel_run(self, cache, stgs, context)
                 self.running_interaction = None
-
+            itsel = None
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
         
@@ -119,6 +123,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
         # Init interactions areas
         self.init_interaction_areas(context)
+        self.interaction_in_selection = None
         self.running_interaction = None
 
         # Setting handlers

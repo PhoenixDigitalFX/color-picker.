@@ -63,7 +63,6 @@ def draw_edition_layer(op, context, cache, settings):
     batch.draw(shader)  
 
 
-
 def draw_callback_px(op, context, cache, settings): 
     gpcp.draw_callback_px(op, context, cache, settings)  
 
