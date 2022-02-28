@@ -41,7 +41,7 @@ vec4 draw_circle_mark(){
 
 vec4 draw_cross_mark(){
     vec2 uv = abs(lpos-mark_origin);
-    float l = aa_eps*2;
+    float l = 0.1*mark_radius;
     if(((uv.x < l) && (uv.y < mark_radius)) 
             || ((uv.y < l) && (uv.x < mark_radius))){
         return mark_color;
@@ -75,11 +75,47 @@ def draw_edition_layer(op, context, cache, settings):
 
     batch.draw(shader)  
 
+empty_palette_fsh = '''
+#define PI 3.1415926538
+uniform vec2 empty_origin;
+uniform vec4 empty_color;
+uniform float empty_radius;
+uniform float aa_eps;
+
+in vec2 lpos;
+in vec2 uv;
+out vec4 fragColor;   
+
+float aa_circle(float rds, float dst, float eps){
+    return smoothstep(rds+eps, rds-eps, dst);
+}       
+
+void main()
+{     
+    float d = length(lpos-empty_origin); 
+    fragColor = empty_color;
+    fragColor.a *= aa_circle(empty_radius, d, aa_eps); 
+  
+}
+'''
+def draw_empty_palette(op, context, settings):
+    shader, batch = gpcp.setup_shader(op, settings, empty_palette_fsh)
+
+    shader.uniform_float("empty_origin", np.zeros(2)) 
+    shader.uniform_float("empty_radius", settings.mc_outer_radius) 
+    shader.uniform_float("empty_color", settings.mc_fill_color) 
+    shader.uniform_float("aa_eps", settings.anti_aliasing_eps) 
+
+    batch.draw(shader)  
 
 def draw_callback_px(op, context, cache, settings): 
-    gpcp.draw_callback_px(op, context, cache, settings)  
 
-    gpu.state.blend_set('ALPHA') 
+    if op.empty_palette:
+        gpu.state.blend_set('ALPHA') 
+        draw_empty_palette(op, context, settings)
+    else:
+        gpcp.draw_callback_px(op, context, cache, settings)  
+        gpu.state.blend_set('ALPHA') 
     
     if op.interaction_in_selection and op.interaction_in_selection.has_mark():
         draw_edition_layer(op, context, cache, settings)

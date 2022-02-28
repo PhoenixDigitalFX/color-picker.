@@ -181,6 +181,9 @@ class GPMatPalettes(PropertyGroup):
 
     def count(self):
         return len(self.palettes)
+    
+    def is_empty(self):
+        return (self.count() == 0)
 
     def clear(self):
         for p in self.palettes:

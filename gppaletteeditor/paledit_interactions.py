@@ -5,6 +5,10 @@ from . paledit_maths import is_in_boundaries, pol2cart
 from .. gpcolorpicker import picker_interactions as gpcp
 
 class CachedData(gpcp.CachedData):
+    def __init__(self, from_palette=True, empty_palette=False):
+        if not empty_palette:
+            super().__init__(from_palette)
+
     def refresh(self):
         super().refresh()
 
@@ -115,9 +119,6 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         op.write_cache_in_palette(context)
 
 class AddMaterialPickerInteraction(InteractionArea):
-    bl_idname = "gpencil.add_material_palette"
-    bl_label = "GP Add Material to Palette"
-
     def __init__(self, op, cache, settings):
         self.th = -1
         self.mark = SelectionMark()
@@ -143,3 +144,17 @@ class AddMaterialPickerInteraction(InteractionArea):
     
     def stop_running(self, op, cache, settings, context):
         bpy.ops.gpencil.add_mat_palette('INVOKE_DEFAULT', angle=self.th)
+
+class NewPaletteInteraction(RadialInteractionArea):
+    def __init__(self, op, settings):
+        self.org = np.zeros(2)
+        self.rds = settings.mc_outer_radius
+        self.mark = SelectionMark()
+        self.mark.color = settings.mc_line_color
+        self.mark.color[3] = 0.5
+        self.mark.radius = settings.mc_inner_radius*0.5
+        self.mark.type = 1 # cross-like mark
+        self.mark.position = self.org
+
+    def stop_running(self, op, cache, settings, context):
+        bpy.ops.gpencil.new_palette('INVOKE_DEFAULT')

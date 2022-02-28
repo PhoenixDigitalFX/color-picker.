@@ -5,6 +5,44 @@ from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
 
+class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
+    bl_idname = "gpencil.new_palette"
+    bl_label = "GP New Palette"
+
+    pal_name: bpy.props.StringProperty(name="New Palette Name")
+    is_pal_name_valid: bpy.props.BoolProperty(default=False)
+
+    def execute(self, context):
+        if not self.is_pal_name_valid :
+            return {'CANCELLED'}       
+
+        palettes = context.scene.gpmatpalettes
+        npal = palettes.add()
+        npal.name = self.pal_name
+
+        bpy.ops.ed.undo_push()
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        row.prop(self, "pal_name")
+        
+        row = layout.row()
+        gpmp = context.scene.gpmatpalettes
+        self.is_pal_name_valid = False 
+        if not self.pal_name:
+            row.label(text="Palette name is empty")
+        elif (self.pal_name in gpmp.palettes):
+            row.label(text="Already exists")
+        else:
+            self.is_pal_name_valid = True           
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+    
 class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
     bl_idname = "gpencil.add_mat_palette"
     bl_label = "GP Add Material to Palette"
@@ -20,7 +58,7 @@ class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
     def execute(self, context):
         if not self.is_mat_name_valid :
             return {'CANCELLED'}       
-            
+
         gpmp = context.scene.gpmatpalettes.active()      
         gpmp.set_material_by_angle(self.mat_name, self.angle)  
 
@@ -57,10 +95,6 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
     bl_idname = "gpencil.palette_edit"
     bl_label = "GP Palette Editor"  
 
-    @classmethod
-    def poll(cls, context):
-        return True
-
     def write_cache_in_palette(self, context):
         cache = self.cached_data
         if not cache.from_palette:
@@ -93,7 +127,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             gpmp = context.scene.gpmatpalettes.active()
             if len(gpmp.materials) != len(cache.materials):
                 cache.refresh()
-                self.init_interaction_areas(context)
+                self.init_interaction_areas(context, mouse_local)
 
         if event.type == 'MOUSEMOVE':
             if self.running_interaction:
@@ -124,9 +158,17 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 self.running_interaction.cancel_run(self, cache, stgs, context)
                 self.running_interaction = None
             self.interaction_in_selection = None
-            context.scene.gpmatpalettes.next()
-            cache.refresh()
-            self.init_interaction_areas(context)
+
+            palettes = context.scene.gpmatpalettes
+            if palettes.is_empty():
+                return {'RUNNING_MODAL'}            
+            if not self.empty_palette and (palettes.active_index == palettes.count()-1):
+                self.empty_palette = True
+            else:
+                self.empty_palette = False
+                palettes.next()
+                cache.refresh()
+            self.init_interaction_areas(context, mouse_local)
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             if self.running_interaction:
@@ -138,18 +180,31 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         
         return {'RUNNING_MODAL'}
 
-    def init_interaction_areas(self, context):
+    def init_interaction_areas(self, context, mouse_local=None):
         self.mat_selected = -1
-        self.selection_mark = None
-
-        cache = self.cached_data
         stgs = self.settings
-
         self.interaction_areas = []
-        for i in range(self.cached_data.mat_nb):         
-            self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
-            self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
-        self.interaction_areas.append(AddMaterialPickerInteraction(self, cache, stgs))
+        cache = self.cached_data
+
+        if self.empty_palette:
+            self.interaction_areas.append(NewPaletteInteraction(self, stgs))
+        else:
+            for i in range(self.cached_data.mat_nb):         
+                self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
+                self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
+            self.interaction_areas.append(AddMaterialPickerInteraction(self, cache, stgs))
+        
+        if mouse_local is None:
+            return 
+
+        self.interaction_in_selection = None  
+        itsel = self.interaction_in_selection 
+        for itar in self.interaction_areas:
+            if (not itsel) and (itar.is_in_selection(self, cache, stgs, mouse_local)):
+                itar.display_in_selection(self, cache, stgs, mouse_local)
+                self.interaction_in_selection = itar
+            else:
+                itar.display_not_in_selection(self, cache, stgs, mouse_local)
 
     def invoke(self, context, event):  
         self.report({'INFO'}, "Entering palette edit mode")
@@ -160,20 +215,18 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
         self.settings = GPCOLORPICKER_settings(prefs)  
 
-        gpmp = context.scene.gpmatpalettes.active()
-        if (not self.settings.mat_from_active) and (not gpmp):
-            self.report({'WARNING'}, "No active palette")
-            return {'CANCELLED'}
-
         # Get event related data
         self.invoke_key = event.type
         self.region_dim = np.asarray([context.region.width,context.region.height])
         self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
 
         # Init Cached Data
-        self.cached_data = CachedData(not self.settings.mat_from_active)
-        if self.cached_data.mat_nb == 0:
-            self.report({'WARNING'}, "No material to pick")
+        gpmp = context.scene.gpmatpalettes.active()
+        self.empty_palette = (gpmp is None)
+        if gpmp:
+            self.cached_data = CachedData(not self.settings.mat_from_active)
+        else:
+            self.cached_data = None
 
         # Init interactions areas
         self.init_interaction_areas(context)
@@ -191,7 +244,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         return {'RUNNING_MODAL'}    
 
 
-classes = [GPCOLORPICKER_OT_paletteEditor, GPCOLORPICKER_OT_addMaterialInPalette]
+classes = [GPCOLORPICKER_OT_paletteEditor, GPCOLORPICKER_OT_addMaterialInPalette, GPCOLORPICKER_OT_newPalette]
 
 def register():
     for cls in classes:
