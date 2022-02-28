@@ -178,14 +178,6 @@ class GPMatPalettes(PropertyGroup):
     def next(self):
         self.active_index = (self.active_index + 1) % len(self.palettes)
 
-    def nextVisible(self):
-        if not any([p.visible for p in self.palettes]):
-            return
-
-        self.next()
-        while not self.palettes[self.active_index].visible:
-            self.next()
-
     def count(self):
         return len(self.palettes)
 
