@@ -8,8 +8,8 @@ from .. gpcolorpicker import picker_draw as gpcp
 
 edition_layer_fsh = '''
 #define PI 3.1415926538
-uniform vec2 mat_origin;
-uniform vec4 picker_color;
+uniform vec2 mark_origin;
+uniform vec4 mark_color;
 uniform float mark_radius;
 uniform float aa_eps;
 
@@ -34,30 +34,21 @@ vec4 alpha_compose(vec4 A, vec4 B){
 
 void main()
 {                    
-    float d = length(lpos-mat_origin);  
+    float d = length(lpos-mark_origin);  
 
-    vec4 fragColor_origin= picker_color;
+    vec4 fragColor_origin= mark_color;
     fragColor_origin.a *= aa_circle(mark_radius, d, aa_eps); 
     fragColor = fragColor_origin;  
 }
 '''
 
 def draw_edition_layer(op, context, cache, settings):
-    nmat = cache.mat_nb
-    if nmat <= 0:
-        return    
+    shader, batch = gpcp.setup_shader(op, settings, edition_layer_fsh)
 
-    fsh = edition_layer_fsh
-    fsh = fsh.replace("__NMAT__",str(nmat))
-
-    shader, batch = gpcp.setup_shader(op, settings, fsh)
-
-    R = settings.mat_centers_radius - settings.mat_radius
-    origin = R*cache.pick_origins[op.origin_selected][0:2]
-
-    shader.uniform_float("mat_origin", origin) 
-    shader.uniform_float("mark_radius", settings.mat_line_width) 
-    shader.uniform_float("picker_color", settings.mc_line_color) 
+    mark = op.interaction_in_selection.mark
+    shader.uniform_float("mark_origin", mark.position) 
+    shader.uniform_float("mark_radius", mark.radius) 
+    shader.uniform_float("mark_color", mark.color) 
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps) 
 
     batch.draw(shader)  
@@ -68,7 +59,7 @@ def draw_callback_px(op, context, cache, settings):
 
     gpu.state.blend_set('ALPHA') 
     
-    if op.origin_selected >= 0:
+    if op.interaction_in_selection and op.interaction_in_selection.has_mark():
         draw_edition_layer(op, context, cache, settings)
 
     # Reset blend mode

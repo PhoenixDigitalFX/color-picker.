@@ -19,9 +19,8 @@ class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
 
     def execute(self, context):
         if not self.is_mat_name_valid :
-            return {'CANCELLED'}
-
-        print("Got Material ", self.mat_name," and angle ", self.angle)        
+            return {'CANCELLED'}       
+            
         gpmp = context.scene.gpmatpalettes.active()      
         gpmp.set_material_by_angle(self.mat_name, self.angle)  
 
@@ -88,8 +87,13 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
         cache = self.cached_data
         stgs = self.settings
-
         itsel = self.interaction_in_selection
+
+        if not self.running_interaction:
+            gpmp = context.scene.gpmatpalettes.active()
+            if len(gpmp.materials) != len(cache.materials):
+                cache.refresh()
+                self.init_interaction_areas(context)
 
         if event.type == 'MOUSEMOVE':
             if self.running_interaction:
@@ -114,15 +118,14 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             if self.running_interaction:
                 self.running_interaction.stop_running(self, cache, stgs, context)
                 self.running_interaction = None
-                self.cached_data.refresh()
             
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
             if self.running_interaction:
                 self.running_interaction.cancel_run(self, cache, stgs, context)
                 self.running_interaction = None
             self.interaction_in_selection = None
-            bpy.context.scene.gpmatpalettes.next()
-            self.cached_data.refresh()
+            context.scene.gpmatpalettes.next()
+            cache.refresh()
             self.init_interaction_areas(context)
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
@@ -137,8 +140,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
     def init_interaction_areas(self, context):
         self.mat_selected = -1
-        self.origin_selected = -1
-        self.add_mat_cursor = -1
+        self.selection_mark = None
 
         cache = self.cached_data
         stgs = self.settings

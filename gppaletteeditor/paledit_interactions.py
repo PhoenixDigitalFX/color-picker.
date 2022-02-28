@@ -8,7 +8,13 @@ class CachedData(gpcp.CachedData):
     def refresh(self):
         super().refresh()
 
+class SelectionMark:
+    position: np.zeros(2)
+    color: np.zeros(4)
+    radius: 1
 class InteractionArea():
+    mark=None
+
     def is_in_selection(self, op, cache, settings, pos):
         return False
 
@@ -30,6 +36,9 @@ class InteractionArea():
     def cancel_run(self, op, cache, settings, context):
         pass
 
+    def has_mark(self):
+        return not (self.mark is None)
+
 class RadialInteractionArea(InteractionArea):
     def __init__(self, origin, radius):
         self.org = origin
@@ -47,7 +56,7 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
         self.org = settings.mat_centers_radius*udir
-        self.rds = settings.selected_radius + settings.mat_line_width
+        self.rds = settings.selected_radius
 
     def display_not_in_selection(self, op, cache, settings, pos):
         if (op.mat_selected == self.id):
@@ -68,8 +77,12 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
     
 class MoveMaterialPickerInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
+        self.mark = SelectionMark()
+        self.mark.color = settings.mc_line_color
+        self.mark.radius = settings.mat_line_width
         self.id = id
-        self.overall_rds = settings.mat_centers_radius - settings.mat_radius
+        self.overall_rds = settings.mat_centers_radius 
+        self.overall_rds -= settings.mat_radius + settings.mat_line_width
         self.name = cache.materials[self.id].name
         self.refresh_position(cache, settings)
 
@@ -79,20 +92,14 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
             return np.append(org, 0)
         return org
 
-    def display_not_in_selection(self, op, cache, settings, pos):
-        if (op.origin_selected == self.id):
-            op.origin_selected = -1
-
-    def display_in_selection(self, op, cache, settings, pos):
-        op.origin_selected = self.id
-
     def refresh_position(self, cache, settings):
         if (cache.pick_origins[self.id][2] == 0):
             self.org = self.init_org(cache, settings, self.id, False)
         else:
             o = cache.pick_origins[self.id]
             self.org = o[0:2] * self.overall_rds
-        self.rds = settings.mat_radius*0.5
+        self.rds = settings.mat_radius*0.75
+        self.mark.position = self.org
     
     def run(self, op, cache, settings, pos):     
         cache.pick_origins[self.id][0:2] = pos/self.overall_rds
@@ -111,12 +118,16 @@ class AddMaterialPickerInteraction(InteractionArea):
 
     def __init__(self, op, cache, settings):
         self.th = -1
+        self.mark = SelectionMark()
+        self.mark.color = settings.mc_line_color
+        self.mark.radius = settings.mat_line_width
 
     def is_in_selection(self, op, cache, settings, pos):
         R = settings.mat_centers_radius
-        r = settings.mat_radius
+        r = settings.mat_radius + settings.mat_line_width
         d = np.linalg.norm(pos)
         self.th = atan2(pos[1], pos[0]) % (2*pi)
+        self.mark.position = pol2cart(R, self.th)
 
         if (d > R + r) or (d < R - r) :
             return False
@@ -126,15 +137,6 @@ class AddMaterialPickerInteraction(InteractionArea):
                 return False
 
         return True
-
-    def display_in_selection(self, op, cache, settings, pos):
-        if self.th >= 0:
-            op.add_mat_cursor = self.th
-
-    def display_not_in_selection(self, op, cache, settings, pos):
-        if op.add_mat_cursor >= 0:
-            op.add_mat_cursor = -1
     
     def stop_running(self, op, cache, settings, context):
         bpy.ops.gpencil.add_mat_palette('INVOKE_DEFAULT', angle=self.th)
-    
