@@ -2,7 +2,6 @@ from calendar import c
 import bpy
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
-from .. gpcolorpicker.picker_interactions import *
 from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
 
@@ -72,8 +71,6 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             bpy.context.scene.gpmatpalettes.next()
             self.cached_data.refresh()
             self.init_interaction_areas(context)
-            self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
-                              self.settings.interaction_radius, self.cached_data.angles)
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
             if self.running_interaction:
@@ -87,6 +84,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
     def init_interaction_areas(self, context):
         self.mat_selected = -1
+        self.origin_selected = -1
         cache = self.cached_data
         stgs = self.settings
 
@@ -113,8 +111,6 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         self.invoke_key = event.type
         self.region_dim = np.asarray([context.region.width,context.region.height])
         self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
-
-        self.mat_selected = -1  
 
         # Init Cached Data
         self.cached_data = CachedData(not self.settings.mat_from_active)

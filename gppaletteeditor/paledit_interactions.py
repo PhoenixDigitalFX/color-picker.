@@ -2,6 +2,11 @@ import bpy
 import numpy as np
 from math import pi, cos, sin, atan2
 from . paledit_maths import is_in_boundaries, pol2cart
+from .. gpcolorpicker import picker_interactions as gpcp
+
+class CachedData(gpcp.CachedData):
+    def refresh(self):
+        super().refresh()
 
 class InteractionArea():
     def is_in_selection(self, pos):
@@ -64,35 +69,37 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
 class MoveMaterialPickerInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.id = id
+        self.overall_rds = settings.mat_centers_radius - settings.mat_radius
         self.refresh_position(cache, settings)
 
-        R = settings.mat_centers_radius - settings.mat_radius
-        c_pos = pol2cart(R, cache.angles[self.id])
-
-    def init_org(self, cache, settings, i, init_z=True):
-        th = cache.angles[i]
-        R = settings.mat_centers_radius - settings.mat_radius
-        org = pol2cart(R,th)
+    def init_org(self, cache, _, i, init_z=True):
+        org = pol2cart(self.overall_rds, cache.angles[i])
         if init_z:
             return np.append(org, 0)
         return org
+
+    def display_not_in_selection(self, op, _, __, ____):
+        if (op.origin_selected == self.id):
+            op.origin_selected = -1
+
+    def display_in_selection(self, op, _, __, ___):
+        op.origin_selected = self.id
 
     def refresh_position(self, cache, settings):
         if (cache.pick_origins[self.id][2] == 0):
             self.org = self.init_org(cache, settings, self.id, False)
         else:
             o = cache.pick_origins[self.id]
-            self.org = o[0:2]
+            self.org = o[0:2] * self.overall_rds
         self.rds = settings.mat_radius*0.5
     
-    def is_in_boundaries(self, settings, pos):
-        return len(pos) < settings.mat_centers_radius
-
-    def run(self, op, cache, settings, pos):
-        if self.is_in_boundaries(settings, pos):
-            cache.pick_origins[self.id][0:2] = pos
-            cache.pick_origins[self.id][2] = 1
+    def run(self, op, cache, _, pos):     
+        cache.pick_origins[self.id][0:2] = pos/self.overall_rds
+        cache.pick_origins[self.id][2] = 1
 
     def stop_running(self, op, cache, settings, context):
+        pos = cache.pick_origins[self.id][0:2]
+        if np.linalg.norm(pos) > 1.:
+            cache.pick_origins[self.id] = self.init_org(cache, settings, self.id)/self.overall_rds
         self.refresh_position(cache, settings)
         op.write_cache_in_palette(context)

@@ -11,7 +11,6 @@ def get_mouse_arg(event, region_dim, origin):
     return atan2(mouse_local[1], mouse_local[0]) % (2*pi)
 
 def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, mat_angles):
-    # TODO : adapt this to deal with unsorted angles list
     if nmt < 1:
         return -1
 

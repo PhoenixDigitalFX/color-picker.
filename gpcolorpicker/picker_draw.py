@@ -44,9 +44,9 @@ main_circle_fsh = '''
 #define PI 3.1415926538
 #ifdef __DRAW_MAIN_CIRCLE__
 uniform vec4 circle_color;
-uniform vec4 line_color;
 uniform float inner_radius;
 uniform float outer_radius;
+uniform vec4 line_color;
 uniform float line_width;
 #endif
 uniform float selected_radius;
@@ -62,6 +62,7 @@ uniform vec4 mat_line_colors[__NMAT__];
 uniform float mat_thetas[__NMAT__];
 uniform vec3 mat_origins[__NMAT__];
 uniform float pickline_width;
+uniform vec4 pickline_color;
 uniform float aa_eps;
 in vec2 lpos;
 in vec2 uv;
@@ -164,9 +165,9 @@ void main()
 
         /* Pick lines */
         if( mat_origins[i].z != 0 ){
-            vec2 s0 = mat_origins[i].xy;
+            vec2 s0 = (R-mat_radius)*mat_origins[i].xy;
             vec2 s1 = (R-mat_radius)*vec2(cos(th_i),sin(th_i));
-            vec4 fragColor_line = vec4(0., 1., 0.,1.);
+            vec4 fragColor_line = pickline_color;
             fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
             fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
         }
@@ -175,6 +176,17 @@ void main()
     }
 }
 '''
+
+def set_uniform_vector_float(shader, data_, var_name):
+    if(len(data_) == 0):
+        return
+    data = data_
+    if isinstance(data[0],float):
+        data = [ [x] for x in data_ ]
+    dim = [len(data),len(data[0])]
+    buf = gpu.types.Buffer('FLOAT', dim, data)
+    loc = shader.uniform_from_name(var_name)
+    shader.uniform_vector_float(loc, buf, dim[1], dim[0])
 
 def draw_main_circle(op, cache, settings):     
     nmat = cache.mat_nb
@@ -192,10 +204,11 @@ def draw_main_circle(op, cache, settings):
     
     if not cache.use_gpu_texture():
         shader.uniform_float("circle_color", settings.mc_fill_color)
-        shader.uniform_float("line_color", settings.mc_line_color)
         shader.uniform_float("inner_radius", settings.mc_inner_radius)
         shader.uniform_float("outer_radius", settings.mc_outer_radius)
+        shader.uniform_float("line_color", settings.mc_line_color)
         shader.uniform_float("line_width", settings.mc_line_width)
+
     shader.uniform_float("selected_radius", settings.selected_radius)
     shader.uniform_float("active_color", settings.active_color)
     shader.uniform_float("mat_radius", settings.mat_radius)
@@ -203,18 +216,7 @@ def draw_main_circle(op, cache, settings):
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     shader.uniform_float("pickline_width", settings.pickline_width)
-    
-    def set_uniform_vector_float(shader, data_, var_name):
-        if(len(data_) == 0):
-            return
-        data = data_
-        if isinstance(data[0],float):
-            data = [ [x] for x in data_ ]
-        dim = [len(data),len(data[0])]
-        buf = gpu.types.Buffer('FLOAT', dim, data)
-        loc = shader.uniform_from_name(var_name)
-        shader.uniform_vector_float(loc, buf, dim[1], dim[0])
-
+    shader.uniform_float("pickline_color", settings.mc_line_color)
     shader.uniform_int("mat_selected", op.mat_selected);   
     shader.uniform_int("mat_nb", nmat);    
     shader.uniform_int("mat_active", cache.mat_active);   
