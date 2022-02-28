@@ -79,11 +79,11 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
             return np.append(org, 0)
         return org
 
-    def display_not_in_selection(self, op, _, __, ____):
+    def display_not_in_selection(self, op, cache, settings, pos):
         if (op.origin_selected == self.id):
             op.origin_selected = -1
 
-    def display_in_selection(self, op, _, __, ___):
+    def display_in_selection(self, op, cache, settings, pos):
         op.origin_selected = self.id
 
     def refresh_position(self, cache, settings):
@@ -94,7 +94,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
             self.org = o[0:2] * self.overall_rds
         self.rds = settings.mat_radius*0.5
     
-    def run(self, op, cache, _, pos):     
+    def run(self, op, cache, settings, pos):     
         cache.pick_origins[self.id][0:2] = pos/self.overall_rds
         cache.pick_origins[self.id][2] = 1
 
