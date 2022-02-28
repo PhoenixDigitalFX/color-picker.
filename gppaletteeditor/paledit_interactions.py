@@ -9,9 +9,11 @@ class CachedData(gpcp.CachedData):
         super().refresh()
 
 class SelectionMark:
-    position: np.zeros(2)
-    color: np.zeros(4)
-    radius: 1
+    def __init__(self):
+        self.position = np.zeros(2)
+        self.color = np.zeros(4)
+        self.radius = 1
+        self.type = 0
 class InteractionArea():
     mark=None
 
@@ -121,6 +123,7 @@ class AddMaterialPickerInteraction(InteractionArea):
         self.mark = SelectionMark()
         self.mark.color = settings.mc_line_color
         self.mark.radius = settings.mat_line_width
+        self.mark.type = 1 # cross-like mark
 
     def is_in_selection(self, op, cache, settings, pos):
         R = settings.mat_centers_radius
