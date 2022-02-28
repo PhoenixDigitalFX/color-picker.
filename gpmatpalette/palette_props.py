@@ -140,6 +140,7 @@ class GPMatPalette(PropertyGroup):
             matit.name = name
         if (index >= 0) and (index != old_id):
             self.materials.move(old_id, index)
+        self.autocomp_positions()
         return self.materials[name]
 
     def clear(self):

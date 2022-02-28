@@ -106,6 +106,9 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         op.write_cache_in_palette(context)
 
 class AddMaterialPickerInteraction(InteractionArea):
+    bl_idname = "gpencil.add_material_palette"
+    bl_label = "GP Add Material to Palette"
+
     def __init__(self, op, cache, settings):
         self.th = -1
 
@@ -133,4 +136,5 @@ class AddMaterialPickerInteraction(InteractionArea):
             op.add_mat_cursor = -1
     
     def stop_running(self, op, cache, settings, context):
-        bpy.ops.gpencil.add_mat_palette('INVOKE_DEFAULT')
+        bpy.ops.gpencil.add_mat_palette('INVOKE_DEFAULT', angle=self.th)
+    

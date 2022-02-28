@@ -1,3 +1,4 @@
+from email.policy import default
 import bpy
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
@@ -7,22 +8,24 @@ from . paledit_interactions import *
 class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
     bl_idname = "gpencil.add_mat_palette"
     bl_label = "GP Add Material to Palette"
-    bl_property = "mat_name"
 
     @classmethod
     def poll(cls, context):
         return context.scene.gpmatpalettes.active()
     
+    angle: bpy.props.FloatProperty(subtype='ANGLE', default=0)
     mat_name: bpy.props.StringProperty(name="New Material Name")
+    is_mat_name_valid: bpy.props.BoolProperty(default=False)
 
     def execute(self, context):
-        if (not (self.mat_name in bpy.data.materials)) \
-            or (not (bpy.data.materials[self.mat_name].is_grease_pencil)) :
-            print("Invalid value")
+        if not self.is_mat_name_valid :
             return {'CANCELLED'}
 
-        print("Got Material ", self.mat_name)
-        
+        print("Got Material ", self.mat_name," and angle ", self.angle)        
+        gpmp = context.scene.gpmatpalettes.active()      
+        gpmp.set_material_by_angle(self.mat_name, self.angle)  
+
+        bpy.ops.ed.undo_push()
         return {'FINISHED'}
 
     def draw(self, context):
@@ -33,6 +36,7 @@ class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
         
         row = layout.row()
         gpmp = context.scene.gpmatpalettes.active()
+        self.is_mat_name_valid = False       
         if not self.mat_name:
             row.label(text="No material selected")
         elif not (self.mat_name in bpy.data.materials):
@@ -40,7 +44,9 @@ class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
         elif not (bpy.data.materials[self.mat_name].is_grease_pencil):
             row.label(text="Material is not Grease Pencil")
         elif self.mat_name in gpmp.materials:
-            row.label(text="Already in current palette")           
+            row.label(text="Already in current palette")
+        else:
+            self.is_mat_name_valid = True           
 
     def invoke(self, context, event):
         wm = context.window_manager
@@ -91,7 +97,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             elif itsel and itsel.is_in_selection(self, cache, stgs, mouse_local):
                 itsel.display_in_selection(self, cache, stgs, mouse_local)
             else:
-                itsel = None                        
+                self.interaction_in_selection = None                        
                 for itar in self.interaction_areas:
                     if (not itsel) and (itar.is_in_selection(self, cache, stgs, mouse_local)):
                         itar.display_in_selection(self, cache, stgs, mouse_local)
@@ -108,6 +114,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             if self.running_interaction:
                 self.running_interaction.stop_running(self, cache, stgs, context)
                 self.running_interaction = None
+                self.cached_data.refresh()
             
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
             if self.running_interaction:
