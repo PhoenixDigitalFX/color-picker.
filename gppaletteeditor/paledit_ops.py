@@ -16,9 +16,10 @@ class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
         if not self.is_pal_name_valid :
             return {'CANCELLED'}       
 
-        palettes = context.scene.gpmatpalettes
-        npal = palettes.add()
+        gpmp = context.scene.gpmatpalettes
+        npal = gpmp.palettes.add()
         npal.name = self.pal_name
+        gpmp.active_index = gpmp.count()-1
 
         bpy.ops.ed.undo_push()
         return {'FINISHED'}
@@ -114,7 +115,6 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 matit.set_origin(cache.pick_origins[i][0:2])
 
     def modal(self, context, event):
-        context.area.tag_redraw()  
         # Find mouse position
         mouse_pos = np.asarray([event.mouse_region_x,event.mouse_region_y])
         mouse_local = mouse_pos - 0.5*self.region_dim - self.origin
@@ -125,10 +125,16 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
         if not self.running_interaction:
             gpmp = context.scene.gpmatpalettes.active()
-            if len(gpmp.materials) != len(cache.materials):
+            if gpmp and \
+                ((len(gpmp.materials) != len(cache.materials)) or \
+                    (self.npalettes != context.scene.gpmatpalettes.count())):
+                self.npalettes = context.scene.gpmatpalettes.count()
+                if self.empty_palette:
+                    self.empty_palette = False
                 cache.refresh()
                 self.init_interaction_areas(context, mouse_local)
 
+        context.area.tag_redraw()  
         if event.type == 'MOUSEMOVE':
             if self.running_interaction:
                 self.running_interaction.run(self, cache, stgs, mouse_local)
@@ -221,12 +227,9 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         self.origin = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*self.region_dim  
 
         # Init Cached Data
-        gpmp = context.scene.gpmatpalettes.active()
-        self.empty_palette = (gpmp is None)
-        if gpmp:
-            self.cached_data = CachedData(not self.settings.mat_from_active)
-        else:
-            self.cached_data = None
+        self.npalettes = context.scene.gpmatpalettes.count()
+        self.empty_palette = (self.npalettes == 0)
+        self.cached_data = CachedData()
 
         # Init interactions areas
         self.init_interaction_areas(context)

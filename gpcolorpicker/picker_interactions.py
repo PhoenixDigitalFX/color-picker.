@@ -64,24 +64,34 @@ class CachedData:
 
         if self.from_palette:
             gpmp = bpy.context.scene.gpmatpalettes.active()
-            self.gpu_texture = load_gpu_texture(gpmp.image)
-            self.pal_active = gpmp.name 
-            self.mat_cached = -1
+            if gpmp is None:
+                self.gpu_texture = None
+                self.pal_active = -1
+                self.mat_cached = -1
 
-            self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
-            self.mat_nb = len(self.materials)
-            
-            nmact = ob.active_material.name   
-            if nmact in gpmp.materials:
-                self.mat_active = list(gpmp.materials.keys()).index(nmact)
-            else:        
+                self.materials = [ ]       
+                self.mat_nb = len(self.materials)
                 self.mat_active = -1
+                self.angles = []
+                self.pick_origins= []
+            else:
+                self.gpu_texture = load_gpu_texture(gpmp.image)
+                self.pal_active = gpmp.name 
+                self.mat_cached = -1
 
-            self.angles = [ m.get_angle() for m in gpmp.materials ]
-            self.is_custom_angle = [ not m.is_angle_movable() for m in gpmp.materials ]
-            self.pick_origins = [ np.asarray(m.get_origin(True))\
-                                     for m in gpmp.materials]           
-            
+                self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
+                self.mat_nb = len(self.materials)
+                
+                nmact = ob.active_material.name   
+                if nmact in gpmp.materials:
+                    self.mat_active = list(gpmp.materials.keys()).index(nmact)
+                else:        
+                    self.mat_active = -1
+
+                self.angles = [ m.get_angle() for m in gpmp.materials ]
+                self.is_custom_angle = [ not m.is_angle_movable() for m in gpmp.materials ]
+                self.pick_origins = [ np.asarray(m.get_origin(True))\
+                                        for m in gpmp.materials]           
         else:
             self.gpu_texture = None
             self.pal_active = -1
@@ -100,4 +110,4 @@ class CachedData:
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
 
     def use_gpu_texture(self):
-        return self.from_palette and self.gpu_texture
+        return self.from_palette and not (self.gpu_texture is None)
