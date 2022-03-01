@@ -38,7 +38,7 @@ vec4 draw_cross_mark(){
 vec4 draw_pencil_mark(){
     vec2 uv = lpos-mark_origin;
     // rotation
-    float th = -2*PI/3.;
+    float th = -3*PI/4.;
     float cs = cos(th);
     float sn = sin(th);
     uv = vec2( cs*uv.x - sn*uv.y , sn*uv.x + cs*uv.y );

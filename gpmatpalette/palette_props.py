@@ -4,48 +4,6 @@ from bpy.props import *
 import numpy as np
 import math
 from . palette_maths import get_unset_intervals
-
-class GPMatImage(PropertyGroup):
-    name: StringProperty(subtype='FILE_NAME')
-    path: StringProperty(subtype='FILE_PATH')
-
-    def get(self):
-        if not self.is_registered():
-            if not self.file_exists():
-                return None
-            self.reload()
-        return bpy.data.images[self.name]
-
-    def is_registered(self):
-        return (self.name in bpy.data.images)
-    
-    def file_exists(self):
-        return os.path.isfile(self.path)
-    
-    def load(self, path, path_prefix="", overload_existing=False):
-        self.path = os.path.join(path_prefix, path)
-        self.reload(overload_existing)
-
-    def reload(self, check_existing=False):
-        im = bpy.data.images.load(filepath=self.path, check_existing=check_existing)
-        self.name = im.name
-    
-    def remove(self):
-        if not self.is_registered(): 
-            return
-        bpy.data.images.remove(bpy.data.images[self.name])
-    
-    def isempty(self):
-        return (self.name == "")
-    
-    def edit(self, nimage_name):
-        self.name = nimage_name
-
-    def clear(self):
-        self.remove()
-        self.name = ""
-        self.path = ""
-    
 class GPMatPosInPicker(PropertyGroup):
     ox : FloatProperty(default=0)
     oy : FloatProperty(default=0)
@@ -53,16 +11,20 @@ class GPMatPosInPicker(PropertyGroup):
     angle: FloatProperty(subtype="ANGLE", default=-1)
     is_angle_movable: BoolProperty(default=True)
 
-
 class GPMatItem(PropertyGroup):
     name: StringProperty()
     pos_in_picker: PointerProperty(type=GPMatPosInPicker)
-    image: PointerProperty(type=GPMatImage)
+    image: PointerProperty(type=bpy.types.Image)
     layer: StringProperty()
 
+    def load_image(self, path, path_prefix="", check_existing=False):
+        fullpath = os.path.join(path_prefix, path)
+        self.image = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
+        if self.image:
+            self.image.pack()
+
     def clear(self):
-        # Remove image from database
-        self.image.clear()
+        pass
     
     def has_pick_line(self):
         return self.pos_in_picker.has_pick_line
@@ -91,14 +53,21 @@ class GPMatItem(PropertyGroup):
             return [pp.ox, pp.oy, pp.has_pick_line]
         return [pp.ox, pp.oy]
 
-
+def set_dirty(self, context):
+    self.is_dirty = True
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
     name: StringProperty(default="unnamed")
     materials: CollectionProperty(type=GPMatItem)
-    image: PointerProperty(type=GPMatImage)
+    image: PointerProperty(type=bpy.types.Image, update=set_dirty)
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
+    is_dirty: BoolProperty(default=False)
+
+    def load_image(self, path, path_prefix="", check_existing=False):
+        fullpath = os.path.join(path_prefix, path)
+        self.image = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
+        self.image.pack()
 
     def autocomp_positions(self):
         angles = [(m.get_angle(True), i) for i,m in enumerate(self.materials)]
@@ -150,7 +119,6 @@ class GPMatPalette(PropertyGroup):
         for m in self.materials:
             m.clear()
         self.materials.clear()
-        self.image.clear()
 
     def count(self):
         return len(self.materials)
@@ -169,6 +137,7 @@ class GPMatPalettes(PropertyGroup):
         
     palettes: CollectionProperty(type=GPMatPalette)
     active_index: IntProperty(default=-1, update=update_palette_active_index)
+    is_dirty: BoolProperty(default=False)
 
     def __init__(self):
         self.palettes.clear()
@@ -195,7 +164,15 @@ class GPMatPalettes(PropertyGroup):
         self.palettes.clear()
         self.active_index = -1
 
-classes = [GPMatImage, GPMatPosInPicker, GPMatItem, GPMatPalette, GPMatPalettes]
+    def needs_refresh(self):
+        return (self.is_dirty) or any([p.is_dirty for p in self.palettes])
+    
+    def all_refreshed(self):
+        self.is_dirty = False
+        for p in self.palettes:
+            p.is_dirty = False
+
+classes = [ GPMatPosInPicker, GPMatItem, GPMatPalette, GPMatPalettes]
 
 def register():
     for cls in classes:

@@ -280,11 +280,7 @@ def load_gpu_texture(image):
     if not image:
         return None 
 
-    im = image.get()
-    if not im:
-        return None
-
-    gpu_tex = gpu.texture.from_image(im)
+    gpu_tex = gpu.texture.from_image(image)
     if (gpu_tex.height > 1) or (gpu_tex.width > 1):
         return gpu_tex
         
@@ -296,6 +292,7 @@ def draw_centered_texture(op, context, cache, settings):
         uniform sampler2D tex;  
         uniform float rad_tex;
         uniform float dimension;
+        uniform float aa_eps;
 
         in vec2 lpos;
         in vec2 uv;
@@ -308,12 +305,10 @@ def draw_centered_texture(op, context, cache, settings):
             vec2 uv_tex = dim_ratio * uv + 0.5*(1 - dim_ratio);
             uv_tex.y *= aspect_ratio;
 
-            if((uv_tex.x < 0) || (uv_tex.x > 1) ||  (uv_tex.y < 0) || (uv_tex.y > 1)){
-                fragColor = vec4(0.);
-            }
-            else{
-                fragColor = texture(tex,uv_tex);
-            }  
+            float dst = length(lpos);
+
+            fragColor = texture(tex,uv_tex);
+            fragColor.a *= aa_circle(rad_tex, dst, aa_eps);
         }
     '''
     gpmp = context.scene.gpmatpalettes.active()
@@ -321,7 +316,7 @@ def draw_centered_texture(op, context, cache, settings):
     if (gpmp.name == cache.pal_active) and \
          (sid == cache.mat_cached) :
         tx = cache.gpu_texture
-    elif ( sid == -1 ) or ( gpmp.materials[sid].image.isempty() ):
+    elif ( sid == -1 ) or ( not gpmp.materials[sid].image ):
         tx = load_gpu_texture(gpmp.image)
     else:
         tx = load_gpu_texture(gpmp.materials[sid].image) 
@@ -333,6 +328,7 @@ def draw_centered_texture(op, context, cache, settings):
     shader, batch = setup_shader(op, settings, centered_tex_fsh)
     shader.uniform_sampler("tex",tx)
     shader.uniform_float("rad_tex",rds)    
+    shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
     batch.draw(shader) 
 
     cache.gpu_tex = tx

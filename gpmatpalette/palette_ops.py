@@ -34,10 +34,7 @@ def upload_palette(pname, data, fpt, palette):
         is_relative_path = ("relative" in im_data) and (im_data["relative"])
         if is_relative_path:
             fdir = os.path.dirname(fpt)
-        already_exists = (palette.image.path == im_data["path"])
-        palette.image.load(im_data["path"], fdir, already_exists)
-
-    hasImage = not (palette.image is None)
+        palette.load_image(im_data["path"], fdir, True)
 
     for name,mat_data in data["materials"].items():
         if not upload_material(name, mat_data):
@@ -57,9 +54,9 @@ def upload_palette(pname, data, fpt, palette):
         if "origin" in mat_data.keys():
             gpmatit.set_origin(mat_data["origin"])
         
-        if hasImage and ("image" in mat_data.keys()):
-            already_exists = (gpmatit.image.path == mat_data["image"])
-            gpmatit.image.load(mat_data["image"], fdir, already_exists)
+        if palette.image and ("image" in mat_data.keys()):
+            already_exists = (gpmatit.image.filepath == mat_data["image"])
+            gpmatit.load_image(mat_data["image"], fdir, already_exists)
 
         if "layer" in mat_data.keys():
             gpmatit.layer = mat_data["layer"]
@@ -134,9 +131,9 @@ def get_palettes_content():
         pal_dct[pname] = {}
         dat_mats = {m.name:m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil}
 
-        if not pdata.image.isempty():
+        if pdata.image:
             # todo : deal with relative and absolute path in a better way
-            imname = os.path.basename(pdata.image.path)
+            imname = os.path.basename(pdata.image.filepath)
             relpath = True
             pal_dct[pname]["image"] = {"path":imname, "relative":relpath}
         
@@ -150,8 +147,8 @@ def get_palettes_content():
             if not mdata.pos_in_picker.has_pick_line:
                 mat_dct[mname]["origin"] = mdata.get_origin()
 
-            if not mdata.image.isempty():
-                mat_dct[mname]["image"] = os.path.basename(mdata.image.path)
+            if mdata.image:
+                mat_dct[mname]["image"] = os.path.basename(mdata.image.filepath)
 
             if mdata.layer:
                 mat_dct[mname]["layer"] = mdata.layer

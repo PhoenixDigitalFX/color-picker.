@@ -4,31 +4,28 @@ import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
-
 class GPCOLORPICKER_OT_editImage(bpy.types.Operator):
     bl_idname = "gpencil.edit_palette_image"
     bl_label = "GP Edit Palette Image"
-
-    im_name: bpy.props.StringProperty(name="New Image Name")
-    im_selected: bpy.props.BoolProperty(name="Is Image selected", default=True)
 
     @classmethod
     def poll(cls, context):
         return context.scene.gpmatpalettes.active()
 
     def execute(self, context):
-        gpmp = context.scene.gpmatpalettes.active()      
-        gpmp.image.edit(self.im_name)
-
-        bpy.ops.ed.undo_push()
         return {'FINISHED'}
 
     def draw(self, context):
         layout = self.layout
 
+        pal = context.scene.gpmatpalettes.active()
+
         row = layout.row()
-        row.prop_search(self, "im_name", bpy.data, "images")
-            
+        row.template_search(pal, "image", bpy.data, "images")
+        row.operator("image.new", text="", icon="PLUS")
+        row.operator("image.open", text="", icon="FILEBROWSER") 
+
+        row = layout.row()
 
     def invoke(self, context, event):
         wm = context.window_manager
@@ -49,6 +46,7 @@ class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
         npal = gpmp.palettes.add()
         npal.name = self.pal_name
         gpmp.active_index = gpmp.count()-1
+        gpmp.needs_refresh = True
 
         bpy.ops.ed.undo_push()
         return {'FINISHED'}
@@ -91,6 +89,7 @@ class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
 
         gpmp = context.scene.gpmatpalettes.active()      
         gpmp.set_material_by_angle(self.mat_name, self.angle)  
+        gpmp.is_dirty = True
 
         bpy.ops.ed.undo_push()
         return {'FINISHED'}
@@ -150,21 +149,17 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         cache = self.cached_data
         stgs = self.settings
         itsel = self.interaction_in_selection
+        gpmp = context.scene.gpmatpalettes
 
-        if not self.running_interaction:
-            gpmp = context.scene.gpmatpalettes.active()
-            if gpmp and \
-                ((len(gpmp.materials) != len(cache.materials)) or \
-                    (self.npalettes != context.scene.gpmatpalettes.count())):
-                self.npalettes = context.scene.gpmatpalettes.count()
-                if self.empty_palette:
-                    self.empty_palette = False
-                cache.refresh()
-                self.init_interaction_areas(context, mouse_local)
+        if gpmp.needs_refresh():
+            print("REFRESHING DATA")
+            cache.refresh()
+            self.init_interaction_areas(context, mouse_local)
+            gpmp.all_refreshed()
 
         context.area.tag_redraw()  
-        if event.type == 'MOUSEMOVE':
-            if self.running_interaction:
+        if event.type == 'MOUSEMOVE':                
+            if not self.running_interaction is None:
                 self.running_interaction.on_mouse_move(self, cache, stgs, mouse_local)
             elif itsel and itsel.is_in_selection(self, cache, stgs, mouse_local):
                 itsel.display_in_selection(self, cache, stgs, mouse_local)
@@ -193,14 +188,13 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 self.running_interaction = None
             self.interaction_in_selection = None
 
-            palettes = context.scene.gpmatpalettes
-            if palettes.is_empty():
+            if gpmp.is_empty():
                 return {'RUNNING_MODAL'}            
-            if not self.empty_palette and (palettes.active_index == palettes.count()-1):
+            if not self.empty_palette and (gpmp.active_index == gpmp.count()-1):
                 self.empty_palette = True
             else:
                 self.empty_palette = False
-                palettes.next()
+                gpmp.next()
                 cache.refresh()
             self.init_interaction_areas(context, mouse_local)
 
@@ -225,7 +219,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         if self.empty_palette:
             self.interaction_areas.append(NewPaletteInteraction(self, stgs))
         else:
-            for i in range(self.cached_data.mat_nb):         
+            for i in range(cache.mat_nb):         
                 self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
                 self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
             self.interaction_areas.append(AddMaterialInteraction(self, cache, stgs))

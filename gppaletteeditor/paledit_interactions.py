@@ -162,15 +162,14 @@ class NewPaletteInteraction(RadialInteractionArea):
 
 class EditImageInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings):
-        self.rds = settings.mc_inner_radius
-        overall_rds = settings.mc_outer_radius*0.75
-        self.org = pol2cart(overall_rds, -pi/6.)
+        self.rds = settings.mc_inner_radius*0.5
+        self.org = np.zeros(2)
 
         self.mark = SelectionMark()
         self.mark.position = self.org
-        self.mark.color = settings.mc_line_color
-        self.mark.radius = self.rds*0.25
-        self.mark.type = 2
+        self.mark.color = settings.mc_fill_color
+        self.mark.radius = self.rds*0.1
+        self.mark.type = 0
 
 
     def on_click_release(self, op, cache, settings, context):
