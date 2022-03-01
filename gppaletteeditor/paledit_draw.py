@@ -18,20 +18,6 @@ in vec2 lpos;
 in vec2 uv;
 out vec4 fragColor;   
 
-float aa_circle(float rds, float dst, float eps){
-    return smoothstep(rds+eps, rds-eps, dst);
-}       
-
-vec4 alpha_compose(vec4 A, vec4 B){
-    /* A over B */
-    vec4 color = vec4(0.);
-    color.a = A.a + B.a*(1.- A.a);
-    if( color.a == 0. ){
-        return color;
-    }
-    color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
-    return color;
-} 
 vec4 draw_circle_mark(){
     float d = length(lpos-mark_origin); 
     vec4 fragColor_circle= mark_color;
@@ -84,11 +70,7 @@ uniform float aa_eps;
 
 in vec2 lpos;
 in vec2 uv;
-out vec4 fragColor;   
-
-float aa_circle(float rds, float dst, float eps){
-    return smoothstep(rds+eps, rds-eps, dst);
-}       
+out vec4 fragColor;      
 
 void main()
 {     

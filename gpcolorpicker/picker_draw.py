@@ -5,7 +5,57 @@ import numpy as np
 from math import *
 import os
 
-def setup_shader(op, settings, fragsh):
+common_libsh='''
+    float aa_circle(float rds, float dst, float eps){
+        return smoothstep(rds+eps, rds-eps, dst);
+    }        
+
+    float aa_contour(float rds, float wdt, float dst, float eps){
+        float a0 = aa_circle(rds+wdt/2., dst, eps);
+        float a1 = aa_circle(rds-wdt/2., dst, eps);
+        return a0*(1-a1);
+    }     
+
+    float aa_donut(float rds0, float rds1, float dst, float eps){
+        float a0 = aa_circle(rds0, dst, eps);
+        float a1 = aa_circle(rds1, dst, eps);
+        return a0*(1-a1);
+    }
+
+    float aa_seg( vec2 s0, vec2 s1, vec2 p, float wdt, float eps){
+        float lgt = length(s0-s1);
+        vec2 udr = (s1-s0)/lgt;
+        vec2 lp = p - s0;
+        float prj = dot(lp, udr);
+        float alpha = 1.;
+
+        alpha *= smoothstep(-eps, eps, prj);  
+        alpha *= smoothstep(lgt+eps, lgt-eps, prj);  
+        if( alpha == 0.){
+            return 0.;
+        }
+        
+        float d = length(prj*udr - lp);
+        return alpha*smoothstep(wdt+eps, wdt-eps, d);
+    }
+
+    vec4 alpha_compose(vec4 A, vec4 B){
+        /* A over B */
+        vec4 color = vec4(0.);
+        color.a = A.a + B.a*(1.- A.a);
+        if( color.a == 0. ){
+            return color;
+        }
+        color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
+        return color;
+    }
+
+    bool in_interval(float x, float a, float b){
+        return (x >= a) && (x <= b);
+    }
+'''
+
+def setup_shader(op, settings, fragsh, libsh=common_libsh):
     vsh = '''            
         uniform mat4 modelViewProjectionMatrix;
         uniform float dimension;
@@ -22,7 +72,7 @@ def setup_shader(op, settings, fragsh):
           uv = (pos+1)*0.5;
         }
     '''
-    shader = gpu.types.GPUShader(vsh, fragsh)
+    shader = gpu.types.GPUShader(vsh, fragsh, libcode=libsh)
 
         # Simple screen quad
     dimension = settings.mat_centers_radius + 2*settings.mat_radius
@@ -54,33 +104,6 @@ def draw_pie_circle(op, settings):
         in vec2 lpos;
         in vec2 uv;
         out vec4 fragColor;   
-
-        float aa_circle(float rds, float dst, float eps){
-            return smoothstep(rds+eps, rds-eps, dst);
-        }        
-
-        float aa_contour(float rds, float wdt, float dst, float eps){
-            float a0 = aa_circle(rds+wdt/2., dst, eps);
-            float a1 = aa_circle(rds-wdt/2., dst, eps);
-            return a0*(1-a1);
-        }     
-
-        float aa_donut(float rds0, float rds1, float dst, float eps){
-            float a0 = aa_circle(rds0, dst, eps);
-            float a1 = aa_circle(rds1, dst, eps);
-            return a0*(1-a1);
-        }
-
-        vec4 alpha_compose(vec4 A, vec4 B){
-            /* A over B */
-            vec4 color = vec4(0.);
-            color.a = A.a + B.a*(1.- A.a);
-            if( color.a == 0. ){
-                return color;
-            }
-            color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
-            return color;
-        }
 
         void main()
         {                    
@@ -126,57 +149,10 @@ uniform vec3 mat_origins[__NMAT__];
 uniform float pickline_width;
 uniform vec4 pickline_color;
 uniform float aa_eps;
+
 in vec2 lpos;
 in vec2 uv;
 out vec4 fragColor;            
-
-float aa_circle(float rds, float dst, float eps){
-    return smoothstep(rds+eps, rds-eps, dst);
-}        
-
-float aa_contour(float rds, float wdt, float dst, float eps){
-    float a0 = aa_circle(rds+wdt/2., dst, eps);
-    float a1 = aa_circle(rds-wdt/2., dst, eps);
-    return a0*(1-a1);
-}     
-
-float aa_donut(float rds0, float rds1, float dst, float eps){
-    float a0 = aa_circle(rds0, dst, eps);
-    float a1 = aa_circle(rds1, dst, eps);
-    return a0*(1-a1);
-}
-
-float aa_seg( vec2 s0, vec2 s1, vec2 p, float wdt, float eps){
-    float lgt = length(s0-s1);
-    vec2 udr = (s1-s0)/lgt;
-    vec2 lp = p - s0;
-    float prj = dot(lp, udr);
-    float alpha = 1.;
-
-    alpha *= smoothstep(-eps, eps, prj);  
-    alpha *= smoothstep(lgt+eps, lgt-eps, prj);  
-    if( alpha == 0.){
-        return 0.;
-    }
-    
-    float d = length(prj*udr - lp);
-    return alpha*smoothstep(wdt+eps, wdt-eps, d);
-}
-
-vec4 alpha_compose(vec4 A, vec4 B){
-    /* A over B */
-    vec4 color = vec4(0.);
-    color.a = A.a + B.a*(1.- A.a);
-    if( color.a == 0. ){
-        return color;
-    }
-    color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
-    return color;
-}
-
-bool in_interval(float x, float a, float b){
-    return (x >= a) && (x <= b);
-}
 
 void main()
 {                    
