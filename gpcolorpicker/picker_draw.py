@@ -40,15 +40,77 @@ def setup_shader(op, settings, fragsh):
     shader.uniform_float("origin", op.origin)
     return shader,batch 
 
-main_circle_fsh = '''
+
+def draw_pie_circle(op, settings): 
+    pie_circle_fsh = '''
+        #define PI 3.1415926538
+        uniform vec4 circle_color;
+        uniform float inner_radius;
+        uniform float outer_radius;
+        uniform vec4 line_color;
+        uniform float line_width;
+        uniform float aa_eps;
+
+        in vec2 lpos;
+        in vec2 uv;
+        out vec4 fragColor;   
+
+        float aa_circle(float rds, float dst, float eps){
+            return smoothstep(rds+eps, rds-eps, dst);
+        }        
+
+        float aa_contour(float rds, float wdt, float dst, float eps){
+            float a0 = aa_circle(rds+wdt/2., dst, eps);
+            float a1 = aa_circle(rds-wdt/2., dst, eps);
+            return a0*(1-a1);
+        }     
+
+        float aa_donut(float rds0, float rds1, float dst, float eps){
+            float a0 = aa_circle(rds0, dst, eps);
+            float a1 = aa_circle(rds1, dst, eps);
+            return a0*(1-a1);
+        }
+
+        vec4 alpha_compose(vec4 A, vec4 B){
+            /* A over B */
+            vec4 color = vec4(0.);
+            color.a = A.a + B.a*(1.- A.a);
+            if( color.a == 0. ){
+                return color;
+            }
+            color.rgb = (A.rgb * A.a + B.rgb * B.a * (1 - A.a))/(color.a);
+            return color;
+        }
+
+        void main()
+        {                    
+            float d = length(lpos);
+            fragColor = vec4(0.);
+
+            vec4 fill_color_ = circle_color;
+            vec4 stroke_color = line_color;
+
+            fill_color_.a *= aa_donut(outer_radius, inner_radius, d, aa_eps);
+            stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
+
+            vec4 fragColor_main = alpha_compose(stroke_color, fill_color_);     
+            fragColor = alpha_compose(fragColor_main, fragColor);
+        }
+    '''    
+
+    shader, batch = setup_shader(op, settings, pie_circle_fsh)
+    
+    shader.uniform_float("circle_color", settings.mc_fill_color)
+    shader.uniform_float("inner_radius", settings.mc_inner_radius)
+    shader.uniform_float("outer_radius", settings.mc_outer_radius)
+    shader.uniform_float("line_color", settings.mc_line_color)
+    shader.uniform_float("line_width", settings.mc_line_width)  
+    shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
+    
+    batch.draw(shader) 
+
+materials_fsh = '''
 #define PI 3.1415926538
-#ifdef __DRAW_MAIN_CIRCLE__
-uniform vec4 circle_color;
-uniform float inner_radius;
-uniform float outer_radius;
-uniform vec4 line_color;
-uniform float line_width;
-#endif
 uniform float selected_radius;
 uniform vec4 active_color;
 uniform float mat_radius;
@@ -121,18 +183,6 @@ void main()
     float d = length(lpos);
     fragColor = vec4(0.);
 
-    /*    MAIN CIRCLE    */
-#ifdef __DRAW_MAIN_CIRCLE__
-    vec4 fill_color_ = circle_color;
-    vec4 stroke_color = line_color;
-
-    fill_color_.a *= aa_donut(outer_radius, inner_radius, d, aa_eps);
-    stroke_color.a *= aa_contour(inner_radius, line_width, d, aa_eps);
-
-    vec4 fragColor_main = alpha_compose(stroke_color, fill_color_);     
-    fragColor = alpha_compose(fragColor_main, fragColor);
-#endif
-
     /*    MATERIALS CIRCLES    */
     for(int i = 0; i < mat_nb; ++i){
         /* get color and if circle is currently selected */
@@ -189,26 +239,14 @@ def set_uniform_vector_float(shader, data_, var_name):
     loc = shader.uniform_from_name(var_name)
     shader.uniform_vector_float(loc, buf, dim[1], dim[0])
 
-def draw_main_circle(op, cache, settings):     
+def draw_materials(op, cache, settings):     
     nmat = cache.mat_nb
     if nmat <= 0:
         return    
 
-    fsh = main_circle_fsh
-
-    if not cache.use_gpu_texture():
-        mc_macro = "__DRAW_MAIN_CIRCLE__"
-        fsh = "#define " + mc_macro + "\n" + fsh  
-
+    fsh = materials_fsh
     fsh = fsh.replace("__NMAT__",str(nmat))
     shader, batch = setup_shader(op, settings, fsh)
-    
-    if not cache.use_gpu_texture():
-        shader.uniform_float("circle_color", settings.mc_fill_color)
-        shader.uniform_float("inner_radius", settings.mc_inner_radius)
-        shader.uniform_float("outer_radius", settings.mc_outer_radius)
-        shader.uniform_float("line_color", settings.mc_line_color)
-        shader.uniform_float("line_width", settings.mc_line_width)
 
     shader.uniform_float("selected_radius", settings.selected_radius)
     shader.uniform_float("active_color", settings.active_color)
@@ -333,8 +371,10 @@ def draw_callback_px(op, context, cache, settings):
         
     if cache.use_gpu_texture():
         draw_centered_texture(op, context, cache, settings)
+    else:
+        draw_pie_circle(op, settings)
 
-    draw_main_circle(op, cache, settings)  
+    draw_materials(op, cache, settings)  
 
     if cache.from_palette:
         write_active_palette(op, context, settings)
