@@ -30,17 +30,20 @@ class InteractionArea():
     def display_in_selection(self, op, cache, settings, pos):
         pass
     
-    def start_running(self, op, cache, settings, context):
+    def on_click_press(self, op, cache, settings, context):
         pass
     
-    def run(self, op, cache, settings, pos):
+    def on_mouse_move(self, op, cache, settings, pos):
         pass
 
-    def stop_running(self, op, cache, settings, context):
+    def on_click_release(self, op, cache, settings, context):
         pass
 
     def cancel_run(self, op, cache, settings, context):
         pass
+    
+    def is_running(self):
+        return False
 
     def has_mark(self):
         return not (self.mark is None)
@@ -71,13 +74,13 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
     def display_in_selection(self, op, cache, settings, pos):
         op.mat_selected = self.id
 
-    def run(self, op, cache, settings, pos):
+    def on_mouse_move(self, op, cache, settings, pos):
         nth = atan2(pos[1], pos[0]) % (2*pi)
         
         cache.angles[self.id] = nth
         cache.is_custom_angle[self.id] = True
     
-    def stop_running(self, op, cache, settings, context):
+    def on_click_release(self, op, cache, settings, context):
         self.refresh_position(cache, settings)
         op.write_cache_in_palette(context)
     
@@ -107,12 +110,12 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.rds = settings.mat_radius*0.75
         self.mark.position = self.org
     
-    def run(self, op, cache, settings, pos):     
+    def on_mouse_move(self, op, cache, settings, pos):     
         cache.pick_origins[self.id][0:2] = pos/self.overall_rds
         cache.pick_origins[self.id][2] = 1
         self.refresh_position(cache, settings)
 
-    def stop_running(self, op, cache, settings, context):
+    def on_click_release(self, op, cache, settings, context):
         pos = cache.pick_origins[self.id][0:2]
         if np.linalg.norm(pos) > 1.:
             cache.pick_origins[self.id] = self.init_org(cache, settings, self.id)/self.overall_rds
@@ -124,7 +127,7 @@ class AddMaterialInteraction(InteractionArea):
         self.th = -1
         self.mark = SelectionMark()
         self.mark.color = settings.mc_line_color
-        self.mark.radius = settings.mat_line_width
+        self.mark.radius = settings.mat_radius*0.5
         self.mark.type = 1 # cross-like mark
 
     def is_in_selection(self, op, cache, settings, pos):
@@ -143,7 +146,7 @@ class AddMaterialInteraction(InteractionArea):
 
         return True
     
-    def stop_running(self, op, cache, settings, context):
+    def on_click_release(self, op, cache, settings, context):
         bpy.ops.gpencil.add_mat_palette('INVOKE_DEFAULT', angle=self.th)
 
 class NewPaletteInteraction(RadialInteractionArea):
@@ -157,5 +160,5 @@ class NewPaletteInteraction(RadialInteractionArea):
         self.mark.type = 1 # cross-like mark
         self.mark.position = self.org
 
-    def stop_running(self, op, cache, settings, context):
+    def on_click_release(self, op, cache, settings, context):
         bpy.ops.gpencil.new_palette('INVOKE_DEFAULT')

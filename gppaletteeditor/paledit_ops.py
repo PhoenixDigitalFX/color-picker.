@@ -136,7 +136,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         context.area.tag_redraw()  
         if event.type == 'MOUSEMOVE':
             if self.running_interaction:
-                self.running_interaction.run(self, cache, stgs, mouse_local)
+                self.running_interaction.on_mouse_move(self, cache, stgs, mouse_local)
             elif itsel and itsel.is_in_selection(self, cache, stgs, mouse_local):
                 itsel.display_in_selection(self, cache, stgs, mouse_local)
             else:
@@ -150,12 +150,12 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'PRESS'):
             if itsel:
-                itsel.start_running(self, cache, stgs, context)
+                itsel.on_click_press(self, cache, stgs, context)
                 self.running_interaction = itsel
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'RELEASE'):
             if self.running_interaction:
-                self.running_interaction.stop_running(self, cache, stgs, context)
+                self.running_interaction.on_click_release(self, cache, stgs, context)
                 self.running_interaction = None
             
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
