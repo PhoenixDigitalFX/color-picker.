@@ -110,6 +110,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
     def run(self, op, cache, settings, pos):     
         cache.pick_origins[self.id][0:2] = pos/self.overall_rds
         cache.pick_origins[self.id][2] = 1
+        self.refresh_position(cache, settings)
 
     def stop_running(self, op, cache, settings, context):
         pos = cache.pick_origins[self.id][0:2]
@@ -118,7 +119,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.refresh_position(cache, settings)
         op.write_cache_in_palette(context)
 
-class AddMaterialPickerInteraction(InteractionArea):
+class AddMaterialInteraction(InteractionArea):
     def __init__(self, op, cache, settings):
         self.th = -1
         self.mark = SelectionMark()
@@ -150,7 +151,7 @@ class NewPaletteInteraction(RadialInteractionArea):
         self.org = np.zeros(2)
         self.rds = settings.mc_outer_radius
         self.mark = SelectionMark()
-        self.mark.color = settings.mc_line_color
+        self.mark.color[0:3] = settings.mc_line_color[0:3]
         self.mark.color[3] = 0.5
         self.mark.radius = settings.mc_inner_radius*0.5
         self.mark.type = 1 # cross-like mark

@@ -115,7 +115,6 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 matit.set_origin(cache.pick_origins[i][0:2])
 
     def modal(self, context, event):
-        # Find mouse position
         mouse_pos = np.asarray([event.mouse_region_x,event.mouse_region_y])
         mouse_local = mouse_pos - 0.5*self.region_dim - self.origin
 
@@ -180,9 +179,11 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             if self.running_interaction:
                 self.running_interaction.cancel_run(self, cache, stgs, context)
                 self.running_interaction = None
-            itsel = None
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-            return {'FINISHED'}
+                return {'RUNNING_MODAL'}
+            else:
+                itsel = None
+                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+                return {'FINISHED'}
         
         return {'RUNNING_MODAL'}
 
@@ -198,7 +199,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             for i in range(self.cached_data.mat_nb):         
                 self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
                 self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
-            self.interaction_areas.append(AddMaterialPickerInteraction(self, cache, stgs))
+            self.interaction_areas.append(AddMaterialInteraction(self, cache, stgs))
         
         if mouse_local is None:
             return 
