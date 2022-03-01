@@ -5,6 +5,35 @@ from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
 
+class GPCOLORPICKER_OT_editImage(bpy.types.Operator):
+    bl_idname = "gpencil.edit_palette_image"
+    bl_label = "GP Edit Palette Image"
+
+    im_name: bpy.props.StringProperty(name="New Image Name")
+    im_selected: bpy.props.BoolProperty(name="Is Image selected", default=True)
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.gpmatpalettes.active()
+
+    def execute(self, context):
+        gpmp = context.scene.gpmatpalettes.active()      
+        gpmp.image.edit(self.im_name)
+
+        bpy.ops.ed.undo_push()
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        row.prop_search(self, "im_name", bpy.data, "images")
+            
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
 class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
     bl_idname = "gpencil.new_palette"
     bl_label = "GP New Palette"
@@ -200,7 +229,8 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
                 self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
             self.interaction_areas.append(AddMaterialInteraction(self, cache, stgs))
-        
+            self.interaction_areas.append(EditImageInteraction(self, cache, stgs))
+
         if mouse_local is None:
             return 
 
@@ -248,7 +278,10 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         return {'RUNNING_MODAL'}    
 
 
-classes = [GPCOLORPICKER_OT_paletteEditor, GPCOLORPICKER_OT_addMaterialInPalette, GPCOLORPICKER_OT_newPalette]
+classes = [GPCOLORPICKER_OT_paletteEditor, \
+        GPCOLORPICKER_OT_addMaterialInPalette, \
+        GPCOLORPICKER_OT_newPalette, \
+        GPCOLORPICKER_OT_editImage]
 
 def register():
     for cls in classes:

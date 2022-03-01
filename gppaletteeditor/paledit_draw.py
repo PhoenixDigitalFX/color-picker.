@@ -35,6 +35,29 @@ vec4 draw_cross_mark(){
     return vec4(0.);
 }
 
+vec4 draw_pencil_mark(){
+    vec2 uv = lpos-mark_origin;
+    // rotation
+    float th = -2*PI/3.;
+    float cs = cos(th);
+    float sn = sin(th);
+    uv = vec2( cs*uv.x - sn*uv.y , sn*uv.x + cs*uv.y );
+
+    vec4 col= mark_color;
+
+    float r = mark_radius;
+    float l = 0.3*r;
+    float alpha = 0.;
+
+    alpha += aa_seg( vec2(-r, 0), vec2(l, 0), uv, l, aa_eps );
+    alpha += aa_seg( vec2(r, 0), vec2(l, l*0.9), uv, l*0.1, aa_eps );
+    alpha += aa_seg( vec2(r, 0), vec2(l, -l*0.9), uv, l*0.1, aa_eps );   
+
+    col.a *= clamp(alpha, 0, 1);
+
+    return col;
+}
+
 void main()
 {                    
     if(mark_type == 0){
@@ -42,6 +65,9 @@ void main()
     }
     else if(mark_type == 1){
         fragColor = draw_cross_mark();
+    }
+    else if(mark_type == 2){
+        fragColor = draw_pencil_mark();
     }
     else{
         fragColor = vec4(0.);

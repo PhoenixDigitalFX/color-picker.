@@ -42,9 +42,6 @@ class InteractionArea():
     def cancel_run(self, op, cache, settings, context):
         pass
     
-    def is_running(self):
-        return False
-
     def has_mark(self):
         return not (self.mark is None)
 
@@ -73,7 +70,7 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
 
     def display_in_selection(self, op, cache, settings, pos):
         op.mat_selected = self.id
-
+    
     def on_mouse_move(self, op, cache, settings, pos):
         nth = atan2(pos[1], pos[0]) % (2*pi)
         
@@ -162,3 +159,20 @@ class NewPaletteInteraction(RadialInteractionArea):
 
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.gpencil.new_palette('INVOKE_DEFAULT')
+
+class EditImageInteraction(RadialInteractionArea):
+    def __init__(self, op, cache, settings):
+        self.rds = settings.mc_inner_radius
+        overall_rds = settings.mc_outer_radius*0.75
+        self.org = pol2cart(overall_rds, -pi/6.)
+
+        self.mark = SelectionMark()
+        self.mark.position = self.org
+        self.mark.color = settings.mc_line_color
+        self.mark.radius = self.rds*0.25
+        self.mark.type = 2
+
+
+    def on_click_release(self, op, cache, settings, context):
+        bpy.ops.gpencil.edit_palette_image('INVOKE_DEFAULT')
+

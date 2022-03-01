@@ -37,6 +37,9 @@ class GPMatImage(PropertyGroup):
     
     def isempty(self):
         return (self.name == "")
+    
+    def edit(self, nimage_name):
+        self.name = nimage_name
 
     def clear(self):
         self.remove()
