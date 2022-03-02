@@ -1,3 +1,4 @@
+from email.mime import image
 import bpy,gpu,os
 from bpy.types import PropertyGroup
 from bpy.props import *
@@ -163,6 +164,13 @@ class GPMatPalettes(PropertyGroup):
 
         self.palettes.clear()
         self.active_index = -1
+
+    def add_palette(self, name):
+        npal = self.palettes.add()
+        npal.name = name
+        self.active_index = self.count()-1
+        npal.image = None
+        self.is_dirty = True
 
     def needs_refresh(self):
         return (self.is_dirty) or any([p.is_dirty for p in self.palettes])

@@ -17,15 +17,9 @@ class GPCOLORPICKER_OT_editImage(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-
         pal = context.scene.gpmatpalettes.active()
-
         row = layout.row()
-        row.template_search(pal, "image", bpy.data, "images")
-        row.operator("image.new", text="", icon="PLUS")
-        row.operator("image.open", text="", icon="FILEBROWSER") 
-
-        row = layout.row()
+        row.template_ID(pal, "image", new="image.new", open="image.open")
 
     def invoke(self, context, event):
         wm = context.window_manager
@@ -43,10 +37,7 @@ class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
             return {'CANCELLED'}       
 
         gpmp = context.scene.gpmatpalettes
-        npal = gpmp.palettes.add()
-        npal.name = self.pal_name
-        gpmp.active_index = gpmp.count()-1
-        gpmp.needs_refresh = True
+        gpmp.add_palette(self.pal_name)
 
         bpy.ops.ed.undo_push()
         return {'FINISHED'}
@@ -153,6 +144,8 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
         if gpmp.needs_refresh():
             print("REFRESHING DATA")
+            if gpmp.is_dirty and self.empty_palette:
+                self.empty_palette = False
             cache.refresh()
             self.init_interaction_areas(context, mouse_local)
             gpmp.all_refreshed()
