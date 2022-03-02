@@ -64,6 +64,7 @@ class GPMatPalette(PropertyGroup):
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
     is_dirty: BoolProperty(default=False)
+    pending_material: PointerProperty(type=bpy.types.Material)
 
     def load_image(self, path, path_prefix="", check_existing=False):
         fullpath = os.path.join(path_prefix, path)
@@ -123,6 +124,24 @@ class GPMatPalette(PropertyGroup):
 
     def count(self):
         return len(self.materials)
+    
+    def is_material_available(self, mat):
+        if (not mat) or (not mat.is_grease_pencil):
+            return False
+        return not mat.name in self.materials
+
+    def accept_pending_material(self, angle=-1):
+        if not self.is_material_available(self.pending_material):
+            self.pending_material = None
+            return False
+        mat = self.pending_material
+        if angle >= 0:
+            self.set_material_by_angle(mat.name, angle)
+        else:
+            self.set_material(mat.name)
+        self.pending_material = None
+        self.is_dirty = True
+        return True
 
 def update_palette_active_index(self,context):
     if self.active_index == -1:

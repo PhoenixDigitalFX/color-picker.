@@ -61,38 +61,26 @@ class CachedData:
 
     def refresh(self):
         ob = bpy.context.active_object   
+        gpmp = bpy.context.scene.gpmatpalettes.active()
 
-        if self.from_palette:
-            gpmp = bpy.context.scene.gpmatpalettes.active()
-            if gpmp is None:
-                self.gpu_texture = None
-                self.pal_active = -1
-                self.mat_cached = -1
+        if gpmp and self.from_palette:
+            self.gpu_texture = load_gpu_texture(gpmp.image)
+            self.pal_active = gpmp.name 
+            self.mat_cached = -1
 
-                self.materials = [ ]       
-                self.mat_nb = len(self.materials)
+            self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
+            self.mat_nb = len(self.materials)
+            
+            if ob and ob.active_material and (ob.active_material.name in gpmp.materials):
+                self.mat_active = list(gpmp.materials.keys()).index(ob.active_material.name)
+            else:        
                 self.mat_active = -1
-                self.angles = []
-                self.pick_origins= []
-            else:
-                self.gpu_texture = load_gpu_texture(gpmp.image)
-                self.pal_active = gpmp.name 
-                self.mat_cached = -1
 
-                self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
-                self.mat_nb = len(self.materials)
-                
-                nmact = ob.active_material.name   
-                if nmact in gpmp.materials:
-                    self.mat_active = list(gpmp.materials.keys()).index(nmact)
-                else:        
-                    self.mat_active = -1
-
-                self.angles = [ m.get_angle() for m in gpmp.materials ]
-                self.is_custom_angle = [ not m.is_angle_movable() for m in gpmp.materials ]
-                self.pick_origins = [ np.asarray(m.get_origin(True))\
-                                        for m in gpmp.materials]           
-        else:
+            self.angles = [ m.get_angle() for m in gpmp.materials ]
+            self.is_custom_angle = [ not m.is_angle_movable() for m in gpmp.materials ]
+            self.pick_origins = [ np.asarray(m.get_origin(True))\
+                                    for m in gpmp.materials]           
+        elif ob and not self.from_palette:
             self.gpu_texture = None
             self.pal_active = -1
             self.mat_cached = -1
@@ -103,6 +91,17 @@ class CachedData:
             self.mat_active = ob.active_material_index
             self.angles = np.linspace(0,2*pi,self.mat_nb+1)[:-1]  
             self.pick_origins= self.mat_nb*[np.asarray([0,0,0])]
+        else:
+            # Empty cache
+            self.gpu_texture = None
+            self.pal_active = -1
+            self.mat_cached = -1
+
+            self.materials = [ ]       
+            self.mat_nb = len(self.materials)
+            self.mat_active = -1
+            self.angles = []
+            self.pick_origins= []
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]
