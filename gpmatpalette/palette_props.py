@@ -1,4 +1,5 @@
 from email.mime import image
+from email.policy import default
 import bpy,gpu,os
 from bpy.types import PropertyGroup
 from bpy.props import *
@@ -159,6 +160,8 @@ class GPMatPalettes(PropertyGroup):
     active_index: IntProperty(default=-1, update=update_palette_active_index)
     is_dirty: BoolProperty(default=False)
 
+    mem_dir: IntProperty(default=1)
+
     def __init__(self):
         self.palettes.clear()
         self.active_index = -1
@@ -168,8 +171,10 @@ class GPMatPalettes(PropertyGroup):
             return None
         return self.palettes[self.active_index]
 
-    def next(self):
-        self.active_index = (self.active_index + 1) % len(self.palettes)
+    def next(self, dir=0):
+        if dir != 0:
+            self.mem_dir = dir
+        self.active_index = (self.active_index + self.mem_dir) % len(self.palettes)
 
     def count(self):
         return len(self.palettes)

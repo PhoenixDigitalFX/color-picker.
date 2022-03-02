@@ -75,7 +75,10 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                                              self.settings.interaction_radius, self.cached_data.angles)
         
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
-            bpy.context.scene.gpmatpalettes.next()
+            dir = 1
+            if event.shift:
+                dir = -1
+            bpy.context.scene.gpmatpalettes.next(dir)
             self.cached_data.refresh()
             self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
                                              self.settings.interaction_radius, self.cached_data.angles)

@@ -230,7 +230,7 @@ class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
         if active_ind == npal-1:
             gpmp.active_index = npal-2
         elif active_ind == self.palette_index:
-            gpmp.next()
+            gpmp.next(1)
 
         return {'FINISHED'}
 
@@ -281,7 +281,7 @@ class GPCOLORPICKER_OT_togglePaletteVisibility(bpy.types.Operator):
         pal.visible = not pal.visible
 
         if gpmp.active_index == self.palette_index:
-            gpmp.next()
+            gpmp.next(1)
 
         return {'FINISHED'}
 

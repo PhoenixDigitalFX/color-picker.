@@ -165,14 +165,19 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 self.running_interaction.cancel_run(self, cache, stgs, context)
                 self.running_interaction = None
             self.interaction_in_selection = None
+            dir = 1
+            if event.shift:
+                dir = -1
 
             if gpmp.is_empty():
                 return {'RUNNING_MODAL'}            
-            if not self.empty_palette and (gpmp.active_index == gpmp.count()-1):
+            if not self.empty_palette and \
+                ( (dir and (gpmp.active_index == gpmp.count()-1)) or \
+                   (not dir and gpmp.active_index == 0) ):
                 self.empty_palette = True
             else:
                 self.empty_palette = False
-                gpmp.next()
+                bpy.context.scene.gpmatpalettes.next(dir)
                 cache.refresh()
             self.init_interaction_areas(context, mouse_local)
 
