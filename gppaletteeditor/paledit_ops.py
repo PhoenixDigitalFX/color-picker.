@@ -118,7 +118,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             if (cache.pick_origins[i][2] > 0):
                 matit = pal.materials[mname]
                 matit.set_origin(cache.pick_origins[i][0:2])
-
+    
     def modal(self, context, event):       
         mouse_pos = np.asarray([event.mouse_region_x,event.mouse_region_y])
         mouse_local = mouse_pos - 0.5*self.region_dim - self.origin
@@ -134,6 +134,9 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             cache.refresh()
             self.init_interaction_areas(context, mouse_local)
             gpmp.all_refreshed()
+        elif not self.running_interaction:
+            for itar in self.interaction_areas:
+                itar.refresh(cache, stgs)
 
         context.area.tag_redraw()  
         if event.type == 'MOUSEMOVE':                

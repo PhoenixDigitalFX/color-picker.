@@ -292,7 +292,6 @@ def draw_centered_texture(op, context, cache, settings):
         #define PI 3.1415926538
         uniform sampler2D tex;  
         uniform float rad_tex;
-        uniform float dimension;
         uniform float aa_eps;
 
         in vec2 lpos;
@@ -302,12 +301,17 @@ def draw_centered_texture(op, context, cache, settings):
         void main()
         {          
             float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
-            float dim_ratio = dimension/rad_tex;
-            vec2 uv_tex = dim_ratio * uv + 0.5*(1 - dim_ratio);
-            uv_tex.y *= aspect_ratio;
+            float w = 2*rad_tex;
+            float h = 2*rad_tex;
+            if(aspect_ratio > 1){
+                w *= aspect_ratio;
+            }
+            else{
+                h *= aspect_ratio;
+            }
+            vec2 uv_tex = lpos/(vec2(w,h)) + vec2(0.5);
 
             float dst = length(lpos);
-
             fragColor = texture(tex,uv_tex);
             fragColor.a *= aa_circle(rad_tex, dst, aa_eps);
         }

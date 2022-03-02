@@ -1,3 +1,5 @@
+from asyncio import FastChildWatcher
+from typing import get_origin
 import bpy
 import numpy as np
 from math import pi, cos, sin, atan2
@@ -11,6 +13,7 @@ class CachedData(gpcp.CachedData):
 
     def refresh(self):
         super().refresh()
+   
 
 class SelectionMark:
     def __init__(self):
@@ -20,6 +23,9 @@ class SelectionMark:
         self.type = 0
 class InteractionArea():
     mark=None
+
+    def refresh(self, cache, settings):
+        pass
 
     def is_in_selection(self, op, cache, settings, pos):
         return False
@@ -56,9 +62,9 @@ class RadialInteractionArea(InteractionArea):
 class MoveMaterialAngleInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.id = id
-        self.refresh_position(cache, settings)
+        self.refresh(cache, settings)
 
-    def refresh_position(self, cache, settings):
+    def refresh(self, cache, settings):
         self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
         self.org = settings.mat_centers_radius*udir
@@ -78,19 +84,19 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         cache.is_custom_angle[self.id] = True
     
     def on_click_release(self, op, cache, settings, context):
-        self.refresh_position(cache, settings)
+        self.refresh(cache, settings)
         op.write_cache_in_palette(context)
     
 class MoveMaterialPickerInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.mark = SelectionMark()
-        self.mark.color = settings.mc_line_color
+        self.mark.color = settings.mark_color
         self.mark.radius = settings.mat_line_width
         self.id = id
         self.overall_rds = settings.mat_centers_radius 
-        self.overall_rds -= settings.mat_radius + settings.mat_line_width
+        self.overall_rds -= settings.mat_radius
         self.name = cache.materials[self.id].name
-        self.refresh_position(cache, settings)
+        self.refresh(cache, settings)
 
     def init_org(self, cache, _, i, init_z=True):
         org = pol2cart(self.overall_rds, cache.angles[i])
@@ -98,7 +104,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
             return np.append(org, 0)
         return org
 
-    def refresh_position(self, cache, settings):
+    def refresh(self, cache, settings):
         if (cache.pick_origins[self.id][2] == 0):
             self.org = self.init_org(cache, settings, self.id, False)
         else:
@@ -110,20 +116,20 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
     def on_mouse_move(self, op, cache, settings, pos):     
         cache.pick_origins[self.id][0:2] = pos/self.overall_rds
         cache.pick_origins[self.id][2] = 1
-        self.refresh_position(cache, settings)
+        self.refresh(cache, settings)
 
     def on_click_release(self, op, cache, settings, context):
         pos = cache.pick_origins[self.id][0:2]
         if np.linalg.norm(pos) > 1.:
             cache.pick_origins[self.id] = self.init_org(cache, settings, self.id)/self.overall_rds
-        self.refresh_position(cache, settings)
+        self.refresh(cache, settings)
         op.write_cache_in_palette(context)
 
 class AddMaterialInteraction(InteractionArea):
     def __init__(self, op, cache, settings):
         self.th = -1
         self.mark = SelectionMark()
-        self.mark.color = settings.mc_line_color
+        self.mark.color = settings.mark_color
         self.mark.radius = settings.mat_radius*0.5
         self.mark.type = 1 # cross-like mark
 

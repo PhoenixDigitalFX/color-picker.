@@ -55,13 +55,15 @@ class GPMatItem(PropertyGroup):
             return [pp.ox, pp.oy, pp.has_pick_line]
         return [pp.ox, pp.oy]
 
-def set_dirty(self, context):
+def update_im(self, context):
     self.is_dirty = True
+    if self.image:
+        self.image.pack()
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
     name: StringProperty(default="unnamed")
     materials: CollectionProperty(type=GPMatItem)
-    image: PointerProperty(type=bpy.types.Image, update=set_dirty)
+    image: PointerProperty(type=bpy.types.Image, update=update_im)
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
     is_dirty: BoolProperty(default=False)
@@ -103,6 +105,7 @@ class GPMatPalette(PropertyGroup):
         ind = self.get_index_by_angle(angle)
         matit = self.set_material(name, ind)
         matit.set_angle(angle, auto)
+        return matit
 
     def set_material(self, name, index = -1):
         old_id = self.count()

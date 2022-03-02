@@ -1,3 +1,4 @@
+from email.mime import image
 import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba
 
@@ -39,7 +40,8 @@ def upload_palette(pname, data, fpt, palette):
     for name,mat_data in data["materials"].items():
         if not upload_material(name, mat_data):
             continue
-        
+
+        gpmatit = None        
         if "position" in mat_data.keys():
             def posdeg2rad(deg):
                 rad = deg*math.pi/180.
@@ -50,6 +52,10 @@ def upload_palette(pname, data, fpt, palette):
             gpmatit = palette.set_material_by_angle(name, angle)
         else:
             gpmatit = palette.set_material(name)
+        
+        if not gpmatit:
+            print("Could not import material ", name)
+            continue
 
         if "origin" in mat_data.keys():
             gpmatit.set_origin(mat_data["origin"])
@@ -123,28 +129,43 @@ def get_material_data(mat):
 
     return mdat
 
-def get_palettes_content():
+def export_palettes_content(filepath):
     gpmp = bpy.context.scene.gpmatpalettes.palettes
     pal_dct = {}
+    ext = ".png"
 
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
         dat_mats = {m.name:m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil}
 
         if pdata.image:
-            # todo : deal with relative and absolute path in a better way
+            saved_fpath = pdata.image.filepath
+            saved_format = pdata.image.file_format
+
+            import os.path as pth
+            pdata.image.filepath = pth.join(pth.dirname(filepath), pdata.image.name)
+            pdata.image.file_format = (ext[1:]).upper()
+            if (not pdata.image.filepath.endswith(ext.upper())) \
+                and (not pdata.image.filepath.endswith(ext)):
+                pdata.image.filepath += ext            
+
+            pdata.image.save()     
+
             imname = os.path.basename(pdata.image.filepath)
             relpath = True
-            pal_dct[pname]["image"] = {"path":imname, "relative":relpath}
+            pal_dct[pname]["image"] = {"path":imname, "relative":relpath} 
+
+            pdata.image.filepath = saved_fpath
+            pdata.image.file_format = saved_format
         
         pal_dct[pname]["materials"] = {}
         mat_dct = pal_dct[pname]["materials"]
         for mname, mdata in pdata.materials.items(): 
             mat_dct[mname] = get_material_data(dat_mats[mname])
 
-            mat_dct[mname]["position"] = mdata.pos_in_picker.angle*180/math.pi
+            mat_dct[mname]["position"] = mdata.get_angle(True)*180/math.pi
 
-            if not mdata.pos_in_picker.has_pick_line:
+            if mdata.has_pick_line():
                 mat_dct[mname]["origin"] = mdata.get_origin()
 
             if mdata.image:
@@ -167,7 +188,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         return True
 
     def execute(self, context): 
-        fpt = self.filepath       
+        fpt = self.filepath     
 
         parseJSONFile(fpt)
 
@@ -195,9 +216,10 @@ class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
         return (context.scene.gpmatpalettes.active())
 
     def execute(self, context): 
-        fpt = self.filepath            
-        data = get_palettes_content()
-        # Directly from dictionary
+        fpt = self.filepath         
+
+        data = export_palettes_content(self.filepath)
+        
         with open(fpt, 'w') as outfile:
             json.dump(data, outfile, indent=4)
         return {'FINISHED'}

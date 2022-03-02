@@ -19,8 +19,9 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             col.label(text=item.source_path)
 
             col = layout.column()
-            rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="", emboss=False)
-            rlp.palette_index = index
+            if item.source_path:
+                rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="", emboss=False)
+                rlp.palette_index = index
 
             col = layout.column()
             rmp = col.operator("scene.remove_palette", icon="X", text="", emboss=False)
