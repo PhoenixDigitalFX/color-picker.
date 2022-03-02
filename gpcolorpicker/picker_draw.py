@@ -190,11 +190,12 @@ void main()
         }
 
         /* Pick lines */
-        if( mat_origins[i].z != 0 ){
+        if( (mat_origins[i].z != 0) ){
             float rds = (R-radius);
             vec2 s0 = rds*mat_origins[i].xy;
             vec2 s1 = rds*vec2(cos(th_i),sin(th_i));
             vec4 fragColor_line = pickline_color;
+            fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
             fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
             fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
         }
