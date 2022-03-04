@@ -1,9 +1,6 @@
-import blf, bpy
 import gpu
-from gpu_extras.batch import batch_for_shader
 import numpy as np
 from math import *
-import os
 from .. gpcolorpicker import picker_draw as gpcp
 
 edition_layer_fsh = '''

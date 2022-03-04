@@ -5,7 +5,6 @@ from . picker_settings import GPCOLORPICKER_settings
 from . picker_interactions import get_selected_mat_id, CachedData
 import time
 
-
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
     bl_idname = "gpencil.color_pick"

@@ -1,4 +1,3 @@
-from email.mime import image
 import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba
 

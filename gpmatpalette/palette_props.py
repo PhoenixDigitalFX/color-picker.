@@ -1,5 +1,3 @@
-from email.mime import image
-from email.policy import default
 import bpy,gpu,os
 from bpy.types import PropertyGroup
 from bpy.props import *

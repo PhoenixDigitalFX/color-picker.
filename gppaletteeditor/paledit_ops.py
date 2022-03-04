@@ -1,4 +1,3 @@
-from email.policy import default
 import bpy
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
