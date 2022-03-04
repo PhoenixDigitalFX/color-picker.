@@ -22,6 +22,11 @@ class GPCOLORPICKER_theme(PropertyGroup):
     text_color: FloatVectorProperty(
         subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
 
+class GPCOLORPICKER_autoloadPalette(PropertyGroup):
+    active: BoolProperty(default=True, name="Autoload mode on")
+    path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH")
+
+
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
@@ -34,6 +39,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
                             default="from_palette")
     assign_mat: BoolProperty(name="Assign material on selection", default= True,  \
         description="Check this option if you want the materials you selected to be assigned automatically to the current object. Otherwise, selecting a material will only work if the object already has it.")
+    autoload_mode: PointerProperty(type=GPCOLORPICKER_autoloadPalette, name="Autoload")
 
     def draw(self, context):
         layout = self.layout
@@ -53,6 +59,11 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         mats = scol.box()
         mats.label(text="Materials", icon='MATERIAL')
         mats.row().prop_tabs_enum(self, "mat_mode")
+        if self.mat_mode == "from_palette":
+            row = mats.row()
+            row.prop(self.autoload_mode, "active", text="Autoload palettes", toggle=-1)
+            if self.autoload_mode.active:
+                row.prop(self.autoload_mode, "path", text="")
 
         prv = scol.box()
         prv.label(text="Keymap", icon='NONE')
@@ -63,6 +74,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             row.prop(kmi, 'type', text="")
     
 classes = [ GPCOLORPICKER_theme, \
+            GPCOLORPICKER_autoloadPalette, \
             GPCOLORPICKER_preferences
           ]
 

@@ -66,6 +66,7 @@ class GPMatPalette(PropertyGroup):
     visible: BoolProperty(default=True)
     is_dirty: BoolProperty(default=False)
     pending_material: PointerProperty(type=bpy.types.Material)
+    autoloaded: BoolProperty(default=False)
 
     def load_image(self, path, path_prefix="", check_existing=False):
         fullpath = os.path.join(path_prefix, path)

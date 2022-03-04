@@ -24,7 +24,8 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
                 rlp.palette_index = index
 
             col = layout.column()
-            rmp = col.operator("scene.remove_palette", icon="X", text="", emboss=False)
+            if item.autoloaded:
+                rmp = col.operator("scene.remove_palette", icon="X", text="", emboss=False)
             rmp.palette_index = index
 
             col = layout.column()
