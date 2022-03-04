@@ -143,19 +143,19 @@ def export_palettes_content(filepath):
             saved_format = pdata.image.file_format
 
             import os.path as pth
-            pdata.image.filepath = pth.join(pth.dirname(filepath), pdata.image.name)
-            pdata.image.file_format = (ext[1:]).upper()
-            if (not pdata.image.filepath.endswith(ext.upper())) \
-                and (not pdata.image.filepath.endswith(ext)):
-                pdata.image.filepath += ext            
+            impath = pth.join(pth.dirname(filepath), pdata.image.name)
+            if (not impath.endswith(ext.upper())) \
+                and (not impath.endswith(ext)):
+                impath += ext      
 
-            pdata.image.save()     
+            pdata.image.file_format = (ext[1:]).upper()       
 
-            imname = os.path.basename(pdata.image.filepath)
+            pdata.image.save_render(impath)     
+
+            imname = os.path.basename(impath)
             relpath = True
             pal_dct[pname]["image"] = {"path":imname, "relative":relpath} 
 
-            pdata.image.filepath = saved_fpath
             pdata.image.file_format = saved_format
         
         pal_dct[pname]["materials"] = {}
