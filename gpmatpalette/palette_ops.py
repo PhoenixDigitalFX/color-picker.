@@ -209,6 +209,7 @@ class GPCOLORPICKER_OT_autoloadPalette(bpy.types.Operator):
             return {'CANCELLED'}
       
         dirpath = prefs.autoload_mode.path
+        print("DIRPATH ", dirpath)
         if not os.path.isdir(dirpath):
             self.report({'WARNING'}, "Invalid palette path")
             return {'CANCELLED'}

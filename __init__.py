@@ -39,11 +39,24 @@ def update_autocheck_mode(self, context):
         bpy.app.timers.register(reload_autopalette)
     elif not self.autocheck and bpy.app.timers.is_registered(reload_autopalette):
         bpy.app.timers.unregister(reload_autopalette)
+
+def set_default_palette_path():
+    pname = (__package__).split('.')[0]
+    prefs = bpy.context.preferences.addons[pname].preferences  
+    if prefs.autoload_mode.path:
+        return 
+        
+    import os 
+    user_path = bpy.utils.resource_path('USER')
+    palette_path = os.path.join(user_path, "scripts", "GPpalettes")
+    if os.path.isdir(palette_path):
+        prefs.autoload_mode.path = palette_path
+
 class GPCOLORPICKER_autoloadPalette(PropertyGroup):
     active: BoolProperty(default=True, name="Autoload mode on")
-    path: StringProperty(default="/home/amelie.fondevilla/.config/blender/3.0/scripts/GPpalettes/", name="Palettes path", subtype="DIR_PATH")
+    path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH")
     autocheck : BoolProperty(default=False, name="Set automatic updates", update=update_autocheck_mode)
-    timerval: FloatProperty(default=3, name="Timer", subtype='TIME', unit='TIME')
+    timerval: IntProperty(default=120, name="Timer", subtype='TIME', min=30)
 
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
@@ -80,10 +93,15 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         if self.mat_mode == "from_palette":
             row = mats.row()
             row.prop(self.autoload_mode, "active", text="Autoload palettes", toggle=-1)
+
             if self.autoload_mode.active:
                 row.prop(self.autoload_mode, "path", text="")
                 row = mats.row()
-                row.operator("gpencil.autoload_palette", text="Update", icon= "FILE_REFRESH")
+
+                txt_updates = "Update"
+                if self.autoload_mode.autocheck:
+                    txt_updates = ""
+                row.operator("gpencil.autoload_palette", text=txt_updates, icon= "FILE_REFRESH")
                 row.prop(self.autoload_mode, "autocheck")
                 if self.autoload_mode.autocheck:
                     row.prop(self.autoload_mode, "timerval")
@@ -114,10 +132,12 @@ def register():
 
     for cls in classes:
         bpy.utils.register_class(cls) 
-    
+        
     if not bpy.app.timers.is_registered(reload_autopalette):
         bpy.app.timers.register(reload_autopalette)
     
+    set_default_palette_path()
+
 def unregister():        
     if bpy.app.timers.is_registered(reload_autopalette):
         bpy.app.timers.unregister(reload_autopalette)
