@@ -30,8 +30,8 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         min=100, default=460, max=800
     )    
     theme: PointerProperty(type=GPCOLORPICKER_theme)
-    mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_file", "From File", 'Set Materials from JSON file')], \
-                            default="from_file")
+    mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_palette", "From Palette", 'Set Materials GP Palettes')], \
+                            default="from_palette")
     assign_mat: BoolProperty(name="Assign material on selection", default= True,  \
         description="Check this option if you want the materials you selected to be assigned automatically to the current object. Otherwise, selecting a material will only work if the object already has it.")
 
