@@ -1,6 +1,5 @@
 import bpy
 
-
 def register():
     from . palette_props import register as register_props
     register_props()
@@ -10,7 +9,6 @@ def register():
 
     from . palette_panel import register as register_panel
     register_panel()
-
 
 def unregister():        
     from . palette_props import unregister as unregister_props

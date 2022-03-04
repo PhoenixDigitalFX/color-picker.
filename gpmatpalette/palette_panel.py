@@ -10,10 +10,15 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
         # Make sure your code supports all 3 layout types
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             col = layout.column()
-            if item.visible:
-                col.label(text=item.name)
-            else:
-                col.label(text='~' + item.name)
+            decorated_name = item.name
+            
+            if item.autoloaded:
+                decorated_name = '[' + decorated_name + ']'
+
+            if not item.visible:
+                decorated_name = '~' + decorated_name
+            
+            col.label(text=decorated_name)
 
             col = layout.column()
             col.label(text=item.source_path)
@@ -24,9 +29,9 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
                 rlp.palette_index = index
 
             col = layout.column()
-            if item.autoloaded:
+            if not item.autoloaded:
                 rmp = col.operator("scene.remove_palette", icon="X", text="", emboss=False)
-            rmp.palette_index = index
+                rmp.palette_index = index
 
             col = layout.column()
             if item.visible:
@@ -50,7 +55,7 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
         row = layout.row()
         row.label(text="Active palettes")
         row.operator("scene.export_palette", icon="EXPORT", text="")
-        row.operator("gpencil.file_load", icon="FILE_NEW", text="")
+        row.operator("gpencil.palette_load", icon="FILE_NEW", text="")
 
         row = layout.row()
         gpmp = bpy.context.scene.gpmatpalettes

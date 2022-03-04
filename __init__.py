@@ -22,10 +22,28 @@ class GPCOLORPICKER_theme(PropertyGroup):
     text_color: FloatVectorProperty(
         subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
 
+def reload_autopalette():  
+    bpy.ops.gpencil.autoload_palette()  
+
+    pname = (__package__).split('.')[0]
+    prefs = bpy.context.preferences.addons[pname].preferences  
+    if not prefs.autoload_mode.autocheck:
+        return None
+
+    timer = prefs.autoload_mode.timerval
+    print("Auto Update of the palette, next in ", timer, "seconds")
+    return timer
+
+def update_autocheck_mode(self, context):
+    if self.autocheck and not bpy.app.timers.is_registered(reload_autopalette):
+        bpy.app.timers.register(reload_autopalette)
+    elif not self.autocheck and bpy.app.timers.is_registered(reload_autopalette):
+        bpy.app.timers.unregister(reload_autopalette)
 class GPCOLORPICKER_autoloadPalette(PropertyGroup):
     active: BoolProperty(default=True, name="Autoload mode on")
-    path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH")
-
+    path: StringProperty(default="/home/amelie.fondevilla/.config/blender/3.0/scripts/GPpalettes/", name="Palettes path", subtype="DIR_PATH")
+    autocheck : BoolProperty(default=False, name="Set automatic updates", update=update_autocheck_mode)
+    timerval: FloatProperty(default=3, name="Timer", subtype='TIME', unit='TIME')
 
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
@@ -64,6 +82,11 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             row.prop(self.autoload_mode, "active", text="Autoload palettes", toggle=-1)
             if self.autoload_mode.active:
                 row.prop(self.autoload_mode, "path", text="")
+                row = mats.row()
+                row.operator("gpencil.autoload_palette", text="Update", icon= "FILE_REFRESH")
+                row.prop(self.autoload_mode, "autocheck")
+                if self.autoload_mode.autocheck:
+                    row.prop(self.autoload_mode, "timerval")
 
         prv = scol.box()
         prv.label(text="Keymap", icon='NONE')
@@ -78,6 +101,7 @@ classes = [ GPCOLORPICKER_theme, \
             GPCOLORPICKER_preferences
           ]
 
+
 def register():
     from . gpmatpalette import register as register_palette
     register_palette()
@@ -89,10 +113,15 @@ def register():
     register_editor(addon_keymaps)
 
     for cls in classes:
-        bpy.utils.register_class(cls)    
+        bpy.utils.register_class(cls) 
     
-
+    if not bpy.app.timers.is_registered(reload_autopalette):
+        bpy.app.timers.register(reload_autopalette)
+    
 def unregister():        
+    if bpy.app.timers.is_registered(reload_autopalette):
+        bpy.app.timers.unregister(reload_autopalette)
+
     # Remove the hotkey
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)

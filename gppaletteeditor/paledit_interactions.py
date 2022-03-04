@@ -8,11 +8,7 @@ class CachedData(gpcp.CachedData):
     def __init__(self, from_palette=True, empty_palette=False):
         if not empty_palette:
             super().__init__(from_palette)
-
-    def refresh(self):
-        super().refresh()
    
-
 class SelectionMark:
     def __init__(self):
         self.position = np.zeros(2)

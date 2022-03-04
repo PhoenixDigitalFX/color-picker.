@@ -197,6 +197,25 @@ class GPMatPalettes(PropertyGroup):
         self.active_index = self.count()-1
         npal.image = None
         self.is_dirty = True
+    
+    def remove_palette_by_id(self, index):
+        npal = self.count()
+        active_ind = self.active_index
+
+        pal = self.palettes[index]
+        pal.clear()
+        self.palettes.remove(index)
+
+        if active_ind == npal-1:
+            self.active_index = npal-2
+        elif active_ind == index:
+            self.next(1)
+
+    def remove_palette(self, name):
+        ind = self.palettes.find(name)
+        if ind < 0:
+            return        
+        self.remove_palette_by_id(ind)
 
     def needs_refresh(self):
         return (self.is_dirty) or any([p.is_dirty for p in self.palettes])

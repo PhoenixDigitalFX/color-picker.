@@ -76,7 +76,7 @@ def upload_palette(pname, data, fpt, palette):
 
     return palette
 
-def parseJSONFile(json_file, palette_names=()):
+def parseJSONFile(json_file, palette_names=set()):
     if not os.path.isfile(json_file):
         print("Error : {} path not found".format(json_file))
         return {'CANCELLED'}
@@ -94,6 +94,8 @@ def parseJSONFile(json_file, palette_names=()):
 
     gpmatpalettes = bpy.context.scene.gpmatpalettes
     palettes = gpmatpalettes.palettes
+    parsed_palettes = set()
+
     # Parse JSON
     for pname, pdata in data.items():
         if (len(palette_names) > 0) and (not pname in palette_names):
@@ -112,6 +114,20 @@ def parseJSONFile(json_file, palette_names=()):
             print("Nothing found in palette ", pname)
             continue
         gpmatpalettes.active_index = ind
+        parsed_palettes.add(pname)
+    return parsed_palettes
+
+def getJSONfiles(dir, max_rec_level=2, level=0):
+    files = []
+    if level == max_rec_level:
+        return files
+    for f in os.listdir(dir):
+        fpath = os.path.join(dir, f)
+        if os.path.isfile(fpath) and f.endswith((".json", ".JSON")):
+            files.append(fpath)
+        if os.path.isdir(fpath):
+            files += getJSONfiles(fpath, max_rec_level, level+1)
+    return files
 
 variables_notex = ["alignment_mode", "alignment_rotation","color","fill_color","fill_style","flip","ghost", \
             "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
@@ -176,9 +192,48 @@ def export_palettes_content(filepath):
 
 
 ### ----------------- Operator definition
+class GPCOLORPICKER_OT_autoloadPalette(bpy.types.Operator):
+    bl_idname = "gpencil.autoload_palette"
+    bl_label = "Autoload palette"    
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context): 
+        # Get palette dir in user preferences
+        pname = (__package__).split('.')[0]
+        prefs = context.preferences.addons[pname].preferences
+        if prefs is None : 
+            self.report({'WARNING'}, "Could not load user preferences")
+            return {'CANCELLED'}
+      
+        dirpath = prefs.autoload_mode.path
+        if not os.path.isdir(dirpath):
+            self.report({'WARNING'}, "Invalid palette path")
+            return {'CANCELLED'}
+        
+        # Remove previously autoloaded palettes
+        gpmp = context.scene.gpmatpalettes
+        autoloaded_pal = set(pal.name for pal in gpmp.palettes if pal.autoloaded)
+        for pname in autoloaded_pal:
+            gpmp.remove_palette(pname)
+
+        # Load palettes
+        palette_files = getJSONfiles(dirpath)   
+        palette_names = set()
+        for pfile in palette_files:
+            palette_names = palette_names.union(parseJSONFile(pfile))
+                     
+        for pname in palette_names:
+            gpmp.palettes[pname].autoloaded = True 
+
+        return {"FINISHED"}
+
+
 class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
-    bl_idname = "gpencil.file_load"
-    bl_label = "Load File"    
+    bl_idname = "gpencil.palette_load"
+    bl_label = "Load Palette"    
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -204,6 +259,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
 class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
     bl_idname = "scene.export_palette"
     bl_label = "Export Palette"    
@@ -226,6 +282,7 @@ class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
 class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
     bl_idname = "scene.remove_palette"
     bl_label = "Remove GP Palette"
@@ -242,19 +299,9 @@ class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
         if (self.palette_index < 0) or (self.palette_index >= npal):
             return {'CANCELLED'}
 
-        active_ind = gpmp.active_index
-
-        pal = gpmp.palettes[self.palette_index]
-        pal.clear()
-        gpmp.palettes.remove(self.palette_index)
-
-        if active_ind == npal-1:
-            gpmp.active_index = npal-2
-        elif active_ind == self.palette_index:
-            gpmp.next(1)
+        gpmp.remove_palette_by_id(self.palette_index)
 
         return {'FINISHED'}
-
 
 class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
     bl_idname = "scene.reload_palette"
@@ -272,8 +319,7 @@ class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
         if (self.palette_index < 0) or (self.palette_index >= npal):
             return {'CANCELLED'}
 
-        pal = gpmp.palettes[self.palette_index]
-        pal.clear()
+        gpmp.remove_palette_by_id(self.palette_index)
 
         fpath = gpmp.palettes[self.palette_index].source_path
         pname = gpmp.palettes[self.palette_index].name
@@ -306,7 +352,8 @@ class GPCOLORPICKER_OT_togglePaletteVisibility(bpy.types.Operator):
 
         return {'FINISHED'}
 
-classes = [GPCOLORPICKER_OT_getJSONFile, \
+classes = [GPCOLORPICKER_OT_autoloadPalette, \
+            GPCOLORPICKER_OT_getJSONFile, \
             GPCOLORPICKER_OT_exportPalette, \
             GPCOLORPICKER_OT_removePalette, \
             GPCOLORPICKER_OT_reloadPalette, \
