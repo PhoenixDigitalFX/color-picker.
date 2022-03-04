@@ -1,5 +1,3 @@
-from asyncio import FastChildWatcher
-from typing import get_origin
 import bpy
 import numpy as np
 from math import pi, cos, sin, atan2
