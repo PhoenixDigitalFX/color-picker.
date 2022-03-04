@@ -14,7 +14,7 @@ def register(addon_keymaps):
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new(GPCOLORPICKER_OT_wheel.bl_idname, \
                                     type=default_invoke_key, value='PRESS')
-        addon_keymaps.append((km, kmi))
+        addon_keymaps.append((km, kmi, "Invoke Picker"))
 
 def unregister():        
     for cls in reversed(classes):

@@ -78,7 +78,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         fcol = frow.column()
         stgs = fcol.box()
         stgs.label(text="Settings", icon='MODIFIER')
-        stgs.prop(self, "icon_scale")
+        stgs.prop(self, "icon_scale", slider=True)
 
         props = fcol.box()
         props.label(text="Theme", icon='RESTRICT_COLOR_ON')
@@ -92,7 +92,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         mats.row().prop_tabs_enum(self, "mat_mode")
         if self.mat_mode == "from_palette":
             row = mats.row()
-            row.prop(self.autoload_mode, "active", text="Autoload palettes", toggle=-1)
+            row.prop(self.autoload_mode, "active", text="Autoload palettes")
 
             if self.autoload_mode.active:
                 row.prop(self.autoload_mode, "path", text="")
@@ -107,11 +107,13 @@ class GPCOLORPICKER_preferences(AddonPreferences):
                     row.prop(self.autoload_mode, "timerval")
 
         prv = scol.box()
-        prv.label(text="Keymap", icon='NONE')
-        if len(addon_keymaps) > 0:
-            kmi = addon_keymaps[0][1]
+        prv.label(text="Keymap", icon='BLENDER')
+        for kc,kmi,dsc in addon_keymaps:
             row = prv.row()
-            row.label(text="Press Key")
+            row.label(text=dsc)
+            row.prop(kmi, 'ctrl_ui', icon="EVENT_CTRL", text="")
+            row.prop(kmi, 'alt_ui', icon="EVENT_ALT", text="")
+            row.prop(kmi, 'shift_ui', icon="EVENT_SHIFT", text="")
             row.prop(kmi, 'type', text="")
     
 classes = [ GPCOLORPICKER_theme, \
@@ -143,7 +145,7 @@ def unregister():
         bpy.app.timers.unregister(reload_autopalette)
 
     # Remove the hotkey
-    for km, kmi in addon_keymaps:
+    for km, kmi, dsc in addon_keymaps:
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
