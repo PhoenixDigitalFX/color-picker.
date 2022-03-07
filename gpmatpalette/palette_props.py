@@ -124,6 +124,7 @@ class GPMatPalette(PropertyGroup):
         for m in self.materials:
             m.clear()
         self.materials.clear()
+        self.image = None
 
     def count(self):
         return len(self.materials)

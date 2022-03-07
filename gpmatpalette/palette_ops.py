@@ -327,10 +327,10 @@ class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
         if (self.palette_index < 0) or (self.palette_index >= npal):
             return {'CANCELLED'}
 
-        gpmp.remove_palette_by_id(self.palette_index)
-
-        fpath = gpmp.palettes[self.palette_index].source_path
-        pname = gpmp.palettes[self.palette_index].name
+        pal = gpmp.palettes[self.palette_index]
+        pal.clear()
+        fpath = pal.source_path
+        pname = pal.name
 
         parseJSONFile(fpath, palette_names=(pname))
 
