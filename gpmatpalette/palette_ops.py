@@ -317,6 +317,27 @@ class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class GPCOLORPICKER_OT_reloadAllPalettes(bpy.types.Operator):
+    bl_idname = "scene.reload_all_palettes"
+    bl_label = "Reload all GP Palettes"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context): 
+        gpmp = context.scene.gpmatpalettes
+
+        pnames = set(pal.name for pal in gpmp.palettes)
+        fpaths = set(pal.source_path for pal in gpmp.palettes)
+
+        print(f"RELOAD ALL : names {pnames}, paths {fpaths}")
+
+        for fpt in fpaths:
+            parseJSONFile(fpt, palette_names=pnames, clear_existing=True)
+
+        return {'FINISHED'}
+
 class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
     bl_idname = "scene.reload_palette"
     bl_label = "Reload GP Palette"
@@ -369,6 +390,7 @@ classes = [GPCOLORPICKER_OT_autoloadPalette, \
             GPCOLORPICKER_OT_getJSONFile, \
             GPCOLORPICKER_OT_exportPalette, \
             GPCOLORPICKER_OT_removePalette, \
+            GPCOLORPICKER_OT_reloadAllPalettes, \
             GPCOLORPICKER_OT_reloadPalette, \
             GPCOLORPICKER_OT_togglePaletteVisibility]
 
