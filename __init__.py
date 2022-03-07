@@ -80,6 +80,7 @@ type_enum = ['NONE', 'LEFTMOUSE', 'MIDDLEMOUSE', 'RIGHTMOUSE', 'BUTTON4MOUSE', '
     'NDOF_BUTTON_1', 'NDOF_BUTTON_2', 'NDOF_BUTTON_3', 'NDOF_BUTTON_4', 'NDOF_BUTTON_5', 'NDOF_BUTTON_6', 'NDOF_BUTTON_7', 'NDOF_BUTTON_8', 'NDOF_BUTTON_9', 'NDOF_BUTTON_10', 'NDOF_BUTTON_A', 'NDOF_BUTTON_B', 'NDOF_BUTTON_C', \
     'ACTIONZONE_AREA', 'ACTIONZONE_REGION', 'ACTIONZONE_FULLSCREEN', 'XR_ACTION']
 type_dct = [ (n,n,n,i) if n else None for i,n in enumerate(type_enum) ]
+
 class GPCOLORPICKER_PickerKM(PropertyGroup):
     bl_dsc = "Invoke Picker"
     kmi: StringProperty(name="Keymap item name", default="gpencil.color_pick")
@@ -87,6 +88,7 @@ class GPCOLORPICKER_PickerKM(PropertyGroup):
     ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
     shift_mdf: BoolProperty(name="Keymap Shift modifier", default=False, update=update_keymap)
     alt_mdf: BoolProperty(name="Keymap Alt modifier", default=False, update=update_keymap)
+
 class GPCOLORPICKER_EditPaletteKM(PropertyGroup):
     bl_dsc = "Invoke Palette Editor"
     kmi: StringProperty(name="Keymap item name", default="gpencil.palette_edit")
@@ -94,6 +96,7 @@ class GPCOLORPICKER_EditPaletteKM(PropertyGroup):
     ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
     shift_mdf: BoolProperty(name="Keymap Shift modifier", default=True, update=update_keymap)
     alt_mdf: BoolProperty(name="Keymap Alt modifier", default=True, update=update_keymap)
+    
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
