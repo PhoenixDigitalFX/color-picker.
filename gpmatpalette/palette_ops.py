@@ -159,16 +159,18 @@ def export_palettes_content(filepath):
     gpmp = bpy.context.scene.gpmatpalettes.palettes
     pal_dct = {}
     ext = ".png"
+    tmstp = str(dt.datetime.now())
+    for pal in gpmp:
+        pal.timestamp = tmstp
 
     pal_dct["__meta__"] = {}
-    pal_dct["__meta__"]["timestamp"] = str(dt.datetime.now())
+    pal_dct["__meta__"]["timestamp"] = tmstp
 
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
         dat_mats = {m.name:m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil}
 
         if pdata.image:
-            saved_fpath = pdata.image.filepath
             saved_format = pdata.image.file_format
 
             import os.path as pth

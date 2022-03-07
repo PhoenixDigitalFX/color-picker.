@@ -23,8 +23,19 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             col = layout.column()
             col.label(text=item.source_path)
 
+            import json
+            def needs_reload():
+                if not item.timestamp:
+                    return True
+                pth = item.source_path
+                ifl = open(pth, 'r')
+                data = json.load(ifl)
+                ifl.close()
+                tmstp = data["__meta__"]["timestamp"]
+                return not item.compare_timestamp(tmstp)
+        
             col = layout.column()
-            if item.source_path:
+            if item.source_path and needs_reload():
                 rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="", emboss=False)
                 rlp.palette_index = index
 
