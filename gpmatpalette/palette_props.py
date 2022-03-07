@@ -67,6 +67,7 @@ class GPMatPalette(PropertyGroup):
     is_dirty: BoolProperty(default=False)
     pending_material: PointerProperty(type=bpy.types.Material)
     autoloaded: BoolProperty(default=False)
+    timestamp: StringProperty(default="")
 
     def load_image(self, path, path_prefix="", check_existing=False):
         fullpath = os.path.join(path_prefix, path)
@@ -133,6 +134,9 @@ class GPMatPalette(PropertyGroup):
         if (not mat) or (not mat.is_grease_pencil):
             return False
         return not mat.name in self.materials
+    
+    def compare_timestamp(self, other_tmstp):
+        return (self.timestamp == other_tmstp)
 
     def accept_pending_material(self, angle=-1):
         if not self.is_material_available(self.pending_material):

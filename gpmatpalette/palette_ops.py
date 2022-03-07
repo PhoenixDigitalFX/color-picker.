@@ -97,6 +97,10 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
     palettes = gpmatpalettes.palettes
     parsed_palettes = set()
 
+    timestamp = ""
+    if "__meta__" in data:
+        timestamp  = data["__meta__"]["timestamp"]
+
     # Parse JSON
     for pname, pdata in data.items():
         if pname.startswith("__"):
@@ -113,7 +117,8 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
             ind = palettes.find(pname)
             if clear_existing:
                 palette.clear()
-
+        
+        palette.timestamp = timestamp
         upload_palette(pname, pdata, json_file, palette)
 
         if not palette:
