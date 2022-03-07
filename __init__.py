@@ -82,12 +82,14 @@ type_enum = ['NONE', 'LEFTMOUSE', 'MIDDLEMOUSE', 'RIGHTMOUSE', 'BUTTON4MOUSE', '
     'ACTIONZONE_AREA', 'ACTIONZONE_REGION', 'ACTIONZONE_FULLSCREEN', 'XR_ACTION']
 type_dct = [ (n,n,n,i) if n else None for i,n in enumerate(type_enum) ]
 class GPCOLORPICKER_PickerKM(PropertyGroup):
+    bl_dsc = "Invoke Picker"
     kmi: StringProperty(name="Keymap item name", default="gpencil.color_pick")
     key_type: EnumProperty(items=type_dct, name="Keymap type", default='A', update=update_keymap)
     ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
     shift_mdf: BoolProperty(name="Keymap Shift modifier", default=False, update=update_keymap)
     alt_mdf: BoolProperty(name="Keymap Alt modifier", default=False, update=update_keymap)
 class GPCOLORPICKER_EditPaletteKM(PropertyGroup):
+    bl_dsc = "Invoke Palette Editor"
     kmi: StringProperty(name="Keymap item name", default="gpencil.palette_edit")
     key_type: EnumProperty(items=type_dct, name="Keymap type", default='A', update=update_keymap)
     ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
@@ -96,17 +98,13 @@ class GPCOLORPICKER_EditPaletteKM(PropertyGroup):
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
-    icon_scale: IntProperty(
-        name="Icon scale",
-        min=100, default=460, max=800
-    )    
+    icon_scale: IntProperty( name="Icon scale", min=100, default=460, max=800)    
     theme: PointerProperty(type=GPCOLORPICKER_theme)
-    mat_mode: EnumProperty(name="Material Mode", items=[("from_active", "From Active", 'Set Materials from active object'), ("from_palette", "From Palette", 'Set Materials GP Palettes')], \
-                            default="from_palette")
+    mat_mode: EnumProperty(name="Material Mode", default="from_palette",\
+             items=[("from_active", "From Active", 'Set Materials from active object'), ("from_palette", "From Palette", 'Set Materials GP Palettes')])
     assign_mat: BoolProperty(name="Assign material on selection", default= True,  \
         description="Check this option if you want the materials you selected to be assigned automatically to the current object. Otherwise, selecting a material will only work if the object already has it.")
     autoload_mode: PointerProperty(type=GPCOLORPICKER_autoloadPalette, name="Autoload")
-
     picker_keymap: PointerProperty(type=GPCOLORPICKER_PickerKM, name="Picker keymap")
     palette_edit_keymap: PointerProperty(type=GPCOLORPICKER_EditPaletteKM, name="Palette Edit keymap")
 
@@ -148,18 +146,18 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         prv.label(text="Keymap", icon='BLENDER')
 
         row = prv.row()
-        row.label(text=self.picker_keymap.kmi)
+        row.label(text=self.picker_keymap.bl_dsc)
         row.prop(self.picker_keymap, "ctrl_mdf", icon="EVENT_CTRL", text="")
         row.prop(self.picker_keymap, "alt_mdf", icon="EVENT_ALT", text="")
         row.prop(self.picker_keymap, "shift_mdf", icon="EVENT_SHIFT", text="")
-        row.prop(self.picker_keymap, "key_type")
+        row.prop(self.picker_keymap, "key_type", text="")
 
         row = prv.row()
-        row.label(text=self.palette_edit_keymap.kmi)
+        row.label(text=self.palette_edit_keymap.bl_dsc)
         row.prop(self.palette_edit_keymap, "ctrl_mdf", icon="EVENT_CTRL", text="")
         row.prop(self.palette_edit_keymap, "alt_mdf", icon="EVENT_ALT", text="")
         row.prop(self.palette_edit_keymap, "shift_mdf", icon="EVENT_SHIFT", text="")
-        row.prop(self.palette_edit_keymap, "key_type")
+        row.prop(self.palette_edit_keymap, "key_type", text="")
     
 classes = [ GPCOLORPICKER_theme, \
             GPCOLORPICKER_autoloadPalette, \
