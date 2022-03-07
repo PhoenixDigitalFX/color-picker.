@@ -47,7 +47,7 @@ def set_default_palette_path():
         return 
         
     import os 
-    palette_path = bpy.utils.user_resource('SCRIPTS', "GPpalettes")
+    palette_path = bpy.utils.user_resource('SCRIPTS', path='GPpalettes')
     if os.path.isdir(palette_path):
         prefs.autoload_mode.path = palette_path
 
