@@ -1,5 +1,6 @@
 import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba
+import datetime as dt
 
 def upload_material(name, mdat):
     # Get material
@@ -98,6 +99,9 @@ def parseJSONFile(json_file, palette_names=set()):
 
     # Parse JSON
     for pname, pdata in data.items():
+        if pname.startswith("__"):
+            continue
+
         if (len(palette_names) > 0) and (not pname in palette_names):
             continue
 
@@ -148,6 +152,9 @@ def export_palettes_content(filepath):
     gpmp = bpy.context.scene.gpmatpalettes.palettes
     pal_dct = {}
     ext = ".png"
+
+    pal_dct["__meta__"] = {}
+    pal_dct["__meta__"]["timestamp"] = str(dt.datetime.now())
 
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
