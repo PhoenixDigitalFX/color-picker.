@@ -58,6 +58,26 @@ class GPCOLORPICKER_autoloadPalette(PropertyGroup):
     autocheck : BoolProperty(default=False, name="Set automatic updates", update=update_autocheck_mode)
     timerval: IntProperty(default=120, name="Timer", subtype='TIME', min=30)
 
+def update_keymap(self, context):
+    wm = bpy.context.window_manager
+    km = wm.keyconfigs.addon.keymaps['3D View']
+    kmi = km.keymap_items[self.kmi]
+    kmi.ctrl = self.ctrl_mdf
+    kmi.alt = self.alt_mdf
+    kmi.shift = self.shift_mdf
+    kmi.type = self.key_type
+class GPCOLORPICKER_PickerKM(PropertyGroup):
+    kmi: StringProperty(name="Keymap item name", default="gpencil.color_pick")
+    key_type: StringProperty(name="Keymap type", default='A', update=update_keymap)
+    ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
+    shift_mdf: BoolProperty(name="Keymap Shift modifier", default=False, update=update_keymap)
+    alt_mdf: BoolProperty(name="Keymap Alt modifier", default=False, update=update_keymap)
+class GPCOLORPICKER_EditPaletteKM(PropertyGroup):
+    kmi: StringProperty(name="Keymap item name", default="gpencil.palette_edit")
+    key_type: StringProperty(name="Keymap type", default='A', update=update_keymap)
+    ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
+    shift_mdf: BoolProperty(name="Keymap Shift modifier", default=True, update=update_keymap)
+    alt_mdf: BoolProperty(name="Keymap Alt modifier", default=True, update=update_keymap)
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
@@ -71,6 +91,9 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     assign_mat: BoolProperty(name="Assign material on selection", default= True,  \
         description="Check this option if you want the materials you selected to be assigned automatically to the current object. Otherwise, selecting a material will only work if the object already has it.")
     autoload_mode: PointerProperty(type=GPCOLORPICKER_autoloadPalette, name="Autoload")
+
+    picker_keymap: PointerProperty(type=GPCOLORPICKER_PickerKM, name="Picker keymap")
+    palette_edit_keymap: PointerProperty(type=GPCOLORPICKER_EditPaletteKM, name="Palette Edit keymap")
 
     def draw(self, context):
         layout = self.layout
@@ -108,21 +131,33 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
         prv = scol.box()
         prv.label(text="Keymap", icon='BLENDER')
-        for kc,kmi,dsc in addon_keymaps:
-            row = prv.row()
-            row.label(text=dsc)
-            row.prop(kmi, 'ctrl_ui', icon="EVENT_CTRL", text="")
-            row.prop(kmi, 'alt_ui', icon="EVENT_ALT", text="")
-            row.prop(kmi, 'shift_ui', icon="EVENT_SHIFT", text="")
-            row.prop(kmi, 'type', text="")
+
+        row = prv.row()
+        row.label(text=self.picker_keymap.kmi)
+        row.prop(self.picker_keymap, "ctrl_mdf", icon="EVENT_CTRL", text="")
+        row.prop(self.picker_keymap, "alt_mdf", icon="EVENT_ALT", text="")
+        row.prop(self.picker_keymap, "shift_mdf", icon="EVENT_SHIFT", text="")
+        row.prop(self.picker_keymap, "key_type")
+
+        row = prv.row()
+        row.label(text=self.palette_edit_keymap.kmi)
+        row.prop(self.palette_edit_keymap, "ctrl_mdf", icon="EVENT_CTRL", text="")
+        row.prop(self.palette_edit_keymap, "alt_mdf", icon="EVENT_ALT", text="")
+        row.prop(self.palette_edit_keymap, "shift_mdf", icon="EVENT_SHIFT", text="")
+        row.prop(self.palette_edit_keymap, "key_type")
     
 classes = [ GPCOLORPICKER_theme, \
             GPCOLORPICKER_autoloadPalette, \
+            GPCOLORPICKER_PickerKM, \
+            GPCOLORPICKER_EditPaletteKM, \
             GPCOLORPICKER_preferences
           ]
 
 
 def register():
+    for cls in classes:
+        bpy.utils.register_class(cls) 
+
     from . gpmatpalette import register as register_palette
     register_palette()
 
@@ -131,9 +166,6 @@ def register():
 
     from . gppaletteeditor import register as register_editor
     register_editor(addon_keymaps)
-
-    for cls in classes:
-        bpy.utils.register_class(cls) 
         
     if not bpy.app.timers.is_registered(reload_autopalette):
         bpy.app.timers.register(reload_autopalette)
@@ -149,9 +181,6 @@ def unregister():
         km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
-    
     from . gppaletteeditor import unregister as unregister_editor
     unregister_editor()
     
@@ -160,6 +189,9 @@ def unregister():
 
     from .gpmatpalette import unregister as unregister_palette
     unregister_palette()
+
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
 
 if __name__ == "__main__":
     register() 

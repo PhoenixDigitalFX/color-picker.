@@ -23,6 +23,12 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             col = layout.column()
             col.label(text=item.source_path)
 
+            pname = (__package__).split('.')[0]
+            prefs = context.preferences.addons[pname].preferences
+            autoload_mode = False
+            if prefs: 
+                autoload_mode = prefs.autoload_mode.active
+
             import json
             def needs_reload():
                 if not item.timestamp:
@@ -40,7 +46,7 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
                 rlp.palette_index = index
 
             col = layout.column()
-            if not item.autoloaded:
+            if not (autoload_mode and item.autoloaded):
                 rmp = col.operator("scene.remove_palette", icon="X", text="", emboss=False)
                 rmp.palette_index = index
 
