@@ -52,7 +52,7 @@ def set_default_palette_path():
         prefs.autoload_mode.path = palette_path
 
 class GPCOLORPICKER_autoloadPalette(PropertyGroup):
-    active: BoolProperty(default=True, name="Autoload mode on")
+    active: BoolProperty(default=False, name="Autoload mode on")
     path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH")
     autocheck : BoolProperty(default=False, name="Set automatic updates", update=update_autocheck_mode)
     timerval: IntProperty(default=120, name="Timer", subtype='TIME', min=30)
@@ -181,8 +181,9 @@ def register():
 
     from . gppaletteeditor import register as register_editor
     register_editor(addon_keymaps)
-        
-    if not bpy.app.timers.is_registered(reload_autopalette):
+
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    if prefs and prefs.autoload_mode.active and (not bpy.app.timers.is_registered(reload_autopalette)):
         bpy.app.timers.register(reload_autopalette)
     
     set_default_palette_path()
