@@ -1,9 +1,10 @@
 import bpy
 from . palette_props import GPMatPalettes
+from bpy.props import *
 
 class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
     bl_idname="GPCOLORPICKER_UL_PaletteList"
-
+    
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):
 
@@ -29,19 +30,8 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             if prefs: 
                 autoload_mode = prefs.autoload_mode.active
 
-            import json
-            def needs_reload():
-                if not item.timestamp:
-                    return True
-                pth = item.source_path
-                ifl = open(pth, 'r')
-                data = json.load(ifl)
-                ifl.close()
-                tmstp = data["__meta__"]["timestamp"]
-                return not item.compare_timestamp(tmstp)
-        
             col = layout.column()
-            if item.source_path and needs_reload():
+            if item.source_path and item.is_obsolete:
                 rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="", emboss=False)
                 rlp.palette_index = index
 
@@ -71,18 +61,17 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Active palettes")
+        gpmp = bpy.context.scene.gpmatpalettes        
         row.operator("scene.reload_all_palettes", icon="FILE_REFRESH", text="")
-        row.operator("scene.export_palette", icon="EXPORT", text="")
+        if gpmp.is_obsolete:
+            row.operator("scene.export_palette", icon="EXPORT", text="")
         row.operator("gpencil.palette_load", icon="FILE_NEW", text="")
 
         row = layout.row()
-        gpmp = bpy.context.scene.gpmatpalettes
         row.template_list("GPCOLORPICKER_UL_PaletteList",'GP_Palettes', \
                         dataptr=gpmp, propname="palettes", \
                         active_dataptr=gpmp, active_propname="active_index", \
                         )
-
-
 
 classes = [GPCOLORPICKER_UL_PaletteList, GPCOLORPICKER_PT_Palette]
 

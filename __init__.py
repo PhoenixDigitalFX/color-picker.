@@ -22,8 +22,8 @@ class GPCOLORPICKER_theme(PropertyGroup):
     text_color: FloatVectorProperty(
         subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
 
-def reload_autopalette():  
-    bpy.ops.gpencil.autoload_palette()  
+def refresh_obsoletes():  
+    bpy.ops.scene.check_obsolete_palettes() 
 
     pname = (__package__).split('.')[0]
     prefs = bpy.context.preferences.addons[pname].preferences  
@@ -31,14 +31,14 @@ def reload_autopalette():
         return None
 
     timer = prefs.autoload_mode.timerval
-    print("Auto Update of the palette, next in ", timer, "seconds")
+    print("Autocheck of the palette updates, next in ", timer, "seconds")
     return timer
 
 def update_autocheck_mode(self, context):
-    if self.autocheck and not bpy.app.timers.is_registered(reload_autopalette):
-        bpy.app.timers.register(reload_autopalette)
-    elif not self.autocheck and bpy.app.timers.is_registered(reload_autopalette):
-        bpy.app.timers.unregister(reload_autopalette)
+    if self.autocheck and not bpy.app.timers.is_registered(refresh_obsoletes):
+        bpy.app.timers.register(refresh_obsoletes)
+    elif not self.autocheck and bpy.app.timers.is_registered(refresh_obsoletes):
+        bpy.app.timers.unregister(refresh_obsoletes)
 
 def set_default_palette_path():
     pname = (__package__).split('.')[0]
@@ -54,7 +54,7 @@ def set_default_palette_path():
 class GPCOLORPICKER_autoloadPalette(PropertyGroup):
     active: BoolProperty(default=False, name="Autoload mode on")
     path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH")
-    autocheck : BoolProperty(default=False, name="Set automatic updates", update=update_autocheck_mode)
+    autocheck : BoolProperty(default=False, name="Set automatic checks", update=update_autocheck_mode)
     timerval: IntProperty(default=120, name="Timer", subtype='TIME', min=30)
 
 def update_keymap(self, context):
@@ -183,14 +183,14 @@ def register():
     register_editor(addon_keymaps)
 
     prefs = bpy.context.preferences.addons[__package__].preferences
-    if prefs and prefs.autoload_mode.active and (not bpy.app.timers.is_registered(reload_autopalette)):
-        bpy.app.timers.register(reload_autopalette)
+    if prefs and prefs.autoload_mode.active and (not bpy.app.timers.is_registered(refresh_obsoletes)):
+        bpy.app.timers.register(refresh_obsoletes)
     
     set_default_palette_path()
 
 def unregister():        
-    if bpy.app.timers.is_registered(reload_autopalette):
-        bpy.app.timers.unregister(reload_autopalette)
+    if bpy.app.timers.is_registered(refresh_obsoletes):
+        bpy.app.timers.unregister(refresh_obsoletes)
 
     # Remove the hotkey
     for km, kmi, dsc in addon_keymaps:

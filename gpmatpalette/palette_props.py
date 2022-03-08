@@ -65,6 +65,7 @@ class GPMatPalette(PropertyGroup):
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
     is_dirty: BoolProperty(default=False)
+    is_obsolete: BoolProperty(default=False)
     pending_material: PointerProperty(type=bpy.types.Material)
     autoloaded: BoolProperty(default=False)
     timestamp: StringProperty(default="")
@@ -140,7 +141,7 @@ class GPMatPalette(PropertyGroup):
             return False
         return not mat.name in self.materials
     
-    def compare_timestamp(self, other_tmstp):
+    def is_same_timestamp(self, other_tmstp):
         return (self.timestamp == other_tmstp)
 
     def accept_pending_material(self, angle=-1):
@@ -171,6 +172,7 @@ class GPMatPalettes(PropertyGroup):
     palettes: CollectionProperty(type=GPMatPalette)
     active_index: IntProperty(default=-1, update=update_palette_active_index)
     is_dirty: BoolProperty(default=False)
+    is_obsolete: BoolProperty(default=False)
 
     mem_dir: IntProperty(default=1)
 
