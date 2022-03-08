@@ -120,6 +120,11 @@ class GPMatPalette(PropertyGroup):
             self.materials.move(old_id, index)
         self.autocomp_positions()
         return self.materials[name]
+    
+
+    def remove_material(self, ind):
+        self.materials.remove(ind)
+        self.is_dirty = True
 
     def clear(self):
         for m in self.materials:

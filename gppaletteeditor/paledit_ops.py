@@ -94,6 +94,25 @@ class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
 
+class GPCOLORPICKER_OT_removeMaterialFromPalette(bpy.types.Operator):
+    bl_idname = "gpencil.remove_mat_palette"
+    bl_label = "GP Remove Material from Palette"
+
+    mat_index: bpy.props.IntProperty(default=-1)
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.gpmatpalettes.active()
+
+    def execute(self, context):
+        gpmp = context.scene.gpmatpalettes
+        gpmp.active().remove_material(self.mat_index)
+        
+        return {'FINISHED'}   
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_confirm(self, event)
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
@@ -207,6 +226,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             for i in range(cache.mat_nb):         
                 self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
                 self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
+                self.interaction_areas.append(RemoveMaterialInteraction(self, cache, stgs, i))
             self.interaction_areas.append(AddMaterialInteraction(self, cache, stgs))
             self.interaction_areas.append(EditImageInteraction(self, cache, stgs))
 
@@ -256,6 +276,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
 classes = [GPCOLORPICKER_OT_paletteEditor, \
         GPCOLORPICKER_OT_addMaterialInPalette, \
+        GPCOLORPICKER_OT_removeMaterialFromPalette, \
         GPCOLORPICKER_OT_newPalette, \
         GPCOLORPICKER_OT_editImage]
 

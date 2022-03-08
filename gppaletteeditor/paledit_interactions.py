@@ -119,6 +119,26 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.refresh(cache, settings)
         op.write_cache_in_palette(context)
 
+class RemoveMaterialInteraction(RadialInteractionArea):
+    def __init__(self, op, cache, settings, id):
+        self.id = id
+        self.mark = SelectionMark()
+        self.mark.color = settings.mark_color
+        self.mark.radius = settings.mat_radius*0.25
+        self.mark.type = 0
+        self.refresh(cache, settings)
+
+    def refresh(self, cache, settings):
+        self.th = cache.angles[self.id]
+        udir = np.asarray([cos(self.th),sin(self.th)])
+        overall_rds = settings.mat_centers_radius+1.5*settings.mat_radius
+        self.org = overall_rds*udir
+        self.rds = settings.mat_radius
+        self.mark.position = self.org
+    
+    def on_click_release(self, op, cache, settings, context):
+        bpy.ops.gpencil.remove_mat_palette('INVOKE_DEFAULT', mat_index=self.id)
+
 class AddMaterialInteraction(InteractionArea):
     def __init__(self, op, cache, settings):
         self.th = -1
@@ -162,13 +182,13 @@ class NewPaletteInteraction(RadialInteractionArea):
 
 class EditImageInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings):
-        self.rds = settings.mc_inner_radius*0.5
+        self.rds = settings.mc_inner_radius*0.25
         self.org = np.zeros(2)
 
         self.mark = SelectionMark()
         self.mark.position = self.org
         self.mark.color = settings.mc_fill_color
-        self.mark.radius = self.rds*0.1
+        self.mark.radius = self.rds*0.3
         self.mark.type = 0
 
 
