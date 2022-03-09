@@ -51,17 +51,21 @@ def update_with_lock(self, context):
         self.is_obsolete = self.lock_obsolete
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
-    name: StringProperty(default="unnamed")
-    materials: CollectionProperty(type=GPMatItem)
-    image: PointerProperty(type=bpy.types.Image, update=update_im)
-    source_path: StringProperty(subtype='FILE_PATH')
-    visible: BoolProperty(default=True)
-    is_dirty: BoolProperty(default=False)
-    is_obsolete: BoolProperty(default=False, name = "Obsolete", description="A new version of the palette exists", update=update_with_lock)
+
+    name: StringProperty(name="Name", default="unnamed")
+    materials: CollectionProperty(name = "Materials", type=GPMatItem)
+    image: PointerProperty(name="Image", type=bpy.types.Image, update=update_im)
+    visible: BoolProperty(name="Visible", default=True)
+
+    autoloaded: BoolProperty(name="Autoloaded", default=False)
+    source_path: StringProperty(name="Source Path", default = "", subtype='FILE_PATH')
+    timestamp: StringProperty(name="Timestamp", default="")
+
+    is_dirty: BoolProperty(name="Dirty", description="The palette was modified recently", default=False)
+    is_obsolete: BoolProperty(name = "Obsolete", description="A new version of the palette exists", default=False,  update=update_with_lock)
     lock_obsolete: BoolProperty(default=False)
+    
     pending_material: PointerProperty(type=bpy.types.Material)
-    autoloaded: BoolProperty(default=False)
-    timestamp: StringProperty(default="")
 
     def autocomp_positions(self):
         angles = [(m.get_angle(True), i) for i,m in enumerate(self.materials)]
