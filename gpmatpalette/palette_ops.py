@@ -1,7 +1,7 @@
 import os, bpy, json
 from . palette_io import getJSONfiles, parseJSONFile, export_palettes_content
 
-### ----------------- Operator definition
+''' Check if one or more palette files are now obsolete '''
 class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
     bl_idname = "scene.check_obsolete_palettes"
     bl_label = "Check obsolete palettes"
@@ -52,8 +52,9 @@ class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
 
         return {"FINISHED"}
 
+''' Automatic import of the palettes in the files in the autoload path'''
 class GPCOLORPICKER_OT_autoloadPalette(bpy.types.Operator):
-    bl_idname = "gpencil.autoload_palette"
+    bl_idname = "scene.autoload_palette"
     bl_label = "Autoload palette"    
 
     @classmethod
@@ -91,9 +92,9 @@ class GPCOLORPICKER_OT_autoloadPalette(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
-    bl_idname = "gpencil.palette_load"
-    bl_label = "Load Palette"    
+class GPCOLORPICKER_OT_importPalettes(bpy.types.Operator):
+    bl_idname = "scene.import_palette"
+    bl_label = "Import Palette"    
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -127,6 +128,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+''' Exports a palette collection to a JSON file + potential image files '''
 class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
     bl_idname = "scene.export_palette"
     bl_label = "Export Palette"    
@@ -135,7 +137,7 @@ class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return (context.scene.gpmatpalettes.active())
+        return not context.scene.gpmatpalettes.is_empty()
 
     def execute(self, context): 
         fpt = self.filepath         
@@ -144,12 +146,15 @@ class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
         
         with open(fpt, 'w') as outfile:
             json.dump(data, outfile, indent=4)
+        
+        self.report({'INFO'}, f"Palettes exported to {self.filepath}")
         return {'FINISHED'}
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+''' Removes a palette '''
 class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
     bl_idname = "scene.remove_palette"
     bl_label = "Remove GP Palette"
@@ -170,6 +175,7 @@ class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
 
         return {'FINISHED'}
 
+''' Reloads all palettes collection'''
 class GPCOLORPICKER_OT_reloadAllPalettes(bpy.types.Operator):
     bl_idname = "scene.reload_all_palettes"
     bl_label = "Reload all GP Palettes"
@@ -192,6 +198,7 @@ class GPCOLORPICKER_OT_reloadAllPalettes(bpy.types.Operator):
 
         return {'FINISHED'}
 
+''' Reloads palette content from source file '''
 class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
     bl_idname = "scene.reload_palette"
     bl_label = "Reload GP Palette"
@@ -218,6 +225,7 @@ class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
 
         return {'FINISHED'}
 
+''' Toggle palette visibility '''
 class GPCOLORPICKER_OT_togglePaletteVisibility(bpy.types.Operator):
     bl_idname = "scene.toggle_pal_visibility"
     bl_label= "Toggle Palette Visibility"
@@ -244,7 +252,7 @@ class GPCOLORPICKER_OT_togglePaletteVisibility(bpy.types.Operator):
 
 classes = [GPCOLORPICKER_OT_checkObsoletePalettes, \
             GPCOLORPICKER_OT_autoloadPalette, \
-            GPCOLORPICKER_OT_getJSONFile, \
+            GPCOLORPICKER_OT_importPalettes, \
             GPCOLORPICKER_OT_exportPalette, \
             GPCOLORPICKER_OT_removePalette, \
             GPCOLORPICKER_OT_reloadAllPalettes, \

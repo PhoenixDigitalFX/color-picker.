@@ -4,7 +4,7 @@ from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
 class GPCOLORPICKER_OT_editImage(bpy.types.Operator):
-    bl_idname = "gpencil.edit_palette_image"
+    bl_idname = "scene.edit_palette_image"
     bl_label = "GP Edit Palette Image"
 
     @classmethod
@@ -25,7 +25,7 @@ class GPCOLORPICKER_OT_editImage(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
 class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
-    bl_idname = "gpencil.new_palette"
+    bl_idname = "scene.new_palette"
     bl_label = "GP New Palette"
 
     pal_name: bpy.props.StringProperty(name="New Palette Name")
@@ -62,7 +62,7 @@ class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
     
 class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
-    bl_idname = "gpencil.add_mat_palette"
+    bl_idname = "scene.add_mat_palette"
     bl_label = "GP Add Material to Palette"
 
     @classmethod
@@ -95,7 +95,7 @@ class GPCOLORPICKER_OT_addMaterialInPalette(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
 class GPCOLORPICKER_OT_removeMaterialFromPalette(bpy.types.Operator):
-    bl_idname = "gpencil.remove_mat_palette"
+    bl_idname = "scene.remove_mat_palette"
     bl_label = "GP Remove Material from Palette"
 
     mat_index: bpy.props.IntProperty(default=-1)
@@ -116,7 +116,7 @@ class GPCOLORPICKER_OT_removeMaterialFromPalette(bpy.types.Operator):
 
 ### ----------------- Operator definition
 class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
-    bl_idname = "gpencil.palette_edit"
+    bl_idname = "scene.palette_edit"
     bl_label = "GP Palette Editor"  
 
     def write_cache_in_palette(self, context):

@@ -61,7 +61,7 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
         row.label(text="Active palettes")
         row.operator("scene.reload_all_palettes", icon="FILE_REFRESH", text="")
         row.operator("scene.export_palette", icon="EXPORT", text="")
-        row.operator("gpencil.palette_load", icon="FILE_NEW", text="")
+        row.operator("scene.import_palette", icon="FILE_NEW", text="")
 
         # Palettes List
         row = layout.row()

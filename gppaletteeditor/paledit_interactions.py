@@ -137,7 +137,7 @@ class RemoveMaterialInteraction(RadialInteractionArea):
         self.mark.position = self.org
     
     def on_click_release(self, op, cache, settings, context):
-        bpy.ops.gpencil.remove_mat_palette('INVOKE_DEFAULT', mat_index=self.id)
+        bpy.ops.scene.remove_mat_palette('INVOKE_DEFAULT', mat_index=self.id)
 
 class AddMaterialInteraction(InteractionArea):
     def __init__(self, op, cache, settings):
@@ -164,7 +164,7 @@ class AddMaterialInteraction(InteractionArea):
         return True
     
     def on_click_release(self, op, cache, settings, context):
-        bpy.ops.gpencil.add_mat_palette('INVOKE_DEFAULT', angle=self.th)
+        bpy.ops.scene.add_mat_palette('INVOKE_DEFAULT', angle=self.th)
 
 class NewPaletteInteraction(RadialInteractionArea):
     def __init__(self, op, settings):
@@ -178,7 +178,7 @@ class NewPaletteInteraction(RadialInteractionArea):
         self.mark.position = self.org
 
     def on_click_release(self, op, cache, settings, context):
-        bpy.ops.gpencil.new_palette('INVOKE_DEFAULT')
+        bpy.ops.scene.new_palette('INVOKE_DEFAULT')
 
 class EditImageInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings):
@@ -193,5 +193,5 @@ class EditImageInteraction(RadialInteractionArea):
 
 
     def on_click_release(self, op, cache, settings, context):
-        bpy.ops.gpencil.edit_palette_image('INVOKE_DEFAULT')
+        bpy.ops.scene.edit_palette_image('INVOKE_DEFAULT')
 

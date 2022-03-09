@@ -165,7 +165,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
             if self.autoload_mode.active:
                 row.prop(self.autoload_mode, "path", text="")
-                row.operator("gpencil.autoload_palette", text="", icon= "FILE_REFRESH")
+                row.operator("scene.autoload_palette", text="", icon= "FILE_REFRESH")
 
             # AUTOCHECK MODE prefs
             row = mats.row()
