@@ -149,7 +149,10 @@ class GPMatPalette(PropertyGroup):
         self.lock_obsolete = val
         self.is_obsolete = self.lock_obsolete
 
-def update_palette_active_index(self,context):
+''' --- Palette collection container --- '''
+
+''' Update callback for active index : switch to next visible palette '''
+def update_palette_active_index(self, context):
     if self.active_index == -1:
         return
     if self.palettes[self.active_index].visible:
@@ -157,9 +160,8 @@ def update_palette_active_index(self,context):
     if not any([p.visible for p in self.palettes]):
         self.active_index = -1
         return
+    # Next visible palette in the memorized direction
     self.next()
-
-''' Palette collection container '''
 class GPMatPalettes(PropertyGroup):
     bl_idname= "scene.gpmatpalettes"
         
@@ -168,6 +170,8 @@ class GPMatPalettes(PropertyGroup):
 
     is_dirty: BoolProperty(name="Was palette collection just modified", default=False)
     is_obsolete: BoolProperty(name="Is palette collection based on obsolete files", default=False)
+
+    mem_dir: IntProperty(name="Last direction of navigation between palettes", default=1)
 
     def __init__(self):
         self.palettes.clear()
@@ -178,8 +182,11 @@ class GPMatPalettes(PropertyGroup):
             return None
         return self.palettes[self.active_index]
 
-    def next(self, dir=1):
-        self.active_index = (self.active_index + dir) % len(self.palettes)
+    def next(self, dir=0):
+        if dir != 0:
+            # this is useful for the update callback of active_index
+            self.mem_dir = dir
+        self.active_index = (self.active_index + self.mem_dir) % len(self.palettes)
 
     def count(self):
         return len(self.palettes)
