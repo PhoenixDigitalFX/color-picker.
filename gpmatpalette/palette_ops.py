@@ -115,7 +115,7 @@ def parseJSONFile(json_file, palette_names=()):
 
 variables_notex = ["alignment_mode", "alignment_rotation","color","fill_color","fill_style","flip","ghost", \
             "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
-            "show_fill", "show_stroke", "stroke_image", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+            "show_fill", "show_stroke", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
 
 def get_material_data(mat):
     def parse_attr(attr):
