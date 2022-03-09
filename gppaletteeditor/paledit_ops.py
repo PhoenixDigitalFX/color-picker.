@@ -149,7 +149,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         if gpmp.needs_refresh():
             if gpmp.is_dirty and self.empty_palette:
                 self.empty_palette = False
-            cache.refresh()
+            cache.refresh(context)
             self.init_interaction_areas(context, mouse_local)
             gpmp.all_refreshed()
         elif not self.running_interaction:
@@ -199,7 +199,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             else:
                 self.empty_palette = False
                 bpy.context.scene.gpmatpalettes.next(dir)
-                cache.refresh()
+                cache.refresh(context)
             self.init_interaction_areas(context, mouse_local)
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
@@ -256,7 +256,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         # Init Cached Data
         self.npalettes = context.scene.gpmatpalettes.count()
         self.empty_palette = (self.npalettes == 0)
-        self.cached_data = CachedData()
+        self.cached_data = CachedData(context)
 
         # Init interactions areas
         self.interaction_in_selection = None

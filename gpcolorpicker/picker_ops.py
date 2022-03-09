@@ -31,7 +31,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
             if event.shift:
                 dir = -1
             bpy.context.scene.gpmatpalettes.next(dir)
-            self.cached_data.refresh()
+            self.cached_data.refresh(context)
             self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
                                              self.settings.interaction_radius, self.cached_data.angles)
 
@@ -93,7 +93,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         self.active_obj = context.active_object
 
         # Init Cache containing materials and palette related data
-        self.cached_data = CachedData(not self.settings.mat_from_active)
+        self.cached_data = CachedData(context, not self.settings.mat_from_active)
         if self.cached_data.mat_nb == 0:
             self.report({'WARNING'}, "No material to pick")
 

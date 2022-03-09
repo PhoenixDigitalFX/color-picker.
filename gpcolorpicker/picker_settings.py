@@ -1,3 +1,4 @@
+# Appearance settings for the picker
 from math import ceil
 
 class GPCOLORPICKER_settings():

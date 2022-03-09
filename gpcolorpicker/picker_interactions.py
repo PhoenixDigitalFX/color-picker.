@@ -6,7 +6,7 @@ from . picker_draw import load_gpu_texture
 
 ''' Sets the given material as active '''
 def pick_material(cache, context, settings, id_in_cache):
-    if (id_in_cache < 0) or (id_in_cache < cache.mat_nb):
+    if (id_in_cache < 0) or (id_in_cache >= cache.mat_nb):
         return True
     
     obj = context.active_object    
@@ -31,7 +31,7 @@ def pick_material(cache, context, settings, id_in_cache):
         return True
 
     if not cache.from_palette:
-        return set_active_material(cache, context, obj, id_in_cache, id_in_cache)
+        return set_active_material(id_in_cache)
     
     ob_mat = obj.data.materials                
     mat = cache.materials[id_in_cache]
@@ -39,13 +39,13 @@ def pick_material(cache, context, settings, id_in_cache):
 
     if id_in_obj >= 0:
         # Found material in current object
-        return set_active_material(cache, context, obj, id_in_cache, id_in_obj)
+        return set_active_material(id_in_obj)
     
     if settings.mat_assign:
         # Assigning new material to current object
         id_in_obj = len(ob_mat)
         ob_mat.append(mat)
-        return set_active_material(cache, context, obj, id_in_cache, id_in_obj)
+        return set_active_material(id_in_obj)
 
     return False
 
@@ -94,14 +94,17 @@ def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, mat_
     # case i = mat_nb-1 is handled by default
     return nmt-1
         
+''' Cache structure for better performances in displaying the picker 
+    Mirrors the content of the active palette or the materials of the active object
+'''
 class CachedData:
-    def __init__(self, from_palette=True):
+    def __init__(self, context, from_palette=True):
         self.from_palette = from_palette
-        self.refresh()        
+        self.refresh(context)        
 
-    def refresh(self):
-        ob = bpy.context.active_object   
-        gpmp = bpy.context.scene.gpmatpalettes.active()
+    def refresh(self, context):
+        ob = context.active_object   
+        gpmp = context.scene.gpmatpalettes.active()
 
         if gpmp and self.from_palette:
             self.gpu_texture = load_gpu_texture(gpmp.image)
@@ -119,8 +122,7 @@ class CachedData:
             self.angles = [ m.get_angle() for m in gpmp.materials ]
             self.is_custom_angle = [ not m.is_angle_movable() for m in gpmp.materials ]
             self.pick_origins = [ np.asarray(m.get_origin(True))\
-                                    for m in gpmp.materials]        
-                                    
+                                    for m in gpmp.materials]                                            
         elif ob and not self.from_palette:
             self.gpu_texture = None
             self.pal_active = -1

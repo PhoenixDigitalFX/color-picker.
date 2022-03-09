@@ -5,9 +5,9 @@ from . paledit_maths import is_in_boundaries, pol2cart
 from .. gpcolorpicker import picker_interactions as gpcp
 
 class CachedData(gpcp.CachedData):
-    def __init__(self, from_palette=True, empty_palette=False):
+    def __init__(self, context, from_palette=True, empty_palette=False):
         if not empty_palette:
-            super().__init__(from_palette)
+            super().__init__(context, from_palette)
    
 class SelectionMark:
     def __init__(self):
