@@ -57,6 +57,10 @@ def update_im(self, context):
     self.is_dirty = True
     if self.image:
         self.image.pack()
+
+def update_with_lock(self, context):
+    if self.is_obsolete != self.lock_obsolete:
+        self.is_obsolete = self.lock_obsolete
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
     name: StringProperty(default="unnamed")
@@ -65,7 +69,11 @@ class GPMatPalette(PropertyGroup):
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
     is_dirty: BoolProperty(default=False)
+    is_obsolete: BoolProperty(default=False, name = "Obsolete", description="A new version of the palette exists", update=update_with_lock)
+    lock_obsolete: BoolProperty(default=False)
     pending_material: PointerProperty(type=bpy.types.Material)
+    autoloaded: BoolProperty(default=False)
+    timestamp: StringProperty(default="")
 
     def load_image(self, path, path_prefix="", check_existing=False):
         fullpath = os.path.join(path_prefix, path)
@@ -118,11 +126,17 @@ class GPMatPalette(PropertyGroup):
             self.materials.move(old_id, index)
         self.autocomp_positions()
         return self.materials[name]
+    
+
+    def remove_material(self, ind):
+        self.materials.remove(ind)
+        self.is_dirty = True
 
     def clear(self):
         for m in self.materials:
             m.clear()
         self.materials.clear()
+        self.image = None
 
     def count(self):
         return len(self.materials)
@@ -131,6 +145,9 @@ class GPMatPalette(PropertyGroup):
         if (not mat) or (not mat.is_grease_pencil):
             return False
         return not mat.name in self.materials
+    
+    def is_same_timestamp(self, other_tmstp):
+        return (self.timestamp == other_tmstp)
 
     def accept_pending_material(self, angle=-1):
         if not self.is_material_available(self.pending_material):
@@ -144,6 +161,10 @@ class GPMatPalette(PropertyGroup):
         self.pending_material = None
         self.is_dirty = True
         return True
+
+    def set_obsolete(self, val):
+        self.lock_obsolete = val
+        self.is_obsolete = self.lock_obsolete
 
 def update_palette_active_index(self,context):
     if self.active_index == -1:
@@ -160,6 +181,7 @@ class GPMatPalettes(PropertyGroup):
     palettes: CollectionProperty(type=GPMatPalette)
     active_index: IntProperty(default=-1, update=update_palette_active_index)
     is_dirty: BoolProperty(default=False)
+    is_obsolete: BoolProperty(default=False)
 
     mem_dir: IntProperty(default=1)
 
@@ -196,6 +218,25 @@ class GPMatPalettes(PropertyGroup):
         self.active_index = self.count()-1
         npal.image = None
         self.is_dirty = True
+    
+    def remove_palette_by_id(self, index):
+        npal = self.count()
+        active_ind = self.active_index
+
+        pal = self.palettes[index]
+        pal.clear()
+        self.palettes.remove(index)
+
+        if active_ind == npal-1:
+            self.active_index = npal-2
+        elif active_ind == index:
+            self.next(1)
+
+    def remove_palette(self, name):
+        ind = self.palettes.find(name)
+        if ind < 0:
+            return        
+        self.remove_palette_by_id(ind)
 
     def needs_refresh(self):
         return (self.is_dirty) or any([p.is_dirty for p in self.palettes])
