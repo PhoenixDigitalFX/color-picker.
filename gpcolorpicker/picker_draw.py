@@ -1,10 +1,12 @@
-import blf, bpy
-import gpu
+# GPU drawing related functions
+
+import blf, gpu
 from gpu_extras.batch import batch_for_shader
 import numpy as np
-from math import *
-import os
 
+''' Common GLSL functions used in many shaders 
+    Mostly creates geometric primitives with anti-aliasing
+'''
 common_libsh='''
     float aa_circle(float rds, float dst, float eps){
         return smoothstep(rds+eps, rds-eps, dst);
@@ -55,6 +57,34 @@ common_libsh='''
     }
 '''
 
+''' Useful function to set an array of float* as shader uniform 
+    * Actually, the array could contain either float, vec2, vec3 or vec4 elements
+'''
+def set_uniform_vector_float(shader, data_, var_name):
+    if(len(data_) == 0):
+        return
+    data = data_
+    if isinstance(data[0],float):
+        data = [ [x] for x in data_ ]
+    dim = [len(data),len(data[0])]
+    buf = gpu.types.Buffer('FLOAT', dim, data)
+    loc = shader.uniform_from_name(var_name)
+    shader.uniform_vector_float(loc, buf, dim[1], dim[0])
+
+''' Useful function to load an image data as GPU texture to be used in a shader'''
+def load_gpu_texture(image):
+    if not image:
+        return None 
+
+    gpu_tex = gpu.texture.from_image(image)
+    if (gpu_tex.height > 1) or (gpu_tex.width > 1):
+        return gpu_tex
+        
+    return None
+
+''' --- Drawing functions --- '''
+
+''' Sets up a shader program to draw an image in the dimensions given in the settings '''
 def setup_shader(op, settings, fragsh, libsh=common_libsh):
     vsh = '''            
         uniform mat4 modelViewProjectionMatrix;
@@ -88,9 +118,12 @@ def setup_shader(op, settings, fragsh, libsh=common_libsh):
     shader.uniform_float("modelViewProjectionMatrix", matrix)     
     shader.uniform_float("dimension",dimension)
     shader.uniform_float("origin", op.origin)
+
     return shader,batch 
 
-
+''' In the case of "from active" material mode, or if there is no image in palette
+    Draws a simple pie circle in the colors and scale given by the settings
+'''
 def draw_pie_circle(op, settings): 
     pie_circle_fsh = '''
         #define PI 3.1415926538
@@ -132,91 +165,80 @@ def draw_pie_circle(op, settings):
     
     batch.draw(shader) 
 
-materials_fsh = '''
-#define PI 3.1415926538
-uniform float selected_radius;
-uniform vec4 active_color;
-uniform float mat_radius;
-uniform float mat_line_width;
-uniform float mat_centers_radius;
-uniform int mat_nb;
-uniform int mat_selected;
-uniform int mat_active;
-uniform vec4 mat_fill_colors[__NMAT__];
-uniform vec4 mat_line_colors[__NMAT__];
-uniform float mat_thetas[__NMAT__];
-uniform vec3 mat_origins[__NMAT__];
-uniform float pickline_width;
-uniform vec4 pickline_color;
-uniform float aa_eps;
+''' Draws all the material previews and their picklines '''
+def draw_materials(op, cache, settings):
+    materials_fsh = '''
+    #define PI 3.1415926538
+    uniform float selected_radius;
+    uniform vec4 active_color;
+    uniform float mat_radius;
+    uniform float mat_line_width;
+    uniform float mat_centers_radius;
+    uniform int mat_nb;
+    uniform int mat_selected;
+    uniform int mat_active;
+    uniform vec4 mat_fill_colors[__NMAT__];
+    uniform vec4 mat_line_colors[__NMAT__];
+    uniform float mat_thetas[__NMAT__];
+    uniform vec3 mat_origins[__NMAT__];
+    uniform float pickline_width;
+    uniform vec4 pickline_color;
+    uniform float aa_eps;
 
-in vec2 lpos;
-in vec2 uv;
-out vec4 fragColor;            
+    in vec2 lpos;
+    in vec2 uv;
+    out vec4 fragColor;            
 
-void main()
-{                    
-    float d = length(lpos);
-    fragColor = vec4(0.);
+    void main()
+    {                    
+        float d = length(lpos);
+        fragColor = vec4(0.);
 
-    /*    MATERIALS CIRCLES    */
-    for(int i = 0; i < mat_nb; ++i){
-        /* get color and if circle is currently selected */
-        vec4 fill_color = mat_fill_colors[i];
-        vec4 line_color = mat_line_colors[i];
-        bool is_selected = (i == mat_selected);
-        bool is_active = (i == mat_active);
+        /*    MATERIALS CIRCLES    */
+        for(int i = 0; i < mat_nb; ++i){
+            /* get color and if circle is currently selected */
+            vec4 fill_color = mat_fill_colors[i];
+            vec4 line_color = mat_line_colors[i];
+            bool is_selected = (i == mat_selected);
+            bool is_active = (i == mat_active);
 
-        /* compute the center of circle */
-        float th_i = mat_thetas[i];
-        float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
-        vec2 ci = R*vec2(cos(th_i),sin(th_i));
-        d = length(lpos-ci);     
+            /* compute the center of circle */
+            float th_i = mat_thetas[i];
+            float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
+            vec2 ci = R*vec2(cos(th_i),sin(th_i));
+            d = length(lpos-ci);     
 
-        /* draw circle */
-        float radius = is_selected?selected_radius:mat_radius;
-        fill_color.a *= aa_circle(radius, d, aa_eps);
-        line_color.a *= aa_contour(radius, mat_line_width, d, aa_eps);
+            /* draw circle */
+            float radius = is_selected?selected_radius:mat_radius;
+            fill_color.a *= aa_circle(radius, d, aa_eps);
+            line_color.a *= aa_contour(radius, mat_line_width, d, aa_eps);
 
-        vec4 fragColor_mat = alpha_compose(line_color, fill_color);
+            vec4 fragColor_mat = alpha_compose(line_color, fill_color);
 
-        if( is_active ){
-            vec4 act_color = active_color;
-            float act_rds = mat_centers_radius + radius + mat_line_width*2.5;
-            vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
-            float act_dst = length(lpos-act_ctr);
-            act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
-            fragColor_mat = alpha_compose(act_color, fragColor_mat);
+            if( is_active ){
+                vec4 act_color = active_color;
+                float act_rds = mat_centers_radius + radius + mat_line_width*2.5;
+                vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
+                float act_dst = length(lpos-act_ctr);
+                act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
+                fragColor_mat = alpha_compose(act_color, fragColor_mat);
+            }
+
+            /* Pick lines */
+            if( (mat_origins[i].z != 0) ){
+                float rds = (R-radius);
+                vec2 s0 = rds*mat_origins[i].xy;
+                vec2 s1 = rds*vec2(cos(th_i),sin(th_i));
+                vec4 fragColor_line = pickline_color;
+                fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
+                fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
+                fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
+            }
+
+            fragColor = alpha_compose(fragColor_mat, fragColor);
         }
-
-        /* Pick lines */
-        if( (mat_origins[i].z != 0) ){
-            float rds = (R-radius);
-            vec2 s0 = rds*mat_origins[i].xy;
-            vec2 s1 = rds*vec2(cos(th_i),sin(th_i));
-            vec4 fragColor_line = pickline_color;
-            fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
-            fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
-            fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
-        }
-
-        fragColor = alpha_compose(fragColor_mat, fragColor);
     }
-}
-'''
-
-def set_uniform_vector_float(shader, data_, var_name):
-    if(len(data_) == 0):
-        return
-    data = data_
-    if isinstance(data[0],float):
-        data = [ [x] for x in data_ ]
-    dim = [len(data),len(data[0])]
-    buf = gpu.types.Buffer('FLOAT', dim, data)
-    loc = shader.uniform_from_name(var_name)
-    shader.uniform_vector_float(loc, buf, dim[1], dim[0])
-
-def draw_materials(op, cache, settings):     
+    '''     
     nmat = cache.mat_nb
     if nmat <= 0:
         return    
@@ -242,51 +264,9 @@ def draw_materials(op, cache, settings):
     set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
     set_uniform_vector_float(shader, cache.pick_origins, "mat_origins")
 
-    batch.draw(shader)  
+    batch.draw(shader)
 
-def write_circle_centered(settings, org, ird, text):
-        font_id = 1
-        blf.color(font_id, *(settings.text_color))
-        blf.size(font_id, settings.text_size, 72)
-        blf.enable(font_id,blf.CLIPPING)
-        
-        dmin, dmax = org - ird, org + ird
-        blf.clipping(font_id, dmin[0], dmin[1], dmax[0], dmax[1])
-        
-        txd = np.asarray(blf.dimensions(font_id, text))
-        pos = org - 0.5*txd
-        blf.position(font_id, pos[0], pos[1], 0)
-        blf.draw(font_id, text)
-        gpu.state.blend_set('ALPHA')   
-
-def write_selected_mat_name(op, cache, settings):
-    txt = cache.materials[op.mat_selected].name
-    org = op.origin + 0.5*op.region_dim
-    org[1] = org[1] - (settings.mat_centers_radius+2*settings.mat_radius)
-    org[1] = org[1] - settings.text_size
-    ird = settings.mc_outer_radius
-    write_circle_centered(settings, org, ird, txt)
-
-def write_active_palette(op, context, settings):
-    plt = context.scene.gpmatpalettes.active()
-    if not plt:
-        return
-    txt = plt.name
-    org = op.origin + 0.5*op.region_dim
-    org[1] = org[1] - (settings.mat_centers_radius+2*settings.mat_radius)
-    ird = settings.mc_outer_radius
-    write_circle_centered(settings, org, ird, txt)
-
-def load_gpu_texture(image):
-    if not image:
-        return None 
-
-    gpu_tex = gpu.texture.from_image(image)
-    if (gpu_tex.height > 1) or (gpu_tex.width > 1):
-        return gpu_tex
-        
-    return None
-
+''' Draws the image of the palette in the middle of the icon '''
 def draw_centered_texture(op, context, cache, settings):
     centered_tex_fsh = '''
         #define PI 3.1415926538
@@ -340,6 +320,46 @@ def draw_centered_texture(op, context, cache, settings):
     cache.mat_cached = sid
     cache.pal_active = gpmp.name
 
+''' --- Writing functions --- '''
+
+''' Useful function to write text centered in a circle of origin org, and of radius ird'''
+def write_circle_centered(settings, org, ird, text):
+    font_id = 1
+    blf.color(font_id, *(settings.text_color))
+    blf.size(font_id, settings.text_size, 72)
+    blf.enable(font_id,blf.CLIPPING)
+    
+    dmin, dmax = org - ird, org + ird
+    blf.clipping(font_id, dmin[0], dmin[1], dmax[0], dmax[1])
+    
+    txd = np.asarray(blf.dimensions(font_id, text))
+    pos = org - 0.5*txd
+    blf.position(font_id, pos[0], pos[1], 0)
+    blf.draw(font_id, text)
+    gpu.state.blend_set('ALPHA')   
+
+''' Writes the name of the selected material '''
+def write_selected_mat_name(op, cache, settings):
+    txt = cache.materials[op.mat_selected].name
+    org = op.origin + 0.5*op.region_dim
+    org[1] = org[1] - (settings.mat_centers_radius+2*settings.mat_radius)
+    org[1] = org[1] - settings.text_size
+    ird = settings.mc_outer_radius
+    write_circle_centered(settings, org, ird, txt)
+
+''' Writes the name of the active palette '''
+def write_active_palette(op, context, settings):
+    plt = context.scene.gpmatpalettes.active()
+    if not plt:
+        return
+    txt = plt.name
+    org = op.origin + 0.5*op.region_dim
+    org[1] = org[1] - (settings.mat_centers_radius+2*settings.mat_radius)
+    ird = settings.mc_outer_radius
+    write_circle_centered(settings, org, ird, txt)
+
+
+''' Main Drawing function for the GP Color Picker'''
 def draw_callback_px(op, context, cache, settings): 
     gpu.state.blend_set('ALPHA')   
 

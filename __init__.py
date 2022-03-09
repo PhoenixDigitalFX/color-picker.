@@ -24,7 +24,6 @@ bl_info = {
 }
 
 addon_keymaps = [] 
-### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
 
