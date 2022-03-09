@@ -2,7 +2,22 @@ import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba
 import datetime as dt
 
-def upload_material(name, mdat):
+variables_notex = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_style","flip","ghost", \
+            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
+            "show_fill", "show_stroke", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+
+variables = ["alignment_mode", "alignment_rotation", "color","fill_image","fill_color","fill_style","flip","ghost", \
+            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
+            "show_fill", "stroke_image", "show_stroke", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+
+def load_image(imname, path_prefix, check_existing=True):
+    fullpath = os.path.join(path_prefix, imname)
+    im = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
+    if im:
+        im.pack()
+    return im
+
+def upload_material(name, mdat, fdir):
     # Get material
     mat = bpy.data.materials.get(name)
     if mat is None:
@@ -23,6 +38,11 @@ def upload_material(name, mdat):
             and isinstance(v[0], str):
                 setattr(m, k, hex2rgba(v[0],v[1]))
                 continue
+        if (k.find("image") >= 0) \
+            and (not v is None):
+            im = load_image(v, fdir)
+            setattr(m, k, im)
+            continue
         setattr(m, k, v)
 
     return True
@@ -35,10 +55,10 @@ def upload_palette(pname, data, fpt, palette):
         is_relative_path = ("relative" in im_data) and (im_data["relative"])
         if is_relative_path:
             fdir = os.path.dirname(fpt)
-        palette.load_image(im_data["path"], fdir, True)
+            palette.image = load_image(im_data["path"], fdir)
 
     for name,mat_data in data["materials"].items():
-        if not upload_material(name, mat_data):
+        if not upload_material(name, mat_data, fdir):
             continue
 
         gpmatit = None        
@@ -61,8 +81,7 @@ def upload_palette(pname, data, fpt, palette):
             gpmatit.set_origin(mat_data["origin"])
         
         if palette.image and ("image" in mat_data.keys()):
-            already_exists = (gpmatit.image.filepath == mat_data["image"])
-            gpmatit.load_image(mat_data["image"], fdir, already_exists)
+            gpmatit.image = load_image(mat_data["image"], fdir)
 
         if "layer" in mat_data.keys():
             gpmatit.layer = mat_data["layer"]
@@ -140,18 +159,40 @@ def getJSONfiles(dir, max_rec_level=2, level=0):
             files = files.union(getJSONfiles(fpath, max_rec_level, level+1))
     return files
 
-variables_notex = ["alignment_mode", "alignment_rotation","color","fill_color","fill_style","flip","ghost", \
-            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
-            "show_fill", "show_stroke", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+def write_image(image, filepath, ext):
+    import os.path as pth
+    impath = pth.join(pth.dirname(filepath), image.name)
+    if (not impath.endswith(ext.upper())) \
+        and (not impath.endswith(ext)):
+        impath += ext   
 
-def get_material_data(mat):
+    saved_format = image.file_format
+    image.file_format = (ext[1:]).upper()     
+
+    if not image.has_data:
+        image.save_render(impath)     
+    else:
+        saved_fpath = image.filepath
+        image.pack()
+        image.filepath = impath
+        image.save()
+        image.filepath = saved_fpath
+
+    image.file_format = saved_format  
+    
+    return impath
+
+def get_material_data(mat, fpth):
     def parse_attr(attr):
         dtp = [int, float, bool, str]
         if (attr is None) or any([isinstance(attr, t) for t in dtp]):
             return attr
+        if (isinstance(attr, bpy.types.Image)):
+            print("Attr image ", attr.name)
+            impath = write_image(attr, fpth, ".png")
+            return os.path.basename(impath)
         return [attr[k] for k in range(len(attr))]
-
-    mdat = { v:parse_attr(getattr(mat,v)) for v in variables_notex }
+    mdat = { v:parse_attr(getattr(mat,v)) for v in variables }
 
     return mdat
 
@@ -171,34 +212,15 @@ def export_palettes_content(filepath):
         dat_mats = {m.name:m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil}
 
         if pdata.image:
-            saved_format = pdata.image.file_format
-
-            import os.path as pth
-            impath = pth.join(pth.dirname(filepath), pdata.image.name)
-            if (not impath.endswith(ext.upper())) \
-                and (not impath.endswith(ext)):
-                impath += ext      
-
-            pdata.image.file_format = (ext[1:]).upper()       
-
-            if not pdata.image.has_data:
-                pdata.image.save_render(impath)     
-            else:
-                saved_fpath = pdata.image.filepath
-                pdata.image.filepath = impath
-                pdata.image.save()
-                pdata.image.filepath = saved_fpath
-
+            impath = write_image(pdata.image, filepath, ext)
             imname = os.path.basename(impath)
             relpath = True
             pal_dct[pname]["image"] = {"path":imname, "relative":relpath} 
 
-            pdata.image.file_format = saved_format
-        
         pal_dct[pname]["materials"] = {}
         mat_dct = pal_dct[pname]["materials"]
         for mname, mdata in pdata.materials.items(): 
-            mat_dct[mname] = get_material_data(dat_mats[mname])
+            mat_dct[mname] = get_material_data(dat_mats[mname], filepath)
 
             mat_dct[mname]["position"] = mdata.get_angle(True)*180/math.pi
 

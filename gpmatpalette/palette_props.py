@@ -17,12 +17,6 @@ class GPMatItem(PropertyGroup):
     image: PointerProperty(type=bpy.types.Image)
     layer: StringProperty()
 
-    def load_image(self, path, path_prefix="", check_existing=False):
-        fullpath = os.path.join(path_prefix, path)
-        self.image = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
-        if self.image:
-            self.image.pack()
-
     def clear(self):
         pass
     
@@ -74,11 +68,6 @@ class GPMatPalette(PropertyGroup):
     pending_material: PointerProperty(type=bpy.types.Material)
     autoloaded: BoolProperty(default=False)
     timestamp: StringProperty(default="")
-
-    def load_image(self, path, path_prefix="", check_existing=False):
-        fullpath = os.path.join(path_prefix, path)
-        self.image = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
-        self.image.pack()
 
     def autocomp_positions(self):
         angles = [(m.get_angle(True), i) for i,m in enumerate(self.materials)]
