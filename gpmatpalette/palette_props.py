@@ -168,32 +168,37 @@ class GPMatPalettes(PropertyGroup):
     palettes: CollectionProperty(name= "Palettes", type=GPMatPalette)
     active_index: IntProperty(name="Active palette index", default=-1, update=update_palette_active_index)
 
-    is_dirty: BoolProperty(name="Was palette collection just modified", default=False)
-    is_obsolete: BoolProperty(name="Is palette collection based on obsolete files", default=False)
+    is_dirty: BoolProperty(name="Is Collection Dirty", description="True if the palette collection was modified recently, False otherwise", default=False)
+    is_obsolete: BoolProperty(name="Is Collection Obsolete", description="True if the palette collection is based on obsolete files, False otherwise", default=False)
 
-    mem_dir: IntProperty(name="Last direction of navigation between palettes", default=1)
+    mem_dir: IntProperty(name="Mem dir", description="Last direction of navigation between palettes", default=1)
 
-    def __init__(self):
-        self.palettes.clear()
-        self.active_index = -1
-
+    ''' Get active palette '''
     def active(self):
         if (self.active_index < 0) or (self.active_index >= len(self.palettes)):
             return None
         return self.palettes[self.active_index]
 
+    ''' Get next visible palette
+        in increasing index order if dir == 1
+        in decreasing index order if dir == -1
+        in same order as previous call if dir == 0
+    '''
     def next(self, dir=0):
         if dir != 0:
             # this is useful for the update callback of active_index
             self.mem_dir = dir
         self.active_index = (self.active_index + self.mem_dir) % len(self.palettes)
 
+    ''' Get nb of palettes in collection'''
     def count(self):
         return len(self.palettes)
     
+    ''' Return True if no palettes in collection, False otherwise '''
     def is_empty(self):
         return (self.count() == 0)
 
+    ''' Removes all the palettes and clears the associated data '''
     def clear(self):
         for p in self.palettes:
             p.clear()
@@ -201,6 +206,7 @@ class GPMatPalettes(PropertyGroup):
         self.palettes.clear()
         self.active_index = -1
 
+    ''' Creates and adds a new palette with the given name '''
     def add_palette(self, name):
         npal = self.palettes.add()
         npal.name = name
@@ -208,6 +214,7 @@ class GPMatPalettes(PropertyGroup):
         npal.image = None
         self.is_dirty = True
     
+    ''' Removes the palette at the given id in the collection '''
     def remove_palette_by_id(self, index):
         npal = self.count()
         active_ind = self.active_index
@@ -221,15 +228,18 @@ class GPMatPalettes(PropertyGroup):
         elif active_ind == index:
             self.next(1)
 
+    ''' Removes the palette of the given name in collection '''
     def remove_palette(self, name):
         ind = self.palettes.find(name)
         if ind < 0:
             return        
         self.remove_palette_by_id(ind)
 
+    ''' Checks if the collection or any palette has recently been changed '''
     def needs_refresh(self):
         return (self.is_dirty) or any([p.is_dirty for p in self.palettes])
     
+    ''' Removes all the dirty flags of the collection '''
     def all_refreshed(self):
         self.is_dirty = False
         for p in self.palettes:
