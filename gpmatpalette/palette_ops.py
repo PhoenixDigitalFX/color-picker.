@@ -176,7 +176,7 @@ class GPCOLORPICKER_OT_reloadAllPalettes(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return True
+        return not context.scene.gpmatpalettes.is_empty()
 
     def execute(self, context): 
         gpmp = context.scene.gpmatpalettes

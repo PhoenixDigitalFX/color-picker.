@@ -1,46 +1,42 @@
+# Panel displaying the list of active palettes and a set of useful tools
 import bpy
-from . palette_props import GPMatPalettes
-from bpy.props import *
 
+''' Palette UI List item '''
 class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
     bl_idname="GPCOLORPICKER_UL_PaletteList"
     
     def draw_item(self, context, layout, data, item, icon, active_data,
                   active_propname, index):
 
-        # Make sure your code supports all 3 layout types
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            col = layout.column()
-            decorated_name = item.name
-            
+        if self.layout_type in {'DEFAULT', 'COMPACT', 'GRID'}:
+            # Palette name
+            decorated_name = item.name            
             if item.autoloaded:
                 decorated_name = '[' + decorated_name + ']'
-
             if not item.visible:
                 decorated_name = '~' + decorated_name
             
+            col = layout.column()
             col.label(text=decorated_name)
 
+            # Warning if palette is obsolete
             col = layout.column()
             if item.is_obsolete:
                 col.prop(item, "is_obsolete", text="", icon="ERROR", emboss=False)
 
-            pname = (__package__).split('.')[0]
-            prefs = context.preferences.addons[pname].preferences
-            autoload_mode = False
-            if prefs: 
-                autoload_mode = prefs.autoload_mode.active
-
+            # Reload palette
             col = layout.column()
             if item.source_path:
                 rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="", emboss=False)
                 rlp.palette_index = index
 
+            # Remove palette
             col = layout.column()
-            if not (autoload_mode and item.autoloaded):
+            if not item.autoloaded:
                 rmp = col.operator("scene.remove_palette", icon="X", text="", emboss=False)
                 rmp.palette_index = index
 
+            # Toggle palette visibility
             col = layout.column()
             if item.visible:
                 tpv_icon = 'HIDE_OFF'
@@ -59,15 +55,17 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
+        
+        # Palettes Header
         row = layout.row()
         row.label(text="Active palettes")
-        gpmp = bpy.context.scene.gpmatpalettes        
         row.operator("scene.reload_all_palettes", icon="FILE_REFRESH", text="")
         row.operator("scene.export_palette", icon="EXPORT", text="")
         row.operator("gpencil.palette_load", icon="FILE_NEW", text="")
 
+        # Palettes List
         row = layout.row()
+        gpmp = bpy.context.scene.gpmatpalettes
         row.template_list("GPCOLORPICKER_UL_PaletteList",'GP_Palettes', \
                         dataptr=gpmp, propname="palettes", \
                         active_dataptr=gpmp, active_propname="active_index", \

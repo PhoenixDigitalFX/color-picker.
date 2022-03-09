@@ -224,7 +224,7 @@ def export_palettes_content(filepath):
 
             mat_dct[mname]["position"] = mdata.get_angle(True)*180/math.pi
 
-            if mdata.has_pick_line():
+            if mdata.has_pick_line:
                 mat_dct[mname]["origin"] = mdata.get_origin()
 
             if mdata.image:
