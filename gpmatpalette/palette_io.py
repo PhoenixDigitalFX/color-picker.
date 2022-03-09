@@ -68,7 +68,7 @@ def upload_palette(pname, data, fpt, palette):
             gpmatit.layer = mat_data["layer"]
     
     if len(palette.materials) == 0:
-        print("No materials in palette. Aborting upload")
+        print(f"No materials in palette {pname} Aborting upload")
         return None
 
     palette.autocomp_positions()   
@@ -181,7 +181,13 @@ def export_palettes_content(filepath):
 
             pdata.image.file_format = (ext[1:]).upper()       
 
-            pdata.image.save_render(impath)     
+            if not pdata.image.has_data:
+                pdata.image.save_render(impath)     
+            else:
+                saved_fpath = pdata.image.filepath
+                pdata.image.filepath = impath
+                pdata.image.save()
+                pdata.image.filepath = saved_fpath
 
             imname = os.path.basename(impath)
             relpath = True
