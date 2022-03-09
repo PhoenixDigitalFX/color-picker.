@@ -54,8 +54,8 @@ def set_default_palette_path():
 class GPCOLORPICKER_autoloadPalette(PropertyGroup):
     active: BoolProperty(default=False, name="Autoload mode on")
     path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH")
-    autocheck : BoolProperty(default=False, name="Set automatic checks", update=update_autocheck_mode)
-    timerval: IntProperty(default=120, name="Timer", subtype='TIME', min=30)
+    autocheck : BoolProperty(default=True, name="Set automatic checks", update=update_autocheck_mode)
+    timerval: IntProperty(default=60, name="Timer", subtype='TIME', min=5)
 
 def update_keymap(self, context):
     wm = bpy.context.window_manager
@@ -134,15 +134,12 @@ class GPCOLORPICKER_preferences(AddonPreferences):
 
             if self.autoload_mode.active:
                 row.prop(self.autoload_mode, "path", text="")
-                row = mats.row()
+                row.operator("gpencil.autoload_palette", text="", icon= "FILE_REFRESH")
 
-                txt_updates = "Update"
-                if self.autoload_mode.autocheck:
-                    txt_updates = ""
-                row.operator("gpencil.autoload_palette", text=txt_updates, icon= "FILE_REFRESH")
-                row.prop(self.autoload_mode, "autocheck")
-                if self.autoload_mode.autocheck:
-                    row.prop(self.autoload_mode, "timerval")
+            row = mats.row()
+            row.prop(self.autoload_mode, "autocheck")
+            if self.autoload_mode.autocheck:
+                row.prop(self.autoload_mode, "timerval")
 
         prv = scol.box()
         prv.label(text="Keymap", icon='BLENDER')
@@ -183,7 +180,7 @@ def register():
     register_editor(addon_keymaps)
 
     prefs = bpy.context.preferences.addons[__package__].preferences
-    if prefs and prefs.autoload_mode.active and (not bpy.app.timers.is_registered(refresh_obsoletes)):
+    if prefs and (not bpy.app.timers.is_registered(refresh_obsoletes)):
         bpy.app.timers.register(refresh_obsoletes)
     
     set_default_palette_path()

@@ -57,6 +57,10 @@ def update_im(self, context):
     self.is_dirty = True
     if self.image:
         self.image.pack()
+
+def update_with_lock(self, context):
+    if self.is_obsolete != self.lock_obsolete:
+        self.is_obsolete = self.lock_obsolete
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
     name: StringProperty(default="unnamed")
@@ -65,7 +69,8 @@ class GPMatPalette(PropertyGroup):
     source_path: StringProperty(subtype='FILE_PATH')
     visible: BoolProperty(default=True)
     is_dirty: BoolProperty(default=False)
-    is_obsolete: BoolProperty(default=False)
+    is_obsolete: BoolProperty(default=False, name = "Obsolete", description="A new version of the palette exists", update=update_with_lock)
+    lock_obsolete: BoolProperty(default=False)
     pending_material: PointerProperty(type=bpy.types.Material)
     autoloaded: BoolProperty(default=False)
     timestamp: StringProperty(default="")
@@ -156,6 +161,10 @@ class GPMatPalette(PropertyGroup):
         self.pending_material = None
         self.is_dirty = True
         return True
+
+    def set_obsolete(self, val):
+        self.lock_obsolete = val
+        self.is_obsolete = self.lock_obsolete
 
 def update_palette_active_index(self,context):
     if self.active_index == -1:

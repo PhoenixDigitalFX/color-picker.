@@ -1,4 +1,4 @@
-import os, bpy
+import os, bpy, json
 from . palette_io import getJSONfiles, parseJSONFile, export_palettes_content
 
 ### ----------------- Operator definition
@@ -18,7 +18,8 @@ class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
             data = load(ifl)
             ifl.close()
             tmstp = ""
-            if ("__meta__" in data) and ("timestamp" in data["__meta__"]): 
+            if ("__meta__" in data) and ("timestamp" in
+             data["__meta__"]): 
                 tmstp = data["__meta__"]["timestamp"]
             pal_names = set( pname for pname in data.keys() if (not pname.startswith("__")) )
             return pal_names, tmstp
@@ -31,7 +32,6 @@ class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
             return {'CANCELLED'}
       
         dirpath = prefs.autoload_mode.path
-        print("DIRPATH ", dirpath)
         if not os.path.isdir(dirpath):
             self.report({'WARNING'}, "Invalid palette path")
             return {'CANCELLED'}
@@ -47,7 +47,7 @@ class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
                     gpmp.is_obsolete = True
                     continue
                 if (not tmstp) or (not gpmp.palettes[pname].is_same_timestamp(tmstp)):
-                    gpmp.palettes[pname].is_obsolete = True
+                    gpmp.palettes[pname].set_obsolete(True)
                     gpmp.is_obsolete = True
 
         return {"FINISHED"}
@@ -69,7 +69,6 @@ class GPCOLORPICKER_OT_autoloadPalette(bpy.types.Operator):
             return {'CANCELLED'}
       
         dirpath = prefs.autoload_mode.path
-        print("DIRPATH ", dirpath)
         if not os.path.isdir(dirpath):
             self.report({'WARNING'}, "Invalid palette path")
             return {'CANCELLED'}
@@ -88,6 +87,7 @@ class GPCOLORPICKER_OT_autoloadPalette(bpy.types.Operator):
                      
         for pname in palette_names:
             gpmp.palettes[pname].autoloaded = True 
+            gpmp.palettes[pname].set_obsolete(False)
 
         return {"FINISHED"}
 
@@ -109,6 +109,7 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
         gpmp = context.scene.gpmatpalettes
         for pname in palette_names:
             gpmp.palettes[pname].autoloaded = False 
+            gpmp.palettes[pname].set_obsolete(False)
 
         # Update data in user preferences
         pname = (__package__).split('.')[0]
@@ -180,11 +181,12 @@ class GPCOLORPICKER_OT_reloadAllPalettes(bpy.types.Operator):
 
         pnames = set(pal.name for pal in gpmp.palettes)
         fpaths = set(pal.source_path for pal in gpmp.palettes)
-
-        print(f"RELOAD ALL : names {pnames}, paths {fpaths}")
-
+        
         for fpt in fpaths:
             parseJSONFile(fpt, palette_names=pnames, clear_existing=True)
+        
+        for pname in pnames:
+            gpmp.palettes[pname].set_obsolete(False)
 
         return {'FINISHED'}
 
@@ -209,6 +211,8 @@ class GPCOLORPICKER_OT_reloadPalette(bpy.types.Operator):
         pname = pal.name
 
         parseJSONFile(fpath, palette_names=(pname), clear_existing=True)
+
+        gpmp.palettes[pname].set_obsolete(False)
 
         return {'FINISHED'}
 

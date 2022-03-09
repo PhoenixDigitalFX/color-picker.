@@ -22,7 +22,8 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
             col.label(text=decorated_name)
 
             col = layout.column()
-            col.label(text=item.source_path)
+            if item.is_obsolete:
+                col.prop(item, "is_obsolete", text="", icon="ERROR", emboss=False)
 
             pname = (__package__).split('.')[0]
             prefs = context.preferences.addons[pname].preferences
@@ -31,7 +32,7 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
                 autoload_mode = prefs.autoload_mode.active
 
             col = layout.column()
-            if item.source_path and item.is_obsolete:
+            if item.source_path:
                 rlp = col.operator("scene.reload_palette", icon="FILE_REFRESH", text="", emboss=False)
                 rlp.palette_index = index
 
@@ -63,8 +64,7 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
         row.label(text="Active palettes")
         gpmp = bpy.context.scene.gpmatpalettes        
         row.operator("scene.reload_all_palettes", icon="FILE_REFRESH", text="")
-        if gpmp.is_obsolete:
-            row.operator("scene.export_palette", icon="EXPORT", text="")
+        row.operator("scene.export_palette", icon="EXPORT", text="")
         row.operator("gpencil.palette_load", icon="FILE_NEW", text="")
 
         row = layout.row()
