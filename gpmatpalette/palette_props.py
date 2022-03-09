@@ -1,51 +1,45 @@
-import bpy,gpu,os
+# Properties definition for Palette data
+import bpy, math
 from bpy.types import PropertyGroup
 from bpy.props import *
 import numpy as np
-import math
 from . palette_maths import get_unset_intervals
-class GPMatPosInPicker(PropertyGroup):
-    ox : FloatProperty(default=0)
-    oy : FloatProperty(default=0)
-    has_pick_line: BoolProperty(default=False)
-    angle: FloatProperty(subtype="ANGLE", default=-1)
-    is_angle_movable: BoolProperty(default=True)
 
+''' Position of a material in the picker'''
 class GPMatItem(PropertyGroup):
-    name: StringProperty()
-    pos_in_picker: PointerProperty(type=GPMatPosInPicker)
-    image: PointerProperty(type=bpy.types.Image)
-    layer: StringProperty()
+    name: StringProperty(name= "Material name")
+
+    image: PointerProperty(type=bpy.types.Image, name="Material palette image")
+    layer: StringProperty(name="Material layers")
+
+    angle: FloatProperty(subtype="ANGLE", default=-1, name="Material position around the wheel")
+    is_angle_movable: BoolProperty(default=True, name="Is position computed by default or set manually")
+
+    has_pick_line: BoolProperty(default=False, name="Material has pickline")
+    ox : FloatProperty(default=0, name="Pickline origin x coordinate")
+    oy : FloatProperty(default=0, name="Pickline origin y coordinate")
 
     def clear(self):
         pass
     
-    def has_pick_line(self):
-        return self.pos_in_picker.has_pick_line
-    
-    def is_angle_movable(self):
-        return self.pos_in_picker.is_angle_movable
-    
     def get_angle(self, only_if_not_movable = False):
-        if only_if_not_movable and self.pos_in_picker.is_angle_movable:
+        if only_if_not_movable and self.is_angle_movable:
             return -1
-        return self.pos_in_picker.angle
+        return self.angle
     
     def set_angle(self, a, auto=False):
-        self.pos_in_picker.angle = a
-        self.pos_in_picker.is_angle_movable = auto
+        self.angle = a
+        self.is_angle_movable = auto
 
     def set_origin(self, origin, auto=False):
-        pp = self.pos_in_picker
-        pp.ox = origin[0]
-        pp.oy = origin[1]
-        pp.has_pick_line = not auto
+        self.ox = origin[0]
+        self.oy = origin[1]
+        self.has_pick_line = not auto
     
     def get_origin(self, with_bool = False):
-        pp = self.pos_in_picker
         if with_bool:
-            return [pp.ox, pp.oy, pp.has_pick_line]
-        return [pp.ox, pp.oy]
+            return [self.ox, self.oy, self.has_pick_line]
+        return [self.ox, self.oy]
 
 def update_im(self, context):
     self.is_dirty = True
@@ -82,7 +76,7 @@ class GPMatPalette(PropertyGroup):
                 self.materials[mat_id].set_angle(a, auto=True)
         
         for m in self.materials:
-            if m.pos_in_picker.has_pick_line:
+            if m.has_pick_line:
                 continue
             a = m.get_angle()
             m.set_origin([math.cos(a), math.sin(a)], auto=True)
@@ -90,7 +84,7 @@ class GPMatPalette(PropertyGroup):
     def get_index_by_angle(self, angle):
         ind = 0
         for m in self.materials:
-            a = m.pos_in_picker.angle
+            a = m.angle
             if (a >= angle):
                 return ind
             ind += 1
@@ -235,7 +229,7 @@ class GPMatPalettes(PropertyGroup):
         for p in self.palettes:
             p.is_dirty = False
 
-classes = [ GPMatPosInPicker, GPMatItem, GPMatPalette, GPMatPalettes]
+classes = [ GPMatItem, GPMatPalette, GPMatPalettes]
 
 def register():
     for cls in classes:
