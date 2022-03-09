@@ -31,7 +31,6 @@ def refresh_obsoletes():
         return None
 
     timer = prefs.autoload_mode.timerval
-    print("Autocheck of the palette updates, next in ", timer, "seconds")
     return timer
 
 def update_autocheck_mode(self, context):

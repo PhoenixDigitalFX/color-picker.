@@ -30,15 +30,15 @@ class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
         if prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences")
             return {'CANCELLED'}
+
+        palette_files = set()
       
         dirpath = prefs.autoload_mode.path
-        if not os.path.isdir(dirpath):
-            self.report({'WARNING'}, "Invalid palette path")
-            return {'CANCELLED'}
-        
+        if prefs.autoload_mode.active and os.path.isdir(dirpath):
+            palette_files = getJSONfiles(dirpath)  
+
         gpmp = context.scene.gpmatpalettes
-        palette_files = getJSONfiles(dirpath)  
-        palette_files += set( pal.source_path for pal in gpmp.palettes )
+        palette_files.union({pal.source_path for pal in gpmp.palettes})
 
         for pth in palette_files:
             pal_names, tmstp = get_palette_names(pth)
@@ -46,7 +46,7 @@ class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
                 if not pname in gpmp.palettes:
                     gpmp.is_obsolete = True
                     continue
-                if (not tmstp) or (not gpmp.palettes[pname].is_same_timestamp(tmstp)):
+                if (tmstp) and (not gpmp.palettes[pname].is_same_timestamp(tmstp)):
                     gpmp.palettes[pname].set_obsolete(True)
                     gpmp.is_obsolete = True
 
@@ -108,8 +108,10 @@ class GPCOLORPICKER_OT_getJSONFile(bpy.types.Operator):
 
         gpmp = context.scene.gpmatpalettes
         for pname in palette_names:
-            gpmp.palettes[pname].autoloaded = False 
-            gpmp.palettes[pname].set_obsolete(False)
+            pal = gpmp.palettes[pname]
+            pal.source_path = fpt
+            pal.autoloaded = False 
+            pal.set_obsolete(False)
 
         # Update data in user preferences
         pname = (__package__).split('.')[0]

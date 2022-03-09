@@ -129,15 +129,15 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
     return parsed_palettes
 
 def getJSONfiles(dir, max_rec_level=2, level=0):
-    files = []
+    files = set()
     if level == max_rec_level:
         return files
     for f in os.listdir(dir):
         fpath = os.path.join(dir, f)
         if os.path.isfile(fpath) and f.endswith((".json", ".JSON")):
-            files.append(fpath)
+            files.add(fpath)
         if os.path.isdir(fpath):
-            files += getJSONfiles(fpath, max_rec_level, level+1)
+            files = files.union(getJSONfiles(fpath, max_rec_level, level+1))
     return files
 
 variables_notex = ["alignment_mode", "alignment_rotation","color","fill_color","fill_style","flip","ghost", \
