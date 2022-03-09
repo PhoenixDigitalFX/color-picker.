@@ -1,3 +1,16 @@
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 
 bl_info = {
@@ -14,6 +27,8 @@ addon_keymaps = []
 ### ----------------- User Preferences
 from bpy.types import AddonPreferences, PropertyGroup
 from bpy.props import *
+
+''' Color theme of the addon '''
 class GPCOLORPICKER_theme(PropertyGroup):
     pie_color: FloatVectorProperty(
             subtype='COLOR', name="Pie Color", min=0, max=1, size=4, default=(0.1,0.1,0.1,1.))
@@ -22,6 +37,9 @@ class GPCOLORPICKER_theme(PropertyGroup):
     text_color: FloatVectorProperty(
         subtype='COLOR', name="Text Color", min=0, max=1, size=4, default=(0.,0.,0.,1.))
 
+''' --- Autoload useful functions --- '''
+
+''' Check if palette files are obsolete (useful in Autocheck mode)'''
 def refresh_obsoletes():  
     bpy.ops.scene.check_obsolete_palettes() 
 
@@ -33,29 +51,36 @@ def refresh_obsoletes():
     timer = prefs.autoload_mode.timerval
     return timer
 
+''' Register the refresh function as recurrent function if autocheck mode is on '''
 def update_autocheck_mode(self, context):
     if self.autocheck and not bpy.app.timers.is_registered(refresh_obsoletes):
         bpy.app.timers.register(refresh_obsoletes)
     elif not self.autocheck and bpy.app.timers.is_registered(refresh_obsoletes):
         bpy.app.timers.unregister(refresh_obsoletes)
 
+''' Select a default path for autoloaded palettes'''
 def set_default_palette_path():
     pname = (__package__).split('.')[0]
     prefs = bpy.context.preferences.addons[pname].preferences  
     if prefs.autoload_mode.path:
         return 
-        
-    import os 
     palette_path = bpy.utils.user_resource('SCRIPTS', path='GPpalettes')
-    if os.path.isdir(palette_path):
+    from os.path import isdir
+    if isdir(palette_path):
         prefs.autoload_mode.path = palette_path
 
+''' Autoload palette preferences settings '''
 class GPCOLORPICKER_autoloadPalette(PropertyGroup):
-    active: BoolProperty(default=False, name="Autoload mode on")
-    path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH")
-    autocheck : BoolProperty(default=True, name="Set automatic checks", update=update_autocheck_mode)
-    timerval: IntProperty(default=60, name="Timer", subtype='TIME', min=5)
+    active: BoolProperty(default=False, name="Autoload mode ON", description="In autoload mode, palettes in the specified folder are automatically imported at file opening.")
+    path: StringProperty(default="", name="Palettes path", subtype="DIR_PATH", description="Path chosen for the autoload palette mode")
+    autocheck : BoolProperty(default=True, name="Set automatic checks", update=update_autocheck_mode, description="In autocheck mode, active palette files are frequently checked. If the file appears obsolete, a warning symbol appears in the palette panel.")
+    timerval: IntProperty(default=60, name="Timer", subtype='TIME', min=5, description="Frequency (in seconds) of the autochecks for obsolete palettes.")
 
+''' --- Keymapping useful functions --- '''
+''' Note : keymaps are entered by hand in the addon preferences structures so that they can be saved after the file is closed'''
+''' We thus restrict ourselves to a combination of CTRL+ADD+SHIFT+TYPE possibilities'''
+
+''' When the keymap is updated in preference, we update the corresponding keymap item in the config'''
 def update_keymap(self, context):
     wm = bpy.context.window_manager
     km = wm.keyconfigs.addon.keymaps['3D View']
@@ -80,26 +105,31 @@ type_enum = ['NONE', 'LEFTMOUSE', 'MIDDLEMOUSE', 'RIGHTMOUSE', 'BUTTON4MOUSE', '
     'ACTIONZONE_AREA', 'ACTIONZONE_REGION', 'ACTIONZONE_FULLSCREEN', 'XR_ACTION']
 type_dct = [ (n,n,n,i) if n else None for i,n in enumerate(type_enum) ]
 
+''' Keymapping to invoke the color picker '''
 class GPCOLORPICKER_PickerKM(PropertyGroup):
     bl_dsc = "Invoke Picker"
-    kmi: StringProperty(name="Keymap item name", default="gpencil.color_pick")
+    from . gpcolorpicker import GPCOLORPICKER_OT_wheel
+    kmi: StringProperty(name="Keymap item name", default=GPCOLORPICKER_OT_wheel.bl_idname)
     key_type: EnumProperty(items=type_dct, name="Keymap type", default='A', update=update_keymap)
     ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
     shift_mdf: BoolProperty(name="Keymap Shift modifier", default=False, update=update_keymap)
     alt_mdf: BoolProperty(name="Keymap Alt modifier", default=False, update=update_keymap)
 
+''' Keymapping to invoke the palette editor '''
 class GPCOLORPICKER_EditPaletteKM(PropertyGroup):
     bl_dsc = "Invoke Palette Editor"
-    kmi: StringProperty(name="Keymap item name", default="gpencil.palette_edit")
+    from . gppaletteeditor import GPCOLORPICKER_OT_paletteEditor
+    kmi: StringProperty(name="Keymap item name", default=GPCOLORPICKER_OT_paletteEditor.bl_idname)
     key_type: EnumProperty(items=type_dct, name="Keymap type", default='A', update=update_keymap)
     ctrl_mdf: BoolProperty(name="Keymap Ctrl modifier", default=False, update=update_keymap)
     shift_mdf: BoolProperty(name="Keymap Shift modifier", default=True, update=update_keymap)
     alt_mdf: BoolProperty(name="Keymap Alt modifier", default=True, update=update_keymap)
     
+''' --- Overall Addon preferences --- '''
 class GPCOLORPICKER_preferences(AddonPreferences):
     bl_idname = __name__
 
-    icon_scale: IntProperty( name="Icon scale", min=100, default=460, max=800)    
+    icon_scale: IntProperty(name="Icon scale", min=100, default=460, max=800)    
     theme: PointerProperty(type=GPCOLORPICKER_theme)
     mat_mode: EnumProperty(name="Material Mode", default="from_palette",\
              items=[("from_active", "From Active", 'Set Materials from active object'), ("from_palette", "From Palette", 'Set Materials GP Palettes')])
@@ -117,17 +147,20 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         stgs.label(text="Settings", icon='MODIFIER')
         stgs.prop(self, "icon_scale", slider=True)
 
+        # THEME prefs
         props = fcol.box()
         props.label(text="Theme", icon='RESTRICT_COLOR_ON')
         props.prop(self.theme, 'pie_color', text="Pie Color")
         props.prop(self.theme, 'line_color', text="Line Color")
         props.prop(self.theme, 'text_color', text="Text Color")
 
+        # MATERIALS MODE prefs
         scol = frow.column()
         mats = scol.box()
         mats.label(text="Materials", icon='MATERIAL')
         mats.row().prop_tabs_enum(self, "mat_mode")
         if self.mat_mode == "from_palette":
+            # AUTOLOAD MODE prefs
             row = mats.row()
             row.prop(self.autoload_mode, "active", text="Autoload palettes")
 
@@ -135,14 +168,17 @@ class GPCOLORPICKER_preferences(AddonPreferences):
                 row.prop(self.autoload_mode, "path", text="")
                 row.operator("gpencil.autoload_palette", text="", icon= "FILE_REFRESH")
 
+            # AUTOCHECK MODE prefs
             row = mats.row()
             row.prop(self.autoload_mode, "autocheck")
             if self.autoload_mode.autocheck:
                 row.prop(self.autoload_mode, "timerval")
 
+        # KEYMAPPING prefs
         prv = scol.box()
         prv.label(text="Keymap", icon='BLENDER')
 
+        # Invoke Picker KM
         row = prv.row()
         row.label(text=self.picker_keymap.bl_dsc)
         row.prop(self.picker_keymap, "ctrl_mdf", icon="EVENT_CTRL", text="")
@@ -150,6 +186,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         row.prop(self.picker_keymap, "shift_mdf", icon="EVENT_SHIFT", text="")
         row.prop(self.picker_keymap, "key_type", text="")
 
+        # Palette Editor KM
         row = prv.row()
         row.label(text=self.palette_edit_keymap.bl_dsc)
         row.prop(self.palette_edit_keymap, "ctrl_mdf", icon="EVENT_CTRL", text="")
@@ -157,13 +194,13 @@ class GPCOLORPICKER_preferences(AddonPreferences):
         row.prop(self.palette_edit_keymap, "shift_mdf", icon="EVENT_SHIFT", text="")
         row.prop(self.palette_edit_keymap, "key_type", text="")
     
+''' --- Class Registration --- '''
 classes = [ GPCOLORPICKER_theme, \
             GPCOLORPICKER_autoloadPalette, \
             GPCOLORPICKER_PickerKM, \
             GPCOLORPICKER_EditPaletteKM, \
             GPCOLORPICKER_preferences
           ]
-
 
 def register():
     for cls in classes:
