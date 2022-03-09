@@ -6,9 +6,10 @@ variables_notex = ["alignment_mode", "alignment_rotation", "color","fill_color",
             "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
             "show_fill", "show_stroke", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
 
-variables = ["alignment_mode", "alignment_rotation", "color","fill_image","fill_color","fill_style","flip","ghost", \
+variables = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
             "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
-            "show_fill", "stroke_image", "show_stroke", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+            "show_fill",  "show_stroke", "stroke_image", "stroke_style", "texture_angle", "texture_offset", "texture_scale", \
+            "use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
 
 def load_image(imname, path_prefix, check_existing=True):
     fullpath = os.path.join(path_prefix, imname)
@@ -188,7 +189,6 @@ def get_material_data(mat, fpth):
         if (attr is None) or any([isinstance(attr, t) for t in dtp]):
             return attr
         if (isinstance(attr, bpy.types.Image)):
-            print("Attr image ", attr.name)
             impath = write_image(attr, fpth, ".png")
             return os.path.basename(impath)
         return [attr[k] for k in range(len(attr))]
