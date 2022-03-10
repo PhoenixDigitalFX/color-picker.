@@ -18,7 +18,12 @@ class SelectionMark:
         self.position = np.zeros(2)
         self.color = np.zeros(4)
         self.radius = 1
-        self.type = 0
+        # Type of mark
+        # 0 : dot
+        # 1 : cross
+        # 2 : pencil (not used because ugly)
+        self.type = 0 
+
 
 ''' Abstract Interaction Area class '''
 class InteractionArea():

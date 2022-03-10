@@ -1,5 +1,4 @@
 # GPU drawing related functions
-
 import blf, gpu
 from gpu_extras.batch import batch_for_shader
 import numpy as np

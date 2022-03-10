@@ -1,78 +1,81 @@
+# GPU drawing related functions
+# Note : drawing the palette editor icon is mainly based on the picker's drawing functions
+# Only palette editor specific displays are specified here
 import gpu
 import numpy as np
 from math import *
 from .. gpcolorpicker import picker_draw as gpcp
 
-edition_layer_fsh = '''
-#define PI 3.1415926538
-uniform vec2 mark_origin;
-uniform vec4 mark_color;
-uniform float mark_radius;
-uniform float aa_eps;
-uniform int mark_type;
-
-in vec2 lpos;
-in vec2 uv;
-out vec4 fragColor;   
-
-vec4 draw_circle_mark(){
-    float d = length(lpos-mark_origin); 
-    vec4 fragColor_circle= mark_color;
-    fragColor_circle.a *= aa_circle(mark_radius, d, aa_eps); 
-    return fragColor_circle;
-}
-
-vec4 draw_cross_mark(){
-    vec2 uv = abs(lpos-mark_origin);
-    float l = 0.1*mark_radius;
-    if(((uv.x < l) && (uv.y < mark_radius)) 
-            || ((uv.y < l) && (uv.x < mark_radius))){
-        return mark_color;
-    }
-    return vec4(0.);
-}
-
-vec4 draw_pencil_mark(){
-    vec2 uv = lpos-mark_origin;
-    // rotation
-    float th = -3*PI/4.;
-    float cs = cos(th);
-    float sn = sin(th);
-    uv = vec2( cs*uv.x - sn*uv.y , sn*uv.x + cs*uv.y );
-
-    vec4 col= mark_color;
-
-    float r = mark_radius;
-    float l = 0.3*r;
-    float alpha = 0.;
-
-    alpha += aa_seg( vec2(-r, 0), vec2(l, 0), uv, l, aa_eps );
-    alpha += aa_seg( vec2(r, 0), vec2(l, l*0.9), uv, l*0.1, aa_eps );
-    alpha += aa_seg( vec2(r, 0), vec2(l, -l*0.9), uv, l*0.1, aa_eps );   
-
-    col.a *= clamp(alpha, 0, 1);
-
-    return col;
-}
-
-void main()
-{                    
-    if(mark_type == 0){
-        fragColor = draw_circle_mark();
-    }
-    else if(mark_type == 1){
-        fragColor = draw_cross_mark();
-    }
-    else if(mark_type == 2){
-        fragColor = draw_pencil_mark();
-    }
-    else{
-        fragColor = vec4(0.);
-    }
-}
-'''
-
+''' Draws layer containing edition marks (defined in InteractionArea structures) '''
 def draw_edition_layer(op, context, cache, settings):
+    edition_layer_fsh = '''
+    #define PI 3.1415926538
+    uniform vec2 mark_origin;
+    uniform vec4 mark_color;
+    uniform float mark_radius;
+    uniform float aa_eps;
+    uniform int mark_type;
+
+    in vec2 lpos;
+    in vec2 uv;
+    out vec4 fragColor;   
+
+    vec4 draw_circle_mark(){
+        float d = length(lpos-mark_origin); 
+        vec4 fragColor_circle= mark_color;
+        fragColor_circle.a *= aa_circle(mark_radius, d, aa_eps); 
+        return fragColor_circle;
+    }
+
+    vec4 draw_cross_mark(){
+        vec2 uv = abs(lpos-mark_origin);
+        float l = 0.1*mark_radius;
+        if(((uv.x < l) && (uv.y < mark_radius)) 
+                || ((uv.y < l) && (uv.x < mark_radius))){
+            return mark_color;
+        }
+        return vec4(0.);
+    }
+
+    vec4 draw_pencil_mark(){
+        vec2 uv = lpos-mark_origin;
+        // rotation
+        float th = -3*PI/4.;
+        float cs = cos(th);
+        float sn = sin(th);
+        uv = vec2( cs*uv.x - sn*uv.y , sn*uv.x + cs*uv.y );
+
+        vec4 col= mark_color;
+
+        float r = mark_radius;
+        float l = 0.3*r;
+        float alpha = 0.;
+
+        alpha += aa_seg( vec2(-r, 0), vec2(l, 0), uv, l, aa_eps );
+        alpha += aa_seg( vec2(r, 0), vec2(l, l*0.9), uv, l*0.1, aa_eps );
+        alpha += aa_seg( vec2(r, 0), vec2(l, -l*0.9), uv, l*0.1, aa_eps );   
+
+        col.a *= clamp(alpha, 0, 1);
+
+        return col;
+    }
+
+    void main()
+    {                    
+        if(mark_type == 0){
+            fragColor = draw_circle_mark();
+        }
+        else if(mark_type == 1){
+            fragColor = draw_cross_mark();
+        }
+        else if(mark_type == 2){
+            fragColor = draw_pencil_mark();
+        }
+        else{
+            fragColor = vec4(0.);
+        }
+    }
+    '''
     shader, batch = gpcp.setup_shader(op, settings, edition_layer_fsh)
 
     mark = op.interaction_in_selection.mark
@@ -84,26 +87,27 @@ def draw_edition_layer(op, context, cache, settings):
 
     batch.draw(shader)  
 
-empty_palette_fsh = '''
-#define PI 3.1415926538
-uniform vec2 empty_origin;
-uniform vec4 empty_color;
-uniform float empty_radius;
-uniform float aa_eps;
-
-in vec2 lpos;
-in vec2 uv;
-out vec4 fragColor;      
-
-void main()
-{     
-    float d = length(lpos-empty_origin); 
-    fragColor = empty_color;
-    fragColor.a *= aa_circle(empty_radius, d, aa_eps); 
-  
-}
-'''
+''' Draws icon for adding a new palette '''
 def draw_empty_palette(op, context, settings):
+    empty_palette_fsh = '''
+    #define PI 3.1415926538
+    uniform vec2 empty_origin;
+    uniform vec4 empty_color;
+    uniform float empty_radius;
+    uniform float aa_eps;
+
+    in vec2 lpos;
+    in vec2 uv;
+    out vec4 fragColor;      
+
+    void main()
+    {     
+        float d = length(lpos-empty_origin); 
+        fragColor = empty_color;
+        fragColor.a *= aa_circle(empty_radius, d, aa_eps); 
+    
+    }
+    '''
     shader, batch = gpcp.setup_shader(op, settings, empty_palette_fsh)
 
     shader.uniform_float("empty_origin", np.zeros(2)) 
@@ -113,6 +117,7 @@ def draw_empty_palette(op, context, settings):
 
     batch.draw(shader)  
 
+''' Main Drawing function for the Palette Editor'''
 def draw_callback_px(op, context, cache, settings): 
 
     if op.empty_palette:
@@ -127,5 +132,4 @@ def draw_callback_px(op, context, cache, settings):
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
-    # op.check_time()
     
