@@ -1,3 +1,4 @@
+# Miscellanous useful functions
 
 def srgb_to_linearrgb(c):
     '''from https://blender.stackexchange.com/a/158902/4979'''
@@ -15,6 +16,7 @@ def hex2rgba(hex, alpha):
     b = (h & 0x0000ff)
     return tuple([srgb_to_linearrgb(c/0xff) for c in (r,g,b)] + [alpha])
 
+''' Get all intervals of value -1 in a list containing sorted values and -1 '''
 def get_unset_intervals(sorted_items):
     nit = len(sorted_items)
 

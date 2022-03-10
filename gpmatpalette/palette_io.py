@@ -1,16 +1,11 @@
+# Import/Export Palette useful functions
 import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba
 import datetime as dt
 
-variables_notex = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_style","flip","ghost", \
-            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
-            "show_fill", "show_stroke", "stroke_style","use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+''' ---------- IMPORT PALETTES ---------- '''
 
-variables = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
-            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
-            "show_fill",  "show_stroke", "stroke_image", "stroke_style", "texture_angle", "texture_offset", "texture_scale", \
-            "use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
-
+''' Load an image in Blender database and pack it '''
 def load_image(imname, path_prefix, check_existing=True):
     fullpath = os.path.join(path_prefix, imname)
     im = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
@@ -18,6 +13,7 @@ def load_image(imname, path_prefix, check_existing=True):
         im.pack()
     return im
 
+''' Reads and loads a GP material in Blender database '''
 def upload_material(name, mdat, fdir):
     # Get material
     mat = bpy.data.materials.get(name)
@@ -35,10 +31,12 @@ def upload_material(name, mdat, fdir):
     for k,v in mdat.items():
         if not hasattr(m, k):
             continue
+        # Color Attributes
         if (k.find("color") >= 0)  \
             and isinstance(v[0], str):
                 setattr(m, k, hex2rgba(v[0],v[1]))
                 continue
+        # Image attributes
         if (k.find("image") >= 0) \
             and (not v is None):
             im = load_image(v, fdir)
@@ -48,7 +46,9 @@ def upload_material(name, mdat, fdir):
 
     return True
 
+''' Reads and loads a palette content in Blender data'''
 def upload_palette(pname, data, fpt, palette):
+    # Image
     is_relative_path = False
     fdir = ""
     if ("image" in data) and ("path" in data["image"]):
@@ -59,9 +59,11 @@ def upload_palette(pname, data, fpt, palette):
             palette.image = load_image(im_data["path"], fdir)
 
     for name,mat_data in data["materials"].items():
+        # Material content
         if not upload_material(name, mat_data, fdir):
             continue
-
+        
+        # Material position in picker
         gpmatit = None        
         if "position" in mat_data.keys():
             def posdeg2rad(deg):
@@ -77,26 +79,35 @@ def upload_palette(pname, data, fpt, palette):
         if not gpmatit:
             print("Could not import material ", name)
             continue
-
+        
+        # Material pickline
         if "origin" in mat_data.keys():
             gpmatit.set_origin(mat_data["origin"])
         
+        # Material Image
         if palette.image and ("image" in mat_data.keys()):
             gpmatit.image = load_image(mat_data["image"], fdir)
 
+        # Material layer
         if "layer" in mat_data.keys():
             gpmatit.layer = mat_data["layer"]
     
-    if len(palette.materials) == 0:
+    if palette.count() == 0:
         print(f"No materials in palette {pname} Aborting upload")
         return None
 
     palette.autocomp_positions()   
     palette.name = pname
     palette.source_path = fpt
+    palette.is_obsolete = False
 
     return palette
 
+''' Reads and loads a palette collection from a JSON file
+    If palette_names is not empty, only the palettes whose name are in the set will be loaded
+    If clear_existing is set to True, each imported palette will be cleared before reading
+    Returns the names of the imported palettes
+'''
 def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
     if not os.path.isfile(json_file):
         print("Error : {} path not found".format(json_file))
@@ -123,6 +134,7 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
 
     # Parse JSON
     for pname, pdata in data.items():
+        # Fields starting with __ refers to internal data
         if pname.startswith("__"):
             continue
 
@@ -148,6 +160,10 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
         parsed_palettes.add(pname)
     return parsed_palettes
 
+''' Get all JSON files in given directory 
+    with a given maximal recursion level
+    returns a set containing all the JSON file paths
+'''
 def getJSONfiles(dir, max_rec_level=2, level=0):
     files = set()
     if level == max_rec_level:
@@ -160,9 +176,15 @@ def getJSONfiles(dir, max_rec_level=2, level=0):
             files = files.union(getJSONfiles(fpath, max_rec_level, level+1))
     return files
 
-def write_image(image, filepath, ext):
+''' ---------- EXPORT PALETTES ---------- '''
+
+''' Writes an image from the Blender file database
+    at the given file directory with the given extension format
+    returns the full image file path
+'''
+def write_image(image, filedir, ext):
     import os.path as pth
-    impath = pth.join(pth.dirname(filepath), image.name)
+    impath = pth.join(filedir, image.name)
     if (not impath.endswith(ext.upper())) \
         and (not impath.endswith(ext)):
         impath += ext   
@@ -183,19 +205,33 @@ def write_image(image, filepath, ext):
     
     return impath
 
-def get_material_data(mat, fpth):
+''' GP Material attributes taken into account for export '''
+variables = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
+            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
+            "show_fill",  "show_stroke", "stroke_image", "stroke_style", "texture_angle", "texture_offset", "texture_scale", \
+            "use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+
+''' Reads all material attributes from the Blender file data
+    returns a dictionnary containing all the attributes
+    side effect : writes image files if the material contains texture attributes
+'''
+def get_material_data(mat, fdir):
     def parse_attr(attr):
         dtp = [int, float, bool, str]
         if (attr is None) or any([isinstance(attr, t) for t in dtp]):
             return attr
         if (isinstance(attr, bpy.types.Image)):
-            impath = write_image(attr, fpth, ".png")
+            impath = write_image(attr, fdir, ".png")
             return os.path.basename(impath)
         return [attr[k] for k in range(len(attr))]
     mdat = { v:parse_attr(getattr(mat,v)) for v in variables }
 
     return mdat
 
+''' Writes all palette contain in a JSON file
+    at the given file path
+    side effect : writes image files in the palette contain some 
+'''
 def export_palettes_content(filepath):
     gpmp = bpy.context.scene.gpmatpalettes.palettes
     pal_dct = {}
@@ -207,12 +243,14 @@ def export_palettes_content(filepath):
     pal_dct["__meta__"] = {}
     pal_dct["__meta__"]["timestamp"] = tmstp
 
+    filedir= os.path.dirname(filepath)
+
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
         dat_mats = {m.name:m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil}
 
         if pdata.image:
-            impath = write_image(pdata.image, filepath, ext)
+            impath = write_image(pdata.image, filedir, ext)
             imname = os.path.basename(impath)
             relpath = True
             pal_dct[pname]["image"] = {"path":imname, "relative":relpath} 
@@ -220,7 +258,7 @@ def export_palettes_content(filepath):
         pal_dct[pname]["materials"] = {}
         mat_dct = pal_dct[pname]["materials"]
         for mname, mdata in pdata.materials.items(): 
-            mat_dct[mname] = get_material_data(dat_mats[mname], filepath)
+            mat_dct[mname] = get_material_data(dat_mats[mname], filedir)
 
             mat_dct[mname]["position"] = mdata.get_angle(True)*180/math.pi
 
