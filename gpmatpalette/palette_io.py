@@ -228,9 +228,9 @@ def get_material_data(mat, fdir):
 
     return mdat
 
-''' Writes all palette contain in a JSON file
+''' Writes all palettes contained in a JSON file
     at the given file path
-    side effect : writes image files in the palette contain some 
+    side effect : writes image files if the palettes contain some 
 '''
 def export_palettes_content(filepath):
     gpmp = bpy.context.scene.gpmatpalettes.palettes
