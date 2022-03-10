@@ -92,6 +92,7 @@ class GPCOLORPICKER_OT_autoloadPalette(bpy.types.Operator):
 
         return {"FINISHED"}
 
+''' Imports a palette collection from a JSON file + potential image files '''
 class GPCOLORPICKER_OT_importPalettes(bpy.types.Operator):
     bl_idname = "scene.import_palette"
     bl_label = "Import Palette"    
