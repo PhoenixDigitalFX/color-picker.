@@ -5,6 +5,7 @@ def register(addon_keymaps):
     from . paledit_ops import register as register_ops
     register_ops()
 
+    # Read keymap from preferences if exists. Default otherwise.
     pname = (__package__).split('.')[0]
     prefs = bpy.context.preferences.addons[pname].preferences
     if prefs is None : 

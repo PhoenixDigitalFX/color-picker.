@@ -1,50 +1,66 @@
+# Useful functions for palette editor related interactions 
 import bpy
 import numpy as np
 from math import pi, cos, sin, atan2
 from . paledit_maths import is_in_boundaries, pol2cart
 from .. gpcolorpicker import picker_interactions as gpcp
 
+''' Simple override of the picker's cache data structure ''' 
 class CachedData(gpcp.CachedData):
-    def __init__(self, context, from_palette=True, empty_palette=False):
-        if not empty_palette:
-            super().__init__(context, from_palette)
+    pass
    
+
+''' -------- INTERACTION AREAS -------- '''
+
+''' Potential marks to be drawn in the palette editor icon '''
 class SelectionMark:
     def __init__(self):
         self.position = np.zeros(2)
         self.color = np.zeros(4)
         self.radius = 1
         self.type = 0
+
+''' Abstract Interaction Area class '''
 class InteractionArea():
     mark=None
 
+    ''' Called at each draw if no interaction is running '''
     def refresh(self, cache, settings):
         pass
 
+    ''' Checks if the given position is withing the selection area of the interaction '''
     def is_in_selection(self, op, cache, settings, pos):
         return False
 
+    ''' Called when interaction area is not in selection '''
     def display_not_in_selection(self, op, cache, settings, pos):
         pass
 
+    ''' Called when interaction area is in selection '''
     def display_in_selection(self, op, cache, settings, pos):
         pass
     
+    ''' Called when interaction area is in selection and the mouse left click is pressed '''
     def on_click_press(self, op, cache, settings, context):
         pass
-    
+
+    ''' Called when interaction area is running and the mouse is moved (left click still pressed) '''
     def on_mouse_move(self, op, cache, settings, pos):
         pass
 
+    ''' Called when interaction area is running and the mouse left click is released '''
     def on_click_release(self, op, cache, settings, context):
         pass
 
+    ''' Called when cancellation key is called while the interaction is running '''
     def cancel_run(self, op, cache, settings, context):
         pass
-    
+
+    ''' Checks if the interaction area has a mark to be drawn if in selection '''
     def has_mark(self):
         return not (self.mark is None)
 
+''' Override for circle based interaction areas '''
 class RadialInteractionArea(InteractionArea):
     def __init__(self, origin, radius):
         self.org = origin
@@ -53,6 +69,8 @@ class RadialInteractionArea(InteractionArea):
     def is_in_selection(self, op, cache, settings, pos):
         return np.linalg.norm(pos-self.org) < self.rds 
 
+
+''' Move Material position in the Palette Editor '''
 class MoveMaterialAngleInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.id = id
@@ -81,6 +99,7 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         self.refresh(cache, settings)
         op.write_cache_in_palette(context)
     
+''' Move Material pickline in the Palette Editor '''
 class MoveMaterialPickerInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.mark = SelectionMark()
@@ -119,6 +138,7 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.refresh(cache, settings)
         op.write_cache_in_palette(context)
 
+''' Removes Material from the active palette '''
 class RemoveMaterialInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
         self.id = id
@@ -139,6 +159,7 @@ class RemoveMaterialInteraction(RadialInteractionArea):
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.scene.remove_mat_palette('INVOKE_DEFAULT', mat_index=self.id)
 
+''' Adds Material in the active palette '''
 class AddMaterialInteraction(InteractionArea):
     def __init__(self, op, cache, settings):
         self.th = -1
@@ -166,6 +187,8 @@ class AddMaterialInteraction(InteractionArea):
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.scene.add_mat_palette('INVOKE_DEFAULT', angle=self.th)
 
+
+''' Adds Palette in the collection '''
 class NewPaletteInteraction(RadialInteractionArea):
     def __init__(self, op, settings):
         self.org = np.zeros(2)
@@ -180,6 +203,7 @@ class NewPaletteInteraction(RadialInteractionArea):
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.scene.new_palette('INVOKE_DEFAULT')
 
+''' Edits Image of the active Palette '''
 class EditImageInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings):
         self.rds = settings.mc_inner_radius*0.25
@@ -190,7 +214,6 @@ class EditImageInteraction(RadialInteractionArea):
         self.mark.color = settings.mc_fill_color
         self.mark.radius = self.rds*0.3
         self.mark.type = 0
-
 
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.scene.edit_palette_image('INVOKE_DEFAULT')
