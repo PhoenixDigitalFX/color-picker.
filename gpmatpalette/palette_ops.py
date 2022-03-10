@@ -1,5 +1,6 @@
 import os, bpy, json
 from . palette_io import getJSONfiles, parseJSONFile, export_palettes_content
+from bpy_extras.io_utils import ExportHelper
 
 ''' Check if one or more palette files are now obsolete '''
 class GPCOLORPICKER_OT_checkObsoletePalettes(bpy.types.Operator):
@@ -130,30 +131,29 @@ class GPCOLORPICKER_OT_importPalettes(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 ''' Exports a palette collection to a JSON file + potential image files '''
-class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator):
+class GPCOLORPICKER_OT_exportPalette(bpy.types.Operator, ExportHelper):
     bl_idname = "scene.export_palette"
     bl_label = "Export Palette"    
-
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    
+    filename_ext = ".json"
+    filter_glob: bpy.props.StringProperty(
+        default="*.json",
+        options={'HIDDEN'},
+        maxlen=255,  # Max internal buffer length, longer would be clamped.
+    )
 
     @classmethod
     def poll(cls, context):
         return not context.scene.gpmatpalettes.is_empty()
 
     def execute(self, context): 
-        fpt = self.filepath         
-
         data = export_palettes_content(self.filepath)
-        
-        with open(fpt, 'w') as outfile:
+
+        with open(self.filepath, 'w') as outfile:
             json.dump(data, outfile, indent=4)
         
         self.report({'INFO'}, f"Palettes exported to {self.filepath}")
         return {'FINISHED'}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
 
 ''' Removes a palette '''
 class GPCOLORPICKER_OT_removePalette(bpy.types.Operator):
