@@ -60,7 +60,7 @@ def upload_palette(pname, data, fpt, palette):
             palette.image = load_image(im_data["path"], fdir)
 
     for name,mat_data in data["materials"].items():
-        # Material content
+        # [obsolete] Material content
         if not upload_material(name, mat_data, fdir):
             continue
         
