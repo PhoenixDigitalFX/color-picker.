@@ -131,7 +131,6 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         pos = cache.pick_origins[self.mat_id][self.pln_id][0:2]
         if np.linalg.norm(pos) > 1.:
             cache.pick_origins[self.mat_id].pop(self.pln_id)
-        self.refresh(cache, settings)
         op.write_cache_in_palette(context)
 
 ''' Add Material pickline in the Palette Editor '''
