@@ -23,12 +23,19 @@ class GPMatPickLine(PropertyGroup):
         if np_arr:
             return np.asarray([self.ox, self.oy])
         return [self.ox, self.oy]
+class GPBrushItem(PropertyGroup):
+    name      : StringProperty(name="Name")
+    image     : PointerProperty(type=bpy.types.Image, name="Preview")
+    index     : IntProperty(name="Index")
+    is_default: BoolProperty(name="Default", default=False)
+
 class GPMatItem(PropertyGroup):
     # name: StringProperty(name= "Name")
     data: PointerProperty(type=bpy.types.Material, name="Data")
 
     image: PointerProperty(type=bpy.types.Image, name="Image", description="Image to be displayed in the picker when material is in selection")
     layer: StringProperty(name="Layer", description="Layer to switch to when material is selected")
+    brushes: CollectionProperty(type=GPBrushItem)
 
     angle: FloatProperty(name="Angle", description="Material angle position in the picker", subtype="ANGLE", default=-1)
     is_angle_movable: BoolProperty(name="Movable", description="The angle is computed dynamically",default=True)
@@ -337,7 +344,7 @@ class GPMatPalettes(PropertyGroup):
         for p in self.palettes:
             p.is_dirty = False
 
-classes = [ GPMatPickLine, GPMatItem, GPMatPalette, GPMatPalettes]
+classes = [ GPBrushItem, GPMatPickLine, GPMatItem, GPMatPalette, GPMatPalettes]
 
 def register():
     for cls in classes:

@@ -47,6 +47,36 @@ def upload_material(name, mdat, fdir):
 
     return True
 
+''' Reads and loads a GP brush in Blender database '''
+def upload_brush(name, bdat, fdir):
+    # Get brush
+    bsh = bpy.data.brushes.get(name)
+    if bsh is None:
+        # create brush
+        bsh = bpy.data.brushes.new(name=name)
+        bsh.use_fake_user = True
+
+    # Setting up brush settings
+    # TODO
+    m = bsh.grease_pencil
+    for k,v in bdat.items():
+        if not hasattr(m, k):
+            continue
+        # Color Attributes
+        if (k.find("color") >= 0)  \
+            and isinstance(v[0], str):
+                setattr(m, k, hex2rgba(v[0],v[1]))
+                continue
+        # Image attributes
+        if (k.find("image") >= 0) \
+            and (not v is None):
+            im = load_image(v, fdir)
+            setattr(m, k, im)
+            continue
+        setattr(m, k, v)
+
+    return True
+
 ''' Reads and loads a palette content in Blender data'''
 def upload_palette(pname, data, fpt, palette):
     # Image
@@ -143,6 +173,11 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
         for mname, mdat in mat_dct.items():
             upload_material(mname, mdat, fdir)
 
+    if "__brushes__" in data:
+        bsh_dct = data["__brushes__"]
+        for bname, bdat in bsh_dct.items():
+            upload_brush(bname, bdat, fdir)
+
     for pname, pdata in data.items():
         # Fields starting with __ refers to internal data
         if pname.startswith("__"):
@@ -216,7 +251,7 @@ def write_image(image, filedir, ext):
     return impath
 
 ''' GP Material attributes taken into account for export '''
-variables = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
+mat_attr = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
             "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
             "show_fill",  "show_stroke", "stroke_image", "stroke_style", "texture_angle", "texture_offset", "texture_scale", \
             "use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
@@ -234,9 +269,33 @@ def get_material_data(mat, fdir):
             impath = write_image(attr, fdir, ".png")
             return os.path.basename(impath)
         return [attr[k] for k in range(len(attr))]
-    mdat = { v:parse_attr(getattr(mat,v)) for v in variables }
+    mdat = { v:parse_attr(getattr(mat,v)) for v in mat_attr }
 
     return mdat
+
+''' GP Brushes attributes taken into account for export '''
+    # TODO
+bsh_attr = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
+            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
+            "show_fill",  "show_stroke", "stroke_image", "stroke_style", "texture_angle", "texture_offset", "texture_scale", \
+            "use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+
+''' Reads all brush attributes from the Blender file data
+    returns a dictionnary containing all the attributes
+    side effect : writes image files if the brush contains texture attributes
+'''
+def get_brush_data(bsh, fdir):
+    def parse_attr(attr):
+        dtp = [int, float, bool, str]
+        if (attr is None) or any([isinstance(attr, t) for t in dtp]):
+            return attr
+        if (isinstance(attr, bpy.types.Image)):
+            impath = write_image(attr, fdir, ".png")
+            return os.path.basename(impath)
+        return [attr[k] for k in range(len(attr))]
+    bdat = { v:parse_attr(getattr(bsh,v)) for v in bsh_attr }
+
+    return bdat
 
 ''' Writes all palettes contained in a JSON file
     at the given file path
@@ -256,7 +315,7 @@ def export_palettes_content(filepath):
     filedir= os.path.dirname(filepath)
 
     # Palettes
-    mat_names = set()
+    mat_names, brush_names = set(), set()
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
 
@@ -283,6 +342,16 @@ def export_palettes_content(filepath):
 
             if mat.layer:
                 mat_dct[mname]["layer"] = mat.layer
+            
+            mat_dct[mname]["brushes"] = {}
+            bsh_dct = mat_dct[mname]["brushes"]
+            for bname, bdata in mat.brushes.items():
+                brush_names.add(bname)
+                bsh_dct[bname] = {}
+                bsh_dct[bname]["index"] = bdata.index
+                bsh_dct[bname]["is_default"] = bdata.is_default                
+                if bdata.image:
+                    bsh_dct[bname]["image"] = os.path.basename(bdata.image.filepath)
 
     # Materials
     pal_dct["__materials__"] = {}
@@ -290,5 +359,12 @@ def export_palettes_content(filepath):
     for mname in mat_names:
         mdat = bpy.data.materials[mname].grease_pencil
         mat_dct[mname] = get_material_data(mdat, filedir)
+
+    # Brushes
+    pal_dct["__brushes__"] = {}
+    bsh_dct = pal_dct["__brushes__"]
+    for bname in brush_names:
+        bdat = bpy.data.brushes[bname]
+        bsh_dct[bname] = get_brush_data(bdat, filedir)
 
     return pal_dct
