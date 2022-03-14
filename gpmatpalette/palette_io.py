@@ -131,12 +131,18 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
     gpmatpalettes = bpy.context.scene.gpmatpalettes
     palettes = gpmatpalettes.palettes
     parsed_palettes = set()
+    fdir = os.path.dirname(json_file)
 
     timestamp = ""
     if "__meta__" in data:
         timestamp  = data["__meta__"]["timestamp"]
 
     # Parse JSON
+    if "__materials__" in data:
+        mat_dct = data["__materials__"]
+        for mname, mdat in mat_dct.items():
+            upload_material(mname, mdat, fdir)
+
     for pname, pdata in data.items():
         # Fields starting with __ refers to internal data
         if pname.startswith("__"):
@@ -249,6 +255,8 @@ def export_palettes_content(filepath):
 
     filedir= os.path.dirname(filepath)
 
+    # Palettes
+    mat_names = set()
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
 
@@ -260,11 +268,11 @@ def export_palettes_content(filepath):
 
         pal_dct[pname]["materials"] = {}
         mat_dct = pal_dct[pname]["materials"]
+        
         for mat in pdata.materials: 
             mname = mat.get_name()
-
-            mat_dct[mname] = get_material_data(mat.data.grease_pencil, filedir)
-
+            mat_names.add(mname)
+            mat_dct[mname] = {}
             mat_dct[mname]["position"] = mat.get_angle(True)*180/math.pi
 
             if mat.has_pickline():
@@ -275,4 +283,12 @@ def export_palettes_content(filepath):
 
             if mat.layer:
                 mat_dct[mname]["layer"] = mat.layer
+
+    # Materials
+    pal_dct["__materials__"] = {}
+    mat_dct = pal_dct["__materials__"]
+    for mname in mat_names:
+        mdat = bpy.data.materials[mname].grease_pencil
+        mat_dct[mname] = get_material_data(mdat, filedir)
+
     return pal_dct
