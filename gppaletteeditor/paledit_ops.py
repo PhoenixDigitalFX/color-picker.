@@ -24,10 +24,12 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             a = cache.angles[i]
             if cache.is_custom_angle[i] and (a != pal.materials[mname].get_angle()):
                 pal.set_material_by_angle(mname, a)
-            
-            if (cache.pick_origins[i][2] > 0):
-                matit = pal.materials[mname]
-                matit.set_origin(cache.pick_origins[i][0:2])
+
+            matit = pal.materials[mname]
+            if len(matit.picklines) != len(cache.pick_origins[i]):
+                pal.is_dirty = True
+            matit.picklines.clear()
+            matit.set_origins(cache.pick_origins[i])
     
     def modal(self, context, event):       
         # Getting mouse location
@@ -119,7 +121,9 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             self.interaction_areas.append(NewPaletteInteraction(self, stgs))
         else:
             for i in range(cache.mat_nb):         
-                self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i))
+                self.interaction_areas.append(AddMaterialPickerInteraction(self, cache, stgs, i))
+                for j in range(len(cache.pick_origins[i])):
+                    self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i, j))
                 self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
                 self.interaction_areas.append(RemoveMaterialInteraction(self, cache, stgs, i))
             self.interaction_areas.append(AddMaterialInteraction(self, cache, stgs))

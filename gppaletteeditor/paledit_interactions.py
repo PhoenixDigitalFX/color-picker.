@@ -106,42 +106,57 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
     
 ''' Move Material pickline in the Palette Editor '''
 class MoveMaterialPickerInteraction(RadialInteractionArea):
-    def __init__(self, op, cache, settings, id):
+    def __init__(self, op, cache, settings, mat_id, pln_id):
         self.mark = SelectionMark()
         self.mark.color = settings.mark_color
         self.mark.radius = settings.mat_line_width
-        self.id = id
+        self.mat_id = mat_id
+        self.pln_id = pln_id
         self.overall_rds = settings.mat_centers_radius 
         self.overall_rds -= settings.mat_radius
-        self.name = cache.materials[self.id].name
+        self.name = cache.materials[self.mat_id].name
         self.refresh(cache, settings)
 
-    def init_org(self, cache, _, i, init_z=True):
-        org = pol2cart(self.overall_rds, cache.angles[i])
-        if init_z:
-            return np.append(org, 0)
-        return org
-
     def refresh(self, cache, settings):
-        if (cache.pick_origins[self.id][2] == 0):
-            self.org = self.init_org(cache, settings, self.id, False)
-        else:
-            o = cache.pick_origins[self.id]
-            self.org = o[0:2] * self.overall_rds
+        o = cache.pick_origins[self.mat_id][self.pln_id]
+        self.org = o * self.overall_rds
         self.rds = settings.mat_radius*0.75
         self.mark.position = self.org
     
-    def on_mouse_move(self, op, cache, settings, pos):     
-        cache.pick_origins[self.id][0:2] = pos/self.overall_rds
-        cache.pick_origins[self.id][2] = 1
+    def on_mouse_move(self, op, cache, settings, pos): 
+        print("Mouse move, mat has ", len(cache.pick_origins[self.mat_id]), " picklines")  
+        cache.pick_origins[self.mat_id][self.pln_id] = pos/self.overall_rds
         self.refresh(cache, settings)
 
     def on_click_release(self, op, cache, settings, context):
-        pos = cache.pick_origins[self.id][0:2]
+        pos = cache.pick_origins[self.mat_id][self.pln_id][0:2]
         if np.linalg.norm(pos) > 1.:
-            cache.pick_origins[self.id] = self.init_org(cache, settings, self.id)/self.overall_rds
+            cache.pick_origins[self.mat_id].pop(self.pln_id)
         self.refresh(cache, settings)
         op.write_cache_in_palette(context)
+
+''' Add Material pickline in the Palette Editor '''
+class AddMaterialPickerInteraction(MoveMaterialPickerInteraction):
+    def __init__(self, op, cache, settings, id):
+        self.was_added = False
+        super().__init__(op, cache, settings, id, -1)
+
+    def refresh(self, cache, settings):
+        if not self.was_added:
+            self.org = pol2cart(self.overall_rds, cache.angles[self.mat_id])
+            self.rds = settings.mat_radius*0.75
+            self.mark.position = self.org
+        else:
+            super().refresh(cache, settings)
+    
+    def on_click_press(self, op, cache, settings, context):
+        cache.pick_origins[self.mat_id].append(self.org)
+        self.was_added = True
+        print("Adding pickline")
+
+    def on_click_release(self, op, cache, settings, context):
+        super().on_click_release(op, cache, settings, context)
+        self.was_added = False
 
 ''' Removes Material from the active palette '''
 class RemoveMaterialInteraction(RadialInteractionArea):

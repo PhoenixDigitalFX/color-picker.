@@ -1,5 +1,5 @@
 # Useful functions for picker related interactions
-from math import atan2, pi
+from math import atan2, pi, sin, cos
 import numpy as np
 import bpy
 from . picker_draw import load_gpu_texture
@@ -107,6 +107,7 @@ class CachedData:
         gpmp = context.scene.gpmatpalettes.active()
 
         if gpmp and self.from_palette:
+            # From palette cache
             self.gpu_texture = load_gpu_texture(gpmp.image)
             self.pal_active = gpmp.name 
             self.mat_cached = -1
@@ -121,9 +122,11 @@ class CachedData:
 
             self.angles = [ m.get_angle() for m in gpmp.materials ]
             self.is_custom_angle = [ not m.is_angle_movable for m in gpmp.materials ]
-            self.pick_origins = [ np.asarray(m.get_origin(True))\
-                                    for m in gpmp.materials]                                            
+            self.pick_origins = [ m.get_origins() for m in gpmp.materials ]      
+            self.nb_max_picklines = gpmp.get_nb_max_picklines()  
+
         elif ob and not self.from_palette:
+            # From active cache
             self.gpu_texture = None
             self.pal_active = -1
             self.mat_cached = -1
@@ -133,7 +136,9 @@ class CachedData:
             self.mat_nb = len(self.materials)
             self.mat_active = ob.active_material_index
             self.angles = np.linspace(0,2*pi,self.mat_nb+1)[:-1]  
-            self.pick_origins= self.mat_nb*[np.asarray([0,0,0])]
+            self.pick_origins= self.mat_nb*[[]]  
+            self.nb_max_picklines = 0     
+            
         else:
             # Empty cache
             self.gpu_texture = None
@@ -145,6 +150,7 @@ class CachedData:
             self.mat_active = -1
             self.angles = []
             self.pick_origins= []
+            self.nb_max_picklines = 0     
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]
@@ -153,3 +159,6 @@ class CachedData:
 
     def use_gpu_texture(self):
         return self.from_palette and not (self.gpu_texture is None)
+
+    def get_picklines(self):
+        return [ [ o[0], o[1], i ] for i,origins in enumerate(self.pick_origins) for o in origins  ]

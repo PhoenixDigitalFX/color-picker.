@@ -82,7 +82,10 @@ def upload_palette(pname, data, fpt, palette):
         
         # Material pickline
         if "origin" in mat_data.keys():
-            gpmatit.set_origin(mat_data["origin"])
+            gpmatit.set_origins([mat_data["origin"]])
+
+        if "origins" in mat_data.keys():
+            gpmatit.set_origins(mat_data["origins"])
         
         # Material Image
         if palette.image and ("image" in mat_data.keys()):
@@ -262,8 +265,8 @@ def export_palettes_content(filepath):
 
             mat_dct[mname]["position"] = mdata.get_angle(True)*180/math.pi
 
-            if mdata.has_pick_line:
-                mat_dct[mname]["origin"] = mdata.get_origin()
+            if mdata.has_pickline():
+                mat_dct[mname]["origins"] = mdata.get_origins()
 
             if mdata.image:
                 mat_dct[mname]["image"] = os.path.basename(mdata.image.filepath)

@@ -6,6 +6,21 @@ import numpy as np
 from . palette_maths import get_unset_intervals
 
 ''' --- Material Item --- '''
+class GPMatPickLine(PropertyGroup):
+    ox : FloatProperty(name="Origin X", default=0, description="Pickline origin x coordinate")
+    oy : FloatProperty(name="Origin Y", default=0, description="Pickline origin y coordinate")
+
+    ''' Setter for pickline origin (both x and y coordinates)'''
+    def set_origin(self, origin):
+        self.ox = origin[0]
+        self.oy = origin[1]
+
+    ''' Getter for pickline origin (both x and y coordinates)
+        If with_bool is set to True, an additionnal 3D coord will be added
+        indicating whether the pickline exists or not
+    '''
+    def get_origin(self):
+        return np.asarray([self.ox, self.oy])
 class GPMatItem(PropertyGroup):
     name: StringProperty(name= "Name")
 
@@ -15,9 +30,7 @@ class GPMatItem(PropertyGroup):
     angle: FloatProperty(name="Angle", description="Material angle position in the picker", subtype="ANGLE", default=-1)
     is_angle_movable: BoolProperty(name="Movable", description="The angle is computed dynamically",default=True)
 
-    has_pick_line: BoolProperty(name="Has Pickline", default=False)
-    ox : FloatProperty(name="Origin X", default=0, description="Pickline origin x coordinate")
-    oy : FloatProperty(name="Origin Y", default=0, description="Pickline origin y coordinate")
+    picklines: CollectionProperty(name="Picklines", type=GPMatPickLine)
 
     ''' Clear all material item data '''
     def clear(self):
@@ -34,20 +47,22 @@ class GPMatItem(PropertyGroup):
         self.angle = a
         self.is_angle_movable = auto
 
-    ''' Setter for pickline origin (both x and y coordinates)'''
-    def set_origin(self, origin, auto=False):
-        self.ox = origin[0]
-        self.oy = origin[1]
-        self.has_pick_line = not auto
+    ''' Setter for pickline origins (both x and y coordinates)'''
+    def set_origins(self, origins):
+        for o in origins:
+            plit = self.picklines.add()
+            plit.set_origin(o)
     
-    ''' Getter for pickline origin (both x and y coordinates)
-        If with_bool is set to True, an additionnal 3D coord will be added
-        indicating whether the pickline exists or not
-    '''
-    def get_origin(self, with_bool = False):
-        if with_bool:
-            return [self.ox, self.oy, self.has_pick_line]
-        return [self.ox, self.oy]
+    ''' Getter for pickline origins (both x and y coordinates)
+    '''    
+    def get_origins(self):
+        return [ pl.get_origin() for pl in self.picklines ]
+
+    def count_picklines(self):
+        return len(self.picklines)
+
+    def has_pickline(self):
+        return self.count_picklines() > 0
 
 ''' --- Palette --- '''
 
@@ -96,12 +111,6 @@ class GPMatPalette(PropertyGroup):
             for i,mat_id in enumerate(ids):
                 a = angles[i] % (2*math.pi)
                 self.materials[mat_id].set_angle(a, auto=True)
-        
-        for m in self.materials:
-            if m.has_pick_line:
-                continue
-            a = m.get_angle()
-            m.set_origin([math.cos(a), math.sin(a)], auto=True)
     
     ''' Get material index from angle position
         Useful to insert a material at a certain angle position
@@ -188,6 +197,11 @@ class GPMatPalette(PropertyGroup):
     def set_obsolete(self, val):
         self.lock_obsolete = val
         self.is_obsolete = self.lock_obsolete
+
+    def get_nb_max_picklines(self):
+        if self.count() == 0:
+            return 0
+        return max([m.count_picklines() for m in self.materials])
 
 ''' --- Palette collection container --- '''
 
@@ -285,7 +299,7 @@ class GPMatPalettes(PropertyGroup):
         for p in self.palettes:
             p.is_dirty = False
 
-classes = [ GPMatItem, GPMatPalette, GPMatPalettes]
+classes = [ GPMatPickLine, GPMatItem, GPMatPalette, GPMatPalettes]
 
 def register():
     for cls in classes:

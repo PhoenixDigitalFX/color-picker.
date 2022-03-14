@@ -179,9 +179,11 @@ def draw_materials(op, cache, settings):
     uniform vec4 mat_fill_colors[__NMAT__];
     uniform vec4 mat_line_colors[__NMAT__];
     uniform float mat_thetas[__NMAT__];
-    uniform vec3 mat_origins[__NMAT__];
+    #ifdef _PICKLINES_
+    uniform vec3 mat_picklines[__NPLM__];
     uniform float pickline_width;
     uniform vec4 pickline_color;
+    #endif
     uniform float aa_eps;
 
     in vec2 lpos;
@@ -192,6 +194,29 @@ def draw_materials(op, cache, settings):
     {                    
         float d = length(lpos);
         fragColor = vec4(0.);
+
+
+        #ifdef _PICKLINES_
+        /* Pick lines */
+        for(int k = 0; k < __NPLM__; ++k){
+            int i = int(mat_picklines[k].z);
+            bool is_selected = (i == mat_selected);
+
+            float th_i = mat_thetas[i];
+            float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
+            float radius = is_selected?selected_radius:mat_radius;
+
+            float rds = (R-radius);
+            vec2 s0 = rds*mat_picklines[k].xy;
+            vec2 s1 = rds*vec2(cos(th_i), sin(th_i));
+
+            vec4 fragColor_line = pickline_color;
+            fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
+            fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
+
+            fragColor = alpha_compose(fragColor, fragColor_line);
+        }
+        #endif
 
         /*    MATERIALS CIRCLES    */
         for(int i = 0; i < mat_nb; ++i){
@@ -223,27 +248,22 @@ def draw_materials(op, cache, settings):
                 fragColor_mat = alpha_compose(act_color, fragColor_mat);
             }
 
-            /* Pick lines */
-            if( (mat_origins[i].z != 0) ){
-                float rds = (R-radius);
-                vec2 s0 = rds*mat_origins[i].xy;
-                vec2 s1 = rds*vec2(cos(th_i),sin(th_i));
-                vec4 fragColor_line = pickline_color;
-                fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
-                fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
-                fragColor_mat = alpha_compose(fragColor_mat, fragColor_line);
-            }
-
             fragColor = alpha_compose(fragColor_mat, fragColor);
         }
     }
     '''     
+    fsh = materials_fsh
+
     nmat = cache.mat_nb
     if nmat <= 0:
         return    
+    
+    nplm = cache.nb_max_picklines
+    if nplm > 0:
+        fsh = "#define _PICKLINES_" + fsh.replace("__NPLM__",str(nplm))
 
-    fsh = materials_fsh
     fsh = fsh.replace("__NMAT__",str(nmat))
+
     shader, batch = setup_shader(op, settings, fsh)
 
     shader.uniform_float("selected_radius", settings.selected_radius)
@@ -252,8 +272,9 @@ def draw_materials(op, cache, settings):
     shader.uniform_float("mat_line_width", settings.mat_line_width)
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
-    shader.uniform_float("pickline_width", settings.pickline_width)
-    shader.uniform_float("pickline_color", settings.mc_line_color)
+    if nplm > 0:
+        shader.uniform_float("pickline_width", settings.pickline_width)
+        shader.uniform_float("pickline_color", settings.mc_line_color)
     shader.uniform_int("mat_selected", op.mat_selected);   
     shader.uniform_int("mat_nb", nmat);    
     shader.uniform_int("mat_active", cache.mat_active);   
@@ -261,7 +282,8 @@ def draw_materials(op, cache, settings):
     set_uniform_vector_float(shader, cache.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, cache.mat_line_colors, "mat_line_colors")
     set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
-    set_uniform_vector_float(shader, cache.pick_origins, "mat_origins")
+    if nplm > 0:
+        set_uniform_vector_float(shader, cache.get_picklines(), "mat_picklines")
 
     batch.draw(shader)
 
