@@ -126,6 +126,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                     self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i, j))
                 self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
                 self.interaction_areas.append(RemoveMaterialInteraction(self, cache, stgs, i))
+                self.interaction_areas.append(AddBrushInteraction(self, cache, stgs, i))
             self.interaction_areas.append(AddMaterialInteraction(self, cache, stgs))
             self.interaction_areas.append(EditImageInteraction(self, cache, stgs))
 
@@ -314,10 +315,40 @@ class GPCOLORPICKER_OT_removeMaterialFromPalette(bpy.types.Operator):
         return wm.invoke_confirm(self, event)
 
 
+''' Adds an existing material in Palette 
+    UI : select material template layout
+'''
+class GPCOLORPICKER_OT_addBrushInMaterial(bpy.types.Operator):
+    bl_idname = "scene.add_brush_mat"
+    bl_label = "GP Add Brush to Material"
+
+    mat_index: bpy.props.IntProperty(default=-1)
+    bsh_index: bpy.props.IntProperty(default=-1)
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.gpmatpalettes.active()
+
+    def execute(self, context):        
+        return {'FINISHED'}   
+
+    def draw(self, context):
+        layout = self.layout
+
+        pal = context.scene.gpmatpalettes.active()
+        mat = pal.materials[self.mat_index]
+        row = layout.row()
+        row.template_ID(mat, "pending_brush")  
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
 classes = [GPCOLORPICKER_OT_paletteEditor, \
         GPCOLORPICKER_OT_addMaterialInPalette, \
         GPCOLORPICKER_OT_removeMaterialFromPalette, \
         GPCOLORPICKER_OT_newPalette, \
+        GPCOLORPICKER_OT_addBrushInMaterial, \
         GPCOLORPICKER_OT_editImage]
 
 def register():

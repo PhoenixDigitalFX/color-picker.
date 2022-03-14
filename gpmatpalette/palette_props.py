@@ -36,6 +36,9 @@ class GPMatItem(PropertyGroup):
     image: PointerProperty(type=bpy.types.Image, name="Image", description="Image to be displayed in the picker when material is in selection")
     layer: StringProperty(name="Layer", description="Layer to switch to when material is selected")
     brushes: CollectionProperty(type=GPBrushItem)
+    pending_brush : PointerProperty(type=bpy.types.Brush)
+
+    is_dirty: BoolProperty(default=False)
 
     angle: FloatProperty(name="Angle", description="Material angle position in the picker", subtype="ANGLE", default=-1)
     is_angle_movable: BoolProperty(name="Movable", description="The angle is computed dynamically",default=True)
@@ -76,7 +79,17 @@ class GPMatItem(PropertyGroup):
 
     def get_name(self):
         return self.data.name
-
+    
+    def accept_pending_brush(self):
+        if not self.pending_brush:
+            return
+        bsh = self.brushes.add()
+        bsh.name = self.pending_brush.name
+        bsh.index = len(self.brushes)-1
+                
+        self.pending_brush = None
+        self.is_dirty = True
+        return True
 
 ''' --- Palette --- '''
 

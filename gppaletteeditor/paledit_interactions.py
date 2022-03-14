@@ -235,3 +235,24 @@ class EditImageInteraction(RadialInteractionArea):
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.scene.edit_palette_image('INVOKE_DEFAULT')
 
+''' Adds Brush in material '''
+class AddBrushInteraction(RadialInteractionArea):
+    def __init__(self, op, cache, settings, id):
+        self.id = id
+        self.mark = SelectionMark()
+        self.mark.color = settings.mark_color
+        self.mark.radius = settings.mat_radius*0.25
+        self.mark.type = 1
+        self.refresh(cache, settings)
+
+    def refresh(self, cache, settings):
+        self.th = cache.angles[self.id]
+        udir = np.asarray([cos(self.th),sin(self.th)])
+        overall_rds = settings.mat_centers_radius+2.5*settings.mat_radius
+        self.org = overall_rds*udir
+        self.rds = settings.mat_radius
+        self.mark.position = self.org
+    
+    def on_click_release(self, op, cache, settings, context):
+        bpy.ops.scene.add_brush_mat('INVOKE_DEFAULT', mat_index=self.id)
+
