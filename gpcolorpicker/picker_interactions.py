@@ -123,7 +123,6 @@ class CachedData:
             self.angles = [ m.get_angle() for m in gpmp.materials ]
             self.is_custom_angle = [ not m.is_angle_movable for m in gpmp.materials ]
             self.pick_origins = [ m.get_origins() for m in gpmp.materials ]      
-            self.nb_max_picklines = gpmp.get_nb_max_picklines()  
 
         elif ob and not self.from_palette:
             # From active cache
@@ -137,7 +136,6 @@ class CachedData:
             self.mat_active = ob.active_material_index
             self.angles = np.linspace(0,2*pi,self.mat_nb+1)[:-1]  
             self.pick_origins= self.mat_nb*[[]]  
-            self.nb_max_picklines = 0     
             
         else:
             # Empty cache
@@ -149,8 +147,7 @@ class CachedData:
             self.mat_nb = len(self.materials)
             self.mat_active = -1
             self.angles = []
-            self.pick_origins= []
-            self.nb_max_picklines = 0     
+            self.pick_origins= []   
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]

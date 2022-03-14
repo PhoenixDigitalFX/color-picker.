@@ -124,7 +124,6 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.mark.position = self.org
     
     def on_mouse_move(self, op, cache, settings, pos): 
-        print("Mouse move, mat has ", len(cache.pick_origins[self.mat_id]), " picklines")  
         cache.pick_origins[self.mat_id][self.pln_id] = pos/self.overall_rds
         self.refresh(cache, settings)
 
@@ -152,7 +151,6 @@ class AddMaterialPickerInteraction(MoveMaterialPickerInteraction):
     def on_click_press(self, op, cache, settings, context):
         cache.pick_origins[self.mat_id].append(self.org)
         self.was_added = True
-        print("Adding pickline")
 
     def on_click_release(self, op, cache, settings, context):
         super().on_click_release(op, cache, settings, context)

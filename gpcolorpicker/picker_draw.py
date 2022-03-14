@@ -258,7 +258,8 @@ def draw_materials(op, cache, settings):
     if nmat <= 0:
         return    
     
-    nplm = cache.nb_max_picklines
+    picklines = cache.get_picklines()
+    nplm = len(picklines)
     if nplm > 0:
         fsh = "#define _PICKLINES_" + fsh.replace("__NPLM__",str(nplm))
 
@@ -272,9 +273,6 @@ def draw_materials(op, cache, settings):
     shader.uniform_float("mat_line_width", settings.mat_line_width)
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
-    if nplm > 0:
-        shader.uniform_float("pickline_width", settings.pickline_width)
-        shader.uniform_float("pickline_color", settings.mc_line_color)
     shader.uniform_int("mat_selected", op.mat_selected);   
     shader.uniform_int("mat_nb", nmat);    
     shader.uniform_int("mat_active", cache.mat_active);   
@@ -282,8 +280,11 @@ def draw_materials(op, cache, settings):
     set_uniform_vector_float(shader, cache.mat_fill_colors, "mat_fill_colors")
     set_uniform_vector_float(shader, cache.mat_line_colors, "mat_line_colors")
     set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
+    
     if nplm > 0:
-        set_uniform_vector_float(shader, cache.get_picklines(), "mat_picklines")
+        shader.uniform_float("pickline_width", settings.pickline_width)
+        shader.uniform_float("pickline_color", settings.mc_line_color)
+        set_uniform_vector_float(shader, picklines, "mat_picklines")
 
     batch.draw(shader)
 
