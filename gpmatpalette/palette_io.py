@@ -266,7 +266,7 @@ def export_palettes_content(filepath):
             mat_dct[mname]["position"] = mdata.get_angle(True)*180/math.pi
 
             if mdata.has_pickline():
-                mat_dct[mname]["origins"] = mdata.get_origins()
+                mat_dct[mname]["origins"] = mdata.get_origins(np_arr = False)
 
             if mdata.image:
                 mat_dct[mname]["image"] = os.path.basename(mdata.image.filepath)

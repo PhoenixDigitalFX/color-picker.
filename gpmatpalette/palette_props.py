@@ -19,8 +19,10 @@ class GPMatPickLine(PropertyGroup):
         If with_bool is set to True, an additionnal 3D coord will be added
         indicating whether the pickline exists or not
     '''
-    def get_origin(self):
-        return np.asarray([self.ox, self.oy])
+    def get_origin(self, np_arr = True):
+        if np_arr:
+            return np.asarray([self.ox, self.oy])
+        return [self.ox, self.oy]
 class GPMatItem(PropertyGroup):
     name: StringProperty(name= "Name")
 
@@ -55,8 +57,8 @@ class GPMatItem(PropertyGroup):
     
     ''' Getter for pickline origins (both x and y coordinates)
     '''    
-    def get_origins(self):
-        return [ pl.get_origin() for pl in self.picklines ]
+    def get_origins(self, np_arr = True):
+        return [ pl.get_origin(np_arr) for pl in self.picklines ]
 
     def count_picklines(self):
         return len(self.picklines)
