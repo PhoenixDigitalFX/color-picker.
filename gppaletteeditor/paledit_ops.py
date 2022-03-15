@@ -1,5 +1,5 @@
 # Palette Editor related operators
-import bpy
+import bpy, time
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
 from . paledit_draw import draw_callback_px
@@ -137,9 +137,23 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             else:
                 itar.display_not_in_selection(self, cache, stgs, mouse_local)
 
+    ''' May be used for performance issue
+        check_time returns the total time passed since the user invoked the picker
+    '''
+    def check_time(self):
+        if self.timeout:
+            return
+        print("Timer : ", time.time() - self.tsart)
+        # we prevent other calls to check_time 
+        # (it was mainly used in the draw function which is called continuously)
+        self.timeout = True
+
 
     def invoke(self, context, event):  
         self.report({'INFO'}, "Entering palette edit mode")
+        # Timer initialization
+        self.tsart = time.time()
+        self.timeout = False
 
         pname = (__package__).split('.')[0]
         prefs = context.preferences.addons[pname].preferences

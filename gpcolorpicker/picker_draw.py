@@ -7,6 +7,14 @@ import numpy as np
     Mostly creates geometric primitives with anti-aliasing
 '''
 common_libsh='''
+    vec4 srgb_to_linear_rgb(vec4 c){
+        vec4 sc = c;
+        sc.r = (c.r < 0.04045)?(c.r/12.92):( pow( (c.r+0.055)/1.055, 2.4) );
+        sc.g = (c.r < 0.04045)?(c.g/12.92):( pow( (c.g+0.055)/1.055, 2.4) );
+        sc.b = (c.r < 0.04045)?(c.b/12.92):( pow( (c.b+0.055)/1.055, 2.4) );
+        return sc;
+    }
+
     float aa_circle(float rds, float dst, float eps){
         return smoothstep(rds+eps, rds-eps, dst);
     }        
@@ -56,8 +64,8 @@ common_libsh='''
     }
 '''
 
-''' Useful function to set an array of float* as shader uniform 
-    * Actually, the array could contain either float, vec2, vec3 or vec4 elements
+''' Useful function to set an array of float-based types* as shader uniform 
+    *either float, vec2, vec3 or vec4
 '''
 def set_uniform_vector_float(shader, data_, var_name):
     if(len(data_) == 0):
@@ -164,6 +172,166 @@ def draw_pie_circle(op, settings):
     
     batch.draw(shader) 
 
+def draw_picklines(op, cache, settings):
+    picklines_fsh = '''
+    #define PI 3.1415926538
+    uniform float selected_radius;
+    uniform float mat_radius;
+    uniform float mat_centers_radius;
+    uniform int mat_selected;
+    uniform float mat_thetas[__NMAT__];
+    uniform vec3 mat_picklines[__NPLM__];
+    uniform float pickline_width;
+    uniform vec4 pickline_color;
+    uniform float aa_eps;
+
+    in vec2 lpos;
+    in vec2 uv;
+    out vec4 fragColor;            
+
+    void main()
+    {                    
+        float d = length(lpos);
+        fragColor = vec4(0.);
+
+        /* Pick lines */
+        for(int k = 0; k < __NPLM__; ++k){
+            int i = int(mat_picklines[k].z);
+            bool is_selected = (i == mat_selected);
+
+            float th_i = mat_thetas[i];
+            float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
+            float radius = is_selected?selected_radius:mat_radius;
+
+            float rds = (R-radius);
+            vec2 s0 = rds*mat_picklines[k].xy;
+            vec2 s1 = rds*vec2(cos(th_i), sin(th_i));
+
+            vec4 fragColor_line = pickline_color;
+            fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
+            fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
+
+            fragColor = alpha_compose(fragColor, fragColor_line);
+        }
+
+    }
+    '''
+    picklines = cache.get_picklines()
+    nplm = len(picklines)
+    if nplm == 0:     
+        return
+
+    fsh = picklines_fsh
+    fsh = fsh.replace("__NPLM__",str(nplm))
+    fsh = fsh.replace("__NMAT__",str(cache.mat_nb))
+
+    shader, batch = setup_shader(op, settings, fsh)
+
+    shader.uniform_float("selected_radius", settings.selected_radius)
+    shader.uniform_float("mat_radius", settings.mat_radius)
+    shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
+    shader.uniform_int("mat_selected", op.mat_selected);   
+    set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
+    set_uniform_vector_float(shader, picklines, "mat_picklines")
+    shader.uniform_float("pickline_width", settings.pickline_width)
+    shader.uniform_float("pickline_color", settings.mc_line_color)
+    shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
+    
+    batch.draw(shader)
+
+''' Draws mark '''
+def draw_mark(op, settings, m_origin, m_radius, m_color, m_type=0):
+    mark_fsh = '''
+    #define PI 3.1415926538
+    uniform vec2 mark_origin;
+    uniform vec4 mark_color;
+    uniform float mark_radius;
+    uniform float aa_eps;
+    uniform int mark_type;
+
+    in vec2 lpos;
+    in vec2 uv;
+    out vec4 fragColor;   
+
+    vec4 draw_circle_mark(){
+        float d = length(lpos-mark_origin); 
+        vec4 fragColor_circle= mark_color;
+        fragColor_circle.a *= aa_circle(mark_radius, d, aa_eps); 
+        return fragColor_circle;
+    }
+
+    vec4 draw_cross_mark(){
+        vec2 uv = abs(lpos-mark_origin);
+        float l = 0.1*mark_radius;
+        if(((uv.x < l) && (uv.y < mark_radius)) 
+                || ((uv.y < l) && (uv.x < mark_radius))){
+            return mark_color;
+        }
+        return vec4(0.);
+    }
+
+    vec4 draw_pencil_mark(){
+        vec2 uv = lpos-mark_origin;
+        // rotation
+        float th = -3*PI/4.;
+        float cs = cos(th);
+        float sn = sin(th);
+        uv = vec2( cs*uv.x - sn*uv.y , sn*uv.x + cs*uv.y );
+
+        vec4 col= mark_color;
+
+        float r = mark_radius;
+        float l = 0.3*r;
+        float alpha = 0.;
+
+        alpha += aa_seg( vec2(-r, 0), vec2(l, 0), uv, l, aa_eps );
+        alpha += aa_seg( vec2(r, 0), vec2(l, l*0.9), uv, l*0.1, aa_eps );
+        alpha += aa_seg( vec2(r, 0), vec2(l, -l*0.9), uv, l*0.1, aa_eps );   
+
+        col.a *= clamp(alpha, 0, 1);
+
+        return col;
+    }
+
+    void main()
+    {                    
+        if(mark_type == 0){
+            fragColor = draw_circle_mark();
+        }
+        else if(mark_type == 1){
+            fragColor = draw_cross_mark();
+        }
+        else if(mark_type == 2){
+            fragColor = draw_pencil_mark();
+        }
+        else{
+            fragColor = vec4(0.);
+        }
+    }
+    '''
+    shader, batch = setup_shader(op, settings, mark_fsh)
+
+    shader.uniform_float("mark_origin", m_origin) 
+    shader.uniform_float("mark_radius", m_radius) 
+    shader.uniform_float("mark_color", m_color) 
+    shader.uniform_int("mark_type", m_type) 
+    shader.uniform_float("aa_eps", settings.anti_aliasing_eps) 
+
+    batch.draw(shader)  
+
+def draw_active(op, cache, settings):
+    color = settings.active_color
+    radius = settings.mat_line_width
+    th = cache.angles[cache.mat_active]
+    from math import cos, sin
+    mat_radius = settings.mat_radius
+    if op.mat_selected == cache.mat_active:
+        mat_radius = settings.selected_radius
+    R = settings.mat_centers_radius + mat_radius + settings.mat_line_width*2.5;
+    pos = R*np.asarray([cos(th), sin(th)])
+    draw_mark(op, settings, pos, radius, color)
+    
+
 ''' Draws all the material previews and their picklines '''
 def draw_materials(op, cache, settings):
     materials_fsh = '''
@@ -225,10 +393,6 @@ def draw_materials(op, cache, settings):
             vec4 line_color = mat_line_colors[i];
             bool is_selected = (i == mat_selected);
             bool is_active = (i == mat_active);
-
-            if(is_selected){
-                continue;
-            }
 
             /* compute the center of circle */
             float th_i = mat_thetas[i];
@@ -310,7 +474,7 @@ def draw_mat_previews(op, context, cache, settings):
         {          
             /* compute the center of circle */
             vec2 ci = R*vec2(cos(th_i),sin(th_i));
-            float d = length(lpos-ci);     
+            float d = length(lpos-ci);    
 
             if( d > rad_tex + aa_eps ){
                 fragColor = vec4(0.);
@@ -329,24 +493,30 @@ def draw_mat_previews(op, context, cache, settings):
             vec2 uv_tex = (lpos-ci)/(vec2(w,h)) + vec2(0.5);
 
             /* draw circle */
-            fragColor = texture(tex, uv_tex);
+            fragColor = srgb_to_linear_rgb(texture(tex, uv_tex));
         }
     '''
-    sid = op.mat_selected
-    tx = cache.mat_prv[sid]
-    th = cache.angles[sid]
-    
-    if not tx:
-        return
+    for mat_id in range(cache.mat_nb):
+        tx = cache.mat_prv[mat_id]
+        if not tx:
+            continue
 
-    rds = settings.mat_radius*1.2   
-    shader, batch = setup_shader(op, settings, centered_tex_fsh)
-    shader.uniform_sampler("tex",tx)
-    shader.uniform_float("rad_tex",rds)    
-    shader.uniform_float("th_i", th)    
-    shader.uniform_float("R", settings.mat_centers_radius)    
-    shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
-    batch.draw(shader) 
+        th = cache.angles[mat_id]
+        if op.mat_selected == mat_id:
+            rds = settings.selected_radius
+            R = settings.mat_centers_radius + rds - settings.mat_radius
+        else:
+            rds = settings.mat_radius
+            R = settings.mat_centers_radius
+        rds *= 1.3
+        
+        shader, batch = setup_shader(op, settings, centered_tex_fsh)
+        shader.uniform_sampler("tex",tx)
+        shader.uniform_float("rad_tex",rds)    
+        shader.uniform_float("th_i", th)    
+        shader.uniform_float("R", R)    
+        shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
+        batch.draw(shader) 
 
 
 ''' Draws the image of the palette in the middle of the icon '''
@@ -453,14 +623,16 @@ def draw_callback_px(op, context, cache, settings):
         draw_centered_texture(op, context, cache, settings)
     else:
         draw_pie_circle(op, settings)
-        draw_mat_previews(op, context, cache, settings)
 
-    draw_materials(op, cache, settings)  
+    # draw_materials(op, cache, settings) 
+    draw_active(op, cache, settings) 
+    draw_picklines(op, cache, settings)
+    draw_mat_previews(op, context, cache, settings)
 
     if cache.from_palette:
         write_active_palette(op, context, settings)
 
     # Reset blend mode
     gpu.state.blend_set('NONE')
-    # op.check_time()
+    op.check_time()
     

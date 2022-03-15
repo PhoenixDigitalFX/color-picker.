@@ -161,12 +161,15 @@ class CachedData:
             else:
                 s = prv.image_size
                 dat = prv.image_pixels_float
+
+            # data as a list : accelerates by far the buffer loading
+            dat = [ d for d in dat ] 
             ts = s[0]*s[1]*4
             import gpu
             pbf = gpu.types.Buffer('FLOAT', ts, dat)
             return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
 
-        self.mat_prv = [ getGPUPreviewTexture(m.preview) for m in self.materials ]
+        self.mat_prv = [ getGPUPreviewTexture(m.preview, use_icon=False) for m in self.materials ]
 
     def use_gpu_texture(self):
         return self.from_palette and not (self.gpu_texture is None)
