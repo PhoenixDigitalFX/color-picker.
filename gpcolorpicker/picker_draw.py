@@ -89,6 +89,86 @@ def load_gpu_texture(image):
         
     return None
 
+''' Useful function to draw a single mark with common shape '''
+def draw_mark(op, settings, m_origin, m_radius, m_color, m_type=0):
+    mark_fsh = '''
+    #define PI 3.1415926538
+    uniform vec2 mark_origin;
+    uniform vec4 mark_color;
+    uniform float mark_radius;
+    uniform float aa_eps;
+    uniform int mark_type;
+
+    in vec2 lpos;
+    in vec2 uv;
+    out vec4 fragColor;   
+
+    vec4 draw_circle_mark(){
+        float d = length(lpos-mark_origin); 
+        vec4 fragColor_circle= mark_color;
+        fragColor_circle.a *= aa_circle(mark_radius, d, aa_eps); 
+        return fragColor_circle;
+    }
+
+    vec4 draw_cross_mark(){
+        vec2 uv = abs(lpos-mark_origin);
+        float l = 0.1*mark_radius;
+        if(((uv.x < l) && (uv.y < mark_radius)) 
+                || ((uv.y < l) && (uv.x < mark_radius))){
+            return mark_color;
+        }
+        return vec4(0.);
+    }
+
+    vec4 draw_pencil_mark(){
+        vec2 uv = lpos-mark_origin;
+        // rotation
+        float th = -3*PI/4.;
+        float cs = cos(th);
+        float sn = sin(th);
+        uv = vec2( cs*uv.x - sn*uv.y , sn*uv.x + cs*uv.y );
+
+        vec4 col= mark_color;
+
+        float r = mark_radius;
+        float l = 0.3*r;
+        float alpha = 0.;
+
+        alpha += aa_seg( vec2(-r, 0), vec2(l, 0), uv, l, aa_eps );
+        alpha += aa_seg( vec2(r, 0), vec2(l, l*0.9), uv, l*0.1, aa_eps );
+        alpha += aa_seg( vec2(r, 0), vec2(l, -l*0.9), uv, l*0.1, aa_eps );   
+
+        col.a *= clamp(alpha, 0, 1);
+
+        return col;
+    }
+
+    void main()
+    {                    
+        if(mark_type == 0){
+            fragColor = draw_circle_mark();
+        }
+        else if(mark_type == 1){
+            fragColor = draw_cross_mark();
+        }
+        else if(mark_type == 2){
+            fragColor = draw_pencil_mark();
+        }
+        else{
+            fragColor = vec4(0.);
+        }
+    }
+    '''
+    shader, batch = setup_shader(op, settings, mark_fsh)
+
+    shader.uniform_float("mark_origin", m_origin) 
+    shader.uniform_float("mark_radius", m_radius) 
+    shader.uniform_float("mark_color", m_color) 
+    shader.uniform_int("mark_type", m_type) 
+    shader.uniform_float("aa_eps", settings.anti_aliasing_eps) 
+
+    batch.draw(shader)  
+
 ''' --- Drawing functions --- '''
 
 ''' Sets up a shader program to draw an image in the dimensions given in the settings '''
@@ -172,6 +252,9 @@ def draw_pie_circle(op, settings):
     
     batch.draw(shader) 
 
+
+''' Draws materials picklines if there are some
+'''
 def draw_picklines(op, cache, settings):
     picklines_fsh = '''
     #define PI 3.1415926538
@@ -239,86 +322,8 @@ def draw_picklines(op, cache, settings):
     
     batch.draw(shader)
 
-''' Draws mark '''
-def draw_mark(op, settings, m_origin, m_radius, m_color, m_type=0):
-    mark_fsh = '''
-    #define PI 3.1415926538
-    uniform vec2 mark_origin;
-    uniform vec4 mark_color;
-    uniform float mark_radius;
-    uniform float aa_eps;
-    uniform int mark_type;
 
-    in vec2 lpos;
-    in vec2 uv;
-    out vec4 fragColor;   
-
-    vec4 draw_circle_mark(){
-        float d = length(lpos-mark_origin); 
-        vec4 fragColor_circle= mark_color;
-        fragColor_circle.a *= aa_circle(mark_radius, d, aa_eps); 
-        return fragColor_circle;
-    }
-
-    vec4 draw_cross_mark(){
-        vec2 uv = abs(lpos-mark_origin);
-        float l = 0.1*mark_radius;
-        if(((uv.x < l) && (uv.y < mark_radius)) 
-                || ((uv.y < l) && (uv.x < mark_radius))){
-            return mark_color;
-        }
-        return vec4(0.);
-    }
-
-    vec4 draw_pencil_mark(){
-        vec2 uv = lpos-mark_origin;
-        // rotation
-        float th = -3*PI/4.;
-        float cs = cos(th);
-        float sn = sin(th);
-        uv = vec2( cs*uv.x - sn*uv.y , sn*uv.x + cs*uv.y );
-
-        vec4 col= mark_color;
-
-        float r = mark_radius;
-        float l = 0.3*r;
-        float alpha = 0.;
-
-        alpha += aa_seg( vec2(-r, 0), vec2(l, 0), uv, l, aa_eps );
-        alpha += aa_seg( vec2(r, 0), vec2(l, l*0.9), uv, l*0.1, aa_eps );
-        alpha += aa_seg( vec2(r, 0), vec2(l, -l*0.9), uv, l*0.1, aa_eps );   
-
-        col.a *= clamp(alpha, 0, 1);
-
-        return col;
-    }
-
-    void main()
-    {                    
-        if(mark_type == 0){
-            fragColor = draw_circle_mark();
-        }
-        else if(mark_type == 1){
-            fragColor = draw_cross_mark();
-        }
-        else if(mark_type == 2){
-            fragColor = draw_pencil_mark();
-        }
-        else{
-            fragColor = vec4(0.);
-        }
-    }
-    '''
-    shader, batch = setup_shader(op, settings, mark_fsh)
-
-    shader.uniform_float("mark_origin", m_origin) 
-    shader.uniform_float("mark_radius", m_radius) 
-    shader.uniform_float("mark_color", m_color) 
-    shader.uniform_int("mark_type", m_type) 
-    shader.uniform_float("aa_eps", settings.anti_aliasing_eps) 
-
-    batch.draw(shader)  
-
+''' Draws a dot mark to spot the active material '''
 def draw_active(op, cache, settings):
     color = settings.active_color
     radius = settings.mat_line_width
@@ -332,7 +337,7 @@ def draw_active(op, cache, settings):
     draw_mark(op, settings, pos, radius, color)
     
 
-''' Draws all the material previews and their picklines '''
+''' Plain drawing of all the materials and their picklines '''
 def draw_materials(op, cache, settings):
     materials_fsh = '''
     #define PI 3.1415926538
