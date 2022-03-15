@@ -287,6 +287,85 @@ def draw_materials(op, cache, settings):
         set_uniform_vector_float(shader, picklines, "mat_picklines")
 
     batch.draw(shader)
+    
+''' Draws the image of the palette in the middle of the icon '''
+def draw_mat_previews(op, context, cache, settings):
+    centered_tex_fsh = '''
+        #define PI 3.1415926538
+        uniform sampler2D tex;  
+        uniform float rad_tex;
+        uniform float aa_eps;
+
+        in vec2 lpos;
+        in vec2 uv;
+        out vec4 fragColor;   
+
+        vec4 aa_tex(vec2 uv_tex, float epsilon){
+            float c = 0;
+            vec4 color = vec4(0.);
+            for(float du = -epsilon; du <= epsilon; du += 0.01){
+                for(float dv = -epsilon; dv <= epsilon; dv += 0.01){
+                    vec2 uv = uv_tex + vec2(du, dv);
+                    float g = exp(-(du*du + dv*dv)/0.005);
+                    color += g*texture(tex,uv);
+                    c += g;
+                }
+            }
+            color = color / c;
+
+            return color;
+        }   
+
+        void main()
+        {          
+            float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
+            float w = 2*rad_tex;
+            float h = 2*rad_tex;
+            if(aspect_ratio > 1){
+                w *= aspect_ratio;
+            }
+            else{
+                h *= aspect_ratio;
+            }
+            vec2 uv_tex = lpos/(vec2(w,h)) + vec2(0.5);
+
+            float dst = length(lpos);
+            fragColor = aa_tex(uv_tex, 0.03);
+            fragColor.a *= aa_circle(rad_tex, dst, aa_eps);
+        }
+    '''
+    def getGPUPreviewTexture(prv, use_icon=False):
+        if use_icon:
+            s = prv.icon_size
+            dat = prv.icon_pixels_float
+        else:
+            s = prv.image_size
+            dat = prv.image_pixels_float
+        ts = s[0]*s[1]*4
+        pbf = gpu.types.Buffer('FLOAT', ts, dat)
+        return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
+
+    gpmp = context.scene.gpmatpalettes.active()
+    sid = op.mat_selected
+    mname = gpmp.materials[sid].name
+    import bpy
+    prv = bpy.data.materials[mname].preview
+
+    tx = getGPUPreviewTexture(prv, use_icon=False) 
+    
+    if not tx:
+        return
+
+    rds = settings.mat_radius*1.5    
+    shader, batch = setup_shader(op, settings, centered_tex_fsh)
+    shader.uniform_sampler("tex",tx)
+    shader.uniform_float("rad_tex",rds)    
+    shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
+    batch.draw(shader) 
+
+    cache.gpu_tex = tx
+    cache.mat_cached = sid
+    cache.pal_active = gpmp.name
 
 ''' Draws the image of the palette in the middle of the icon '''
 def draw_centered_texture(op, context, cache, settings):
@@ -392,6 +471,7 @@ def draw_callback_px(op, context, cache, settings):
         draw_centered_texture(op, context, cache, settings)
     else:
         draw_pie_circle(op, settings)
+        draw_mat_previews(op, context, cache, settings)
 
     draw_materials(op, cache, settings)  
 
