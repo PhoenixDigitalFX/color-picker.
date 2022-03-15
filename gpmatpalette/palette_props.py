@@ -66,6 +66,7 @@ class GPMatItem(PropertyGroup):
     def has_pickline(self):
         return self.count_picklines() > 0
 
+
 ''' --- Palette --- '''
 
 ''' Update callback for the Image property

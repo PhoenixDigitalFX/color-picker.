@@ -154,6 +154,20 @@ class CachedData:
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
 
+        def getGPUPreviewTexture(prv, use_icon=True):
+            if use_icon:
+                s = prv.icon_size
+                dat = prv.icon_pixels_float
+            else:
+                s = prv.image_size
+                dat = prv.image_pixels_float
+            ts = s[0]*s[1]*4
+            import gpu
+            pbf = gpu.types.Buffer('FLOAT', ts, dat)
+            return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
+
+        self.mat_prv = [ getGPUPreviewTexture(m.preview) for m in self.materials ]
+
     def use_gpu_texture(self):
         return self.from_palette and not (self.gpu_texture is None)
 
