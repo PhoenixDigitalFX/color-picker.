@@ -336,130 +336,6 @@ def draw_active(op, cache, settings):
     pos = R*np.asarray([cos(th), sin(th)])
     draw_mark(op, settings, pos, radius, color)
     
-
-''' Plain drawing of all the materials and their picklines '''
-def draw_materials(op, cache, settings):
-    materials_fsh = '''
-    #define PI 3.1415926538
-    uniform float selected_radius;
-    uniform vec4 active_color;
-    uniform float mat_radius;
-    uniform float mat_line_width;
-    uniform float mat_centers_radius;
-    uniform int mat_nb;
-    uniform int mat_selected;
-    uniform int mat_active;
-    uniform vec4 mat_fill_colors[__NMAT__];
-    uniform vec4 mat_line_colors[__NMAT__];
-    uniform float mat_thetas[__NMAT__];
-    #ifdef _PICKLINES_
-    uniform vec3 mat_picklines[__NPLM__];
-    uniform float pickline_width;
-    uniform vec4 pickline_color;
-    #endif
-    uniform float aa_eps;
-
-    in vec2 lpos;
-    in vec2 uv;
-    out vec4 fragColor;            
-
-    void main()
-    {                    
-        float d = length(lpos);
-        fragColor = vec4(0.);
-
-
-        #ifdef _PICKLINES_
-        /* Pick lines */
-        for(int k = 0; k < __NPLM__; ++k){
-            int i = int(mat_picklines[k].z);
-            bool is_selected = (i == mat_selected);
-
-            float th_i = mat_thetas[i];
-            float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
-            float radius = is_selected?selected_radius:mat_radius;
-
-            float rds = (R-radius);
-            vec2 s0 = rds*mat_picklines[k].xy;
-            vec2 s1 = rds*vec2(cos(th_i), sin(th_i));
-
-            vec4 fragColor_line = pickline_color;
-            fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
-            fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
-
-            fragColor = alpha_compose(fragColor, fragColor_line);
-        }
-        #endif
-
-        /*    MATERIALS CIRCLES    */
-        for(int i = 0; i < mat_nb; ++i){
-            /* get color and if circle is currently selected */
-            vec4 fill_color = mat_fill_colors[i];
-            vec4 line_color = mat_line_colors[i];
-            bool is_selected = (i == mat_selected);
-            bool is_active = (i == mat_active);
-
-            /* compute the center of circle */
-            float th_i = mat_thetas[i];
-            float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
-            vec2 ci = R*vec2(cos(th_i),sin(th_i));
-            d = length(lpos-ci);     
-
-            /* draw circle */
-            float radius = is_selected?selected_radius:mat_radius;
-            fill_color.a *= aa_circle(radius, d, aa_eps);
-            line_color.a *= aa_contour(radius, mat_line_width, d, aa_eps);
-
-            vec4 fragColor_mat = alpha_compose(line_color, fill_color);
-
-            if( is_active ){
-                vec4 act_color = active_color;
-                float act_rds = mat_centers_radius + radius + mat_line_width*2.5;
-                vec2 act_ctr = act_rds*vec2(cos(th_i),sin(th_i));
-                float act_dst = length(lpos-act_ctr);
-                act_color.a *= aa_circle(mat_line_width, act_dst, aa_eps);
-                fragColor_mat = alpha_compose(act_color, fragColor_mat);
-            }
-
-            fragColor = alpha_compose(fragColor_mat, fragColor);
-        }
-    }
-    '''     
-    fsh = materials_fsh
-
-    nmat = cache.mat_nb
-    if nmat <= 0:
-        return    
-    
-    picklines = cache.get_picklines()
-    nplm = len(picklines)
-    if nplm > 0:
-        fsh = "#define _PICKLINES_" + fsh.replace("__NPLM__",str(nplm))
-
-    fsh = fsh.replace("__NMAT__",str(nmat))
-
-    shader, batch = setup_shader(op, settings, fsh)
-
-    shader.uniform_float("selected_radius", settings.selected_radius)
-    shader.uniform_float("active_color", settings.active_color)
-    shader.uniform_float("mat_radius", settings.mat_radius)
-    shader.uniform_float("mat_line_width", settings.mat_line_width)
-    shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
-    shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
-    shader.uniform_int("mat_selected", op.mat_selected);   
-    shader.uniform_int("mat_nb", nmat);    
-    shader.uniform_int("mat_active", cache.mat_active);   
-    
-    set_uniform_vector_float(shader, cache.mat_fill_colors, "mat_fill_colors")
-    set_uniform_vector_float(shader, cache.mat_line_colors, "mat_line_colors")
-    set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
-    
-    if nplm > 0:
-        shader.uniform_float("pickline_width", settings.pickline_width)
-        shader.uniform_float("pickline_color", settings.mc_line_color)
-        set_uniform_vector_float(shader, picklines, "mat_picklines")
-
-    batch.draw(shader)
     
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
@@ -669,7 +545,6 @@ def draw_callback_px(op, context, cache, settings):
     else:
         draw_pie_circle(op, settings)
 
-    # draw_materials(op, cache, settings) 
     draw_active(op, cache, settings) 
     draw_picklines(op, cache, settings)
     draw_mat_previews(op, context, cache, settings)
