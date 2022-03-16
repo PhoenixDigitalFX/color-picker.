@@ -245,6 +245,8 @@ class GPCOLORPICKER_OT_newPalette(bpy.types.Operator):
             row.label(text="Palette name is empty")
         elif (self.pal_name in gpmp.palettes):
             row.label(text="Already exists")
+        elif self.pal_name.startswith("__"):
+            row.label(text="Palette name cannot start with __")
         else:
             self.is_pal_name_valid = True           
 
