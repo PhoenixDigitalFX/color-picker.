@@ -463,10 +463,10 @@ def draw_materials(op, cache, settings):
     
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
-    centered_tex_fsh = '''
+    mat_prv_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
-        uniform float rad_tex;
+        uniform float radius;
         uniform float aa_eps;
         uniform float th_i;
         uniform float R;
@@ -481,14 +481,14 @@ def draw_mat_previews(op, context, cache, settings):
             vec2 ci = R*vec2(cos(th_i),sin(th_i));
             float d = length(lpos-ci);    
 
-            if( d > rad_tex + aa_eps ){
+            if( d > radius + aa_eps*2 ){
                 fragColor = vec4(0.);
                 return;
             }
 
             float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
-            float w = 2*rad_tex;
-            float h = 2*rad_tex;
+            float w = 2*radius;
+            float h = 2*radius;
             if(aspect_ratio > 1){
                 w *= aspect_ratio;
             }
@@ -497,14 +497,49 @@ def draw_mat_previews(op, context, cache, settings):
             }
             vec2 uv_tex = (lpos-ci)/(vec2(w,h)) + vec2(0.5);
 
-            /* draw circle */
             fragColor = srgb_to_linear_rgb(texture(tex, uv_tex));
+        }
+    '''
+    flat_prv_fsh = '''
+        #define PI 3.1415926538
+        uniform vec4 fill_color;
+        uniform vec4 line_color;
+        uniform float mat_line_width;
+        uniform float radius;
+        uniform float aa_eps;
+        uniform float th_i;
+        uniform float R;
+
+        in vec2 lpos;
+        in vec2 uv;
+        out vec4 fragColor;   
+
+        void main()
+        {          
+            /* compute the center of circle */
+            vec2 ci = R*vec2(cos(th_i),sin(th_i));
+            float d = length(lpos-ci);    
+
+            if( d > radius + aa_eps*2 ){
+                fragColor = vec4(0.);
+                return;
+            } 
+
+            /* draw circle */
+            vec4 fcolor = fill_color;
+            vec4 lcolor = line_color;
+            fcolor.a *= aa_circle(radius, d, aa_eps);
+            lcolor.a *= aa_contour(radius, mat_line_width, d, aa_eps);
+
+            fragColor = alpha_compose(lcolor, fcolor);
         }
     '''
     for mat_id in range(cache.mat_nb):
         tx = cache.mat_prv[mat_id]
-        if not tx:
-            continue
+        if tx:
+            fsh = mat_prv_fsh
+        else:
+            fsh = flat_prv_fsh
 
         th = cache.angles[mat_id]
         if op.mat_selected == mat_id:
@@ -513,11 +548,16 @@ def draw_mat_previews(op, context, cache, settings):
         else:
             rds = settings.mat_radius
             R = settings.mat_centers_radius
-        rds *= 1.3
         
-        shader, batch = setup_shader(op, settings, centered_tex_fsh)
-        shader.uniform_sampler("tex",tx)
-        shader.uniform_float("rad_tex",rds)    
+        shader, batch = setup_shader(op, settings, fsh)
+        if tx:
+            shader.uniform_sampler("tex",tx)
+            rds *= 1.3
+        else:
+            shader.uniform_float("fill_color", cache.mat_fill_colors[mat_id])
+            shader.uniform_float("line_color", cache.mat_line_colors[mat_id])
+            shader.uniform_float("mat_line_width", settings.mat_line_width)
+        shader.uniform_float("radius",rds)    
         shader.uniform_float("th_i", th)    
         shader.uniform_float("R", R)    
         shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    

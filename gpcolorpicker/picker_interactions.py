@@ -154,7 +154,13 @@ class CachedData:
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
 
-        def getGPUPreviewTexture(prv, use_icon=True):
+        def getGPUPreviewTexture(mat, use_icon=True):
+            prv = mat.preview
+            if not prv:
+                mat.asset_generate_preview()
+                print(f"ERROR : Material {mat.name} has no preview image")
+                return None
+
             if use_icon:
                 s = prv.icon_size
                 dat = prv.icon_pixels_float
@@ -165,11 +171,16 @@ class CachedData:
             # data as a list : accelerates by far the buffer loading
             dat = [ d for d in dat ] 
             ts = s[0]*s[1]*4
+            if ts < 1:
+                mat.asset_generate_preview()
+                print(f"ERROR : Could not load mat {mat.name} preview image")
+                return None
+
             import gpu
             pbf = gpu.types.Buffer('FLOAT', ts, dat)
             return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
 
-        self.mat_prv = [ getGPUPreviewTexture(m.preview, use_icon=False) for m in self.materials ]
+        self.mat_prv = [ getGPUPreviewTexture(m, use_icon=False) for m in self.materials ]
 
     def use_gpu_texture(self):
         return self.from_palette and not (self.gpu_texture is None)
