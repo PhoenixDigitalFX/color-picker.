@@ -411,7 +411,8 @@ def draw_mat_previews(op, context, cache, settings):
         }
     '''
     for mat_id in range(cache.mat_nb):
-        tx = cache.mat_prv[mat_id]
+        # tx = cache.mat_prv[mat_id]
+        tx = None
         if tx:
             fsh = mat_prv_fsh
         else:
@@ -545,7 +546,8 @@ def draw_callback_px(op, context, cache, settings):
     else:
         draw_pie_circle(op, settings)
 
-    draw_active(op, cache, settings) 
+    if cache.mat_active >= 0:
+        draw_active(op, cache, settings) 
     draw_picklines(op, cache, settings)
     draw_mat_previews(op, context, cache, settings)
 
