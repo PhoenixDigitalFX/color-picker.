@@ -67,7 +67,7 @@ class GPMatItem(PropertyGroup):
     def has_pickline(self):
         return self.count_picklines() > 0
 
-    def name(self):
+    def get_name(self):
         return self.data.name
 
 
@@ -119,6 +119,16 @@ class GPMatPalette(PropertyGroup):
                 a = angles[i] % (2*math.pi)
                 self.materials[mat_id].set_angle(a, auto=True)
     
+    def contains_material(self, name):
+        mnames = {m.get_name() for m in self.materials}
+        return name in mnames
+    
+    def index_material(self, name):
+        mnames = [m.get_name() for m in self.materials]
+        if not (name in mnames):
+            return -1
+        return mnames.index(name)
+
     ''' Get material index from angle position
         Useful to insert a material at a certain angle position
     '''
@@ -145,16 +155,17 @@ class GPMatPalette(PropertyGroup):
     def set_material(self, name, index_ = -1):
         old_id = self.count()
         index = index_
-        if name in self.materials:
+        if self.contains_material(name):
             old_id = self.materials.find(name)
             if old_id < index:
                 index = index - 1
         else:
             matit = self.materials.add()
-            if not name in bpy.data.materials:
+            bmats = bpy.data.materials
+            if not name in bmats:
                 self.report({'ERROR'}, f"Material {name} not registered")
                 return None
-            matit.data = bpy.data.materials[name]
+            matit.data = bmats[name]
         if (index >= 0) and (index != old_id):
             self.materials.move(old_id, index)
         self.autocomp_positions()
@@ -180,7 +191,7 @@ class GPMatPalette(PropertyGroup):
     def is_material_available(self, mat):
         if (not mat) or (not mat.is_grease_pencil):
             return False
-        return not mat.name in self.materials
+        return not self.contains_material(mat.name)
     
     ''' Timestamp comparison function '''
     def is_same_timestamp(self, other_tmstp):

@@ -115,8 +115,8 @@ class CachedData:
             self.materials = [ n.data for n in gpmp.materials ]       
             self.mat_nb = len(self.materials)
             
-            if ob and ob.active_material and (ob.active_material.name in gpmp.materials):
-                self.mat_active = list(gpmp.materials.keys()).index(ob.active_material.name)
+            if ob and ob.active_material:
+                self.mat_active = gpmp.index_material(ob.active_material.name)
             else:        
                 self.mat_active = -1
 
