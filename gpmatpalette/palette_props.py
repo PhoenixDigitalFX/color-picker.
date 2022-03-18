@@ -104,6 +104,18 @@ class GPMatPalette(PropertyGroup):
     
     pending_material: PointerProperty(type=bpy.types.Material)
 
+    ''' Automatic data update for palettes using old material indexation system
+    '''
+    def compatibility_check(self):
+        bmats = bpy.data.materials
+        for ind, matit in enumerate(self.materials):
+            if matit.name and (not matit.data):
+                if not (matit.name in bmats):
+                    self.report({'ERROR'}, f"Material {matit.name} not in blend data")
+                    self.remove_material(ind)
+                matit.data = bmats[matit.name]
+
+
     ''' Automatic completion of material angle positions
         useful when some are not specified
     '''
@@ -119,10 +131,14 @@ class GPMatPalette(PropertyGroup):
                 a = angles[i] % (2*math.pi)
                 self.materials[mat_id].set_angle(a, auto=True)
     
+    ''' Checks if material is in palette
+    '''
     def contains_material(self, name):
         mnames = {m.get_name() for m in self.materials}
         return name in mnames
     
+    ''' Get material index from name
+    '''
     def index_material(self, name):
         mnames = [m.get_name() for m in self.materials]
         if not (name in mnames):
