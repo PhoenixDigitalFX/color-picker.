@@ -462,7 +462,7 @@ def draw_centered_texture(op, context, cache, settings):
                 w *= aspect_ratio;
             }
             else{
-                h *= aspect_ratio;
+                h /= aspect_ratio;
             }
             vec2 uv_tex = lpos/(vec2(w,h)) + vec2(0.5);
 
@@ -473,6 +473,7 @@ def draw_centered_texture(op, context, cache, settings):
     '''
     gpmp = context.scene.gpmatpalettes.active()
     sid = op.mat_selected
+
     if (gpmp.name == cache.pal_active) and \
          (sid == cache.mat_cached) :
         tx = cache.gpu_texture
