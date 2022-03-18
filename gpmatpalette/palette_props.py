@@ -24,7 +24,8 @@ class GPMatPickLine(PropertyGroup):
             return np.asarray([self.ox, self.oy])
         return [self.ox, self.oy]
 class GPMatItem(PropertyGroup):
-    name: StringProperty(name= "Name")
+    # name: StringProperty(name= "Name")
+    data: PointerProperty(type=bpy.types.Material, name="Data")
 
     image: PointerProperty(type=bpy.types.Image, name="Image", description="Image to be displayed in the picker when material is in selection")
     layer: StringProperty(name="Layer", description="Layer to switch to when material is selected")
@@ -65,6 +66,9 @@ class GPMatItem(PropertyGroup):
 
     def has_pickline(self):
         return self.count_picklines() > 0
+
+    def name(self):
+        return self.data.name
 
 
 ''' --- Palette --- '''
@@ -138,19 +142,23 @@ class GPMatPalette(PropertyGroup):
     ''' Insert a new material at a given collection index
         If index is unspecified or < 0, the material will be inserted at the end of the collection
     '''
-    def set_material(self, name, index = -1):
+    def set_material(self, name, index_ = -1):
         old_id = self.count()
+        index = index_
         if name in self.materials:
             old_id = self.materials.find(name)
             if old_id < index:
                 index = index - 1
         else:
             matit = self.materials.add()
-            matit.name = name
+            if not name in bpy.data.materials:
+                self.report({'ERROR'}, f"Material {name} not registered")
+                return None
+            matit.data = bpy.data.materials[name]
         if (index >= 0) and (index != old_id):
             self.materials.move(old_id, index)
         self.autocomp_positions()
-        return self.materials[name]
+        return self.materials[index]
     
     ''' Remove a material from the collection (given by collection index) '''
     def remove_material(self, ind):

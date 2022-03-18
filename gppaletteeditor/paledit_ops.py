@@ -22,10 +22,10 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             mname = cache.materials[i].name
 
             a = cache.angles[i]
-            if cache.is_custom_angle[i] and (a != pal.materials[mname].get_angle()):
+            matit = pal.materials[i]
+            if cache.is_custom_angle[i] and (a != matit.get_angle()):
                 pal.set_material_by_angle(mname, a)
 
-            matit = pal.materials[mname]
             if len(matit.picklines) != len(cache.pick_origins[i]):
                 pal.is_dirty = True
             matit.picklines.clear()

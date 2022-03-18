@@ -112,7 +112,7 @@ class CachedData:
             self.pal_active = gpmp.name 
             self.mat_cached = -1
 
-            self.materials = [ bpy.data.materials[n.name] for n in gpmp.materials ]       
+            self.materials = [ n.data for n in gpmp.materials ]       
             self.mat_nb = len(self.materials)
             
             if ob and ob.active_material and (ob.active_material.name in gpmp.materials):
