@@ -105,9 +105,9 @@ class CachedData:
     def refresh(self, context):
         ob = context.active_object   
         gpmp = context.scene.gpmatpalettes.active()
-        gpmp.compatibility_check()
 
         if gpmp and self.from_palette:
+            gpmp.compatibility_check()
             # From palette cache
             self.gpu_texture = load_gpu_texture(gpmp.image)
             self.pal_active = gpmp.name 
