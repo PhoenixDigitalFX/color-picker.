@@ -5,11 +5,18 @@ import bpy
 from . picker_draw import load_gpu_texture
 
 ''' Sets the given material as active '''
-def pick_material(cache, context, settings, id_in_cache):
+def pick_material(cache, context, settings, id_in_cache, brush_id):
     if (id_in_cache < 0) or (id_in_cache >= cache.mat_nb):
         return True
     
     obj = context.active_object    
+
+    def set_active_brush(mat_id, brush_id):
+        if brush_id < 0:
+            return
+        bname = cache.map_bsh[mat_id][brush_id]
+        brush = bpy.data.brushes[bname]
+        context.tool_settings.gpencil_paint.brush = brush
 
     def set_active_material(id_in_obj):
         obj.active_material_index = id_in_obj
@@ -23,12 +30,14 @@ def pick_material(cache, context, settings, id_in_cache):
             return True
 
         if not gpmt.layer in obj.data.layers:
-            bpy.ops.gpencil.layer_add()
+            bpy.ops.gapencil.layer_add()
             obj.data.layers.active.info = gpmt.layer
         else:
             obj.data.layers.active = obj.data.layers[gpmt.layer]
 
         return True
+
+    set_active_brush(id_in_cache, brush_id)
 
     if not cache.from_palette:
         return set_active_material(id_in_cache)
@@ -151,7 +160,7 @@ class CachedData:
             self.pick_origins = [ m.get_origins() for m in gpmp.materials ]      
 
             self.brushes = gpmp.get_brushes()
-            self.map_bsh = [ m.get_brushes_names() for m in gpmp.materials]
+            self.map_bsh = [ list(m.get_brushes_names()) for m in gpmp.materials]
 
         elif ob and not self.from_palette:
             # From active cache
@@ -190,7 +199,6 @@ class CachedData:
         def getGPUPreviewTexture(item, check_custom=False, use_icon=False):
             prv = item.preview
             if check_custom and (not item.use_custom_icon):
-                print(f"INFO : Brush {item.name} has no custom icon")
                 return None
             elif not prv:
                 item.asset_generate_preview()

@@ -51,7 +51,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                 and (event.value == 'RELEASE') and (self.mat_selected != -1)) \
                     or (event.type == 'LEFTMOUSE'):
             # Change the active material and quit picker when a material is selected
-            if pick_material(self.cached_data, context, self.settings, self.mat_selected):   
+            if pick_material(self.cached_data, context, self.settings, self.mat_selected, self.brush_selected):   
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
                 bpy.ops.ed.undo_push()
                 return {'FINISHED'}                
