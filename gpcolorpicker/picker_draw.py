@@ -335,8 +335,58 @@ def draw_active(op, cache, settings):
     R = settings.mat_centers_radius + mat_radius + settings.mat_line_width*2.5;
     pos = R*np.asarray([cos(th), sin(th)])
     draw_mark(op, settings, pos, radius, color)
-    
-    
+
+def draw_centered_texture(op, settings, tx, center=[0,0], rds=1, \
+                            use_mask=True, convert_srgb=False):
+    centered_tex_fsh = '''
+        #define PI 3.1415926538
+        uniform sampler2D tex;  
+        uniform vec2 center;
+        uniform float rad_tex;
+        uniform bool use_mask;
+        uniform bool convert_srgb;
+        uniform float aa_eps;
+
+        in vec2 lpos;
+        in vec2 uv;
+        out vec4 fragColor;      
+
+        void main()
+        {          
+            vec2 lpos_c = lpos-center;
+
+            float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
+            float w = 2*rad_tex;
+            float h = 2*rad_tex;
+            if(aspect_ratio > 1){
+                w *= aspect_ratio;
+            }
+            else{
+                h /= aspect_ratio;
+            }
+            vec2 uv_tex = lpos_c/(vec2(w,h)) + vec2(0.5);
+
+            float dst = length(lpos_c);
+            fragColor = texture(tex,uv_tex);
+            
+            if(use_mask){
+                fragColor.a *= aa_circle(rad_tex, dst, aa_eps);
+            }
+
+            if(convert_srgb){
+                fragColor = srgb_to_linear_rgb(texture(tex, uv_tex));
+            }
+        }
+    '''
+    shader, batch = setup_shader(op, settings, centered_tex_fsh)
+    shader.uniform_sampler("tex", tx)
+    shader.uniform_float("rad_tex", rds)
+    shader.uniform_float("center", center)
+    shader.uniform_bool("use_mask", [use_mask])  
+    shader.uniform_bool("convert_srgb", [convert_srgb])   
+    shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
+    batch.draw(shader) 
+
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
     mat_prv_fsh = '''
@@ -442,35 +492,7 @@ def draw_mat_previews(op, context, cache, settings):
 
 
 ''' Draws the image of the palette in the middle of the icon '''
-def draw_centered_texture(op, context, cache, settings):
-    centered_tex_fsh = '''
-        #define PI 3.1415926538
-        uniform sampler2D tex;  
-        uniform float rad_tex;
-        uniform float aa_eps;
-
-        in vec2 lpos;
-        in vec2 uv;
-        out vec4 fragColor;      
-
-        void main()
-        {          
-            float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
-            float w = 2*rad_tex;
-            float h = 2*rad_tex;
-            if(aspect_ratio > 1){
-                w *= aspect_ratio;
-            }
-            else{
-                h /= aspect_ratio;
-            }
-            vec2 uv_tex = lpos/(vec2(w,h)) + vec2(0.5);
-
-            float dst = length(lpos);
-            fragColor = texture(tex,uv_tex);
-            fragColor.a *= aa_circle(rad_tex, dst, aa_eps);
-        }
-    '''
+def draw_palette_image(op, context, cache, settings):
     gpmp = context.scene.gpmatpalettes.active()
     sid = op.mat_selected
 
@@ -485,12 +507,8 @@ def draw_centered_texture(op, context, cache, settings):
     if not tx:
         return
 
-    rds = settings.tex_radius    
-    shader, batch = setup_shader(op, settings, centered_tex_fsh)
-    shader.uniform_sampler("tex",tx)
-    shader.uniform_float("rad_tex",rds)    
-    shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
-    batch.draw(shader) 
+    rds = settings.tex_radius  
+    draw_centered_texture(op, settings, tx, rds=rds, use_mask=True)
 
     cache.gpu_tex = tx
     cache.mat_cached = sid
@@ -543,7 +561,7 @@ def draw_callback_px(op, context, cache, settings):
         write_selected_mat_name(op, cache, settings)
         
     if cache.use_gpu_texture():
-        draw_centered_texture(op, context, cache, settings)
+        draw_palette_image(op, context, cache, settings)
     else:
         draw_pie_circle(op, settings)
 
