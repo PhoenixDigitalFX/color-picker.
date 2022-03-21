@@ -399,6 +399,10 @@ def draw_active(op, cache, settings):
     pos = R*np.asarray([cos(th), sin(th)])
     draw_mark(op, settings, pos, radius, color)
 
+def draw_bsh_previews(op, context, cache, settings, mat_id):
+    bnames = cache.map_bsh[mat_id]
+    brushes = [b for b in cache.brushes if b.name in bnames]
+    print("Displaying textures ", {b.name for b in brushes})
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
@@ -572,6 +576,7 @@ def draw_callback_px(op, context, cache, settings):
 
     if op.mat_selected >= 0:
         write_selected_mat_name(op, cache, settings)
+        draw_bsh_previews(op, context, cache, settings, mat_id=op.mat_selected)
         
     if cache.use_gpu_texture():
         draw_palette_image(op, context, cache, settings)

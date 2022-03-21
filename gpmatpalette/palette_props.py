@@ -274,6 +274,9 @@ class GPMatPalette(PropertyGroup):
             bnames = bnames.union(m.get_brushes_names())
         return bnames
 
+    def get_brushes(self):
+        return [ bpy.data.brushes[bname] for bname in self.get_brushes_names() ]
+
 ''' --- Palette collection container --- '''
 
 ''' Update callback for active index : switch to next visible palette '''

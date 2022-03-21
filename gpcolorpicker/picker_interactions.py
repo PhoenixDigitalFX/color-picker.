@@ -125,7 +125,8 @@ class CachedData:
             self.is_custom_angle = [ not m.is_angle_movable for m in gpmp.materials ]
             self.pick_origins = [ m.get_origins() for m in gpmp.materials ]      
 
-            self.brushes = gpmp.get_brushes_names()
+            self.brushes = gpmp.get_brushes()
+            self.map_bsh = [ m.get_brushes_names() for m in gpmp.materials]
 
         elif ob and not self.from_palette:
             # From active cache
@@ -140,7 +141,8 @@ class CachedData:
             self.angles = np.linspace(0,2*pi,self.mat_nb+1)[:-1]  
             self.pick_origins= self.mat_nb*[[]]  
             
-            self.brushes = {}
+            self.brushes = []
+            self.map_bsh = []
         else:
             # Empty cache
             self.gpu_texture = None
@@ -152,18 +154,19 @@ class CachedData:
             self.mat_active = -1
             self.angles = []
             self.pick_origins= []   
-            self.brushes = {}
+            self.brushes = []
+            self.map_bsh = []
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
 
-        def getGPUPreviewTexture(mat, use_icon=True):
-            prv = mat.preview
+        def getGPUPreviewTexture(item, use_icon=False):
+            prv = item.preview
             if not prv:
-                mat.asset_generate_preview()
-                print(f"ERROR : Material {mat.name} has no preview image")
+                item.asset_generate_preview()
+                print(f"ERROR : Item {item.name} has no preview image")
                 return None
 
             if use_icon:
@@ -177,18 +180,17 @@ class CachedData:
             dat = [ d for d in dat ] 
             ts = s[0]*s[1]*4
             if ts < 1:
-                mat.asset_generate_preview()
-                print(f"ERROR : Could not load mat {mat.name} preview image")
+                item.asset_generate_preview()
+                print(f"ERROR : Could not load mat {item.name} preview image")
                 return None
 
             import gpu
             pbf = gpu.types.Buffer('FLOAT', ts, dat)
             return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
 
-        self.mat_prv = [ getGPUPreviewTexture(m, use_icon=False) for m in self.materials ]
-
-        bbsh = bpy.data.brushes
-        print("Brushes : ", {n:(not (bbsh[n].preview is None)) for n in self.brushes})
+        self.mat_prv = [ getGPUPreviewTexture(m) for m in self.materials ]
+        self.bsh_prv = [ getGPUPreviewTexture(b) for b in self.brushes ]
+        print("Brushes map name :", self.map_bsh)
 
     def use_gpu_texture(self):
         return self.from_palette and not (self.gpu_texture is None)
