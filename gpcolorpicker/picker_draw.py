@@ -183,7 +183,6 @@ def draw_centered_texture(op, settings, tx, center=[0,0], rds=1, \
     centered_tex_fsh = '''
         #define PI 3.1415926538
         uniform sampler2D tex;  
-        uniform vec2 center;
         uniform float rad_tex;
         uniform bool use_mask;
         uniform bool convert_srgb;
@@ -194,9 +193,7 @@ def draw_centered_texture(op, settings, tx, center=[0,0], rds=1, \
         out vec4 fragColor;      
 
         void main()
-        {          
-            vec2 lpos_c = lpos-center;
-
+        {        
             float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
             float w = 2*rad_tex;
             float h = 2*rad_tex;
@@ -206,9 +203,9 @@ def draw_centered_texture(op, settings, tx, center=[0,0], rds=1, \
             else{
                 h /= aspect_ratio;
             }
-            vec2 uv_tex = lpos_c/(vec2(w,h)) + vec2(0.5);
+            vec2 uv_tex = lpos/(vec2(w,h)) + vec2(0.5);
 
-            float dst = length(lpos_c);
+            float dst = length(lpos);
             fragColor = texture(tex,uv_tex);
             
             if(use_mask){
@@ -216,14 +213,14 @@ def draw_centered_texture(op, settings, tx, center=[0,0], rds=1, \
             }
 
             if(convert_srgb){
-                fragColor = srgb_to_linear_rgb(texture(tex, uv_tex));
+                fragColor = srgb_to_linear_rgb(fragColor);
             }
         }
     '''
-    shader, batch = setup_shader(op, settings, centered_tex_fsh)
+    abs_origin = np.asarray(op.origin) + np.asarray(center)
+    shader, batch = setup_shader(op, settings, fragsh=centered_tex_fsh, origin=abs_origin, dimension=rds*2.5)
     shader.uniform_sampler("tex", tx)
     shader.uniform_float("rad_tex", rds)
-    shader.uniform_float("center", center)
     shader.uniform_bool("use_mask", [use_mask])  
     shader.uniform_bool("convert_srgb", [convert_srgb])   
     shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
@@ -232,7 +229,8 @@ def draw_centered_texture(op, settings, tx, center=[0,0], rds=1, \
 ''' --- Drawing functions --- '''
 
 ''' Sets up a shader program to draw an image in the dimensions given in the settings '''
-def setup_shader(op, settings, fragsh, libsh=common_libsh, dimension = -1, origin = None):
+def setup_shader(op, settings, fragsh, libsh=common_libsh, \
+                    dimension = -1, origin = None):
     vsh = '''            
         uniform mat4 modelViewProjectionMatrix;
         uniform float dimension;
@@ -254,7 +252,7 @@ def setup_shader(op, settings, fragsh, libsh=common_libsh, dimension = -1, origi
         # Simple screen quad
     if dimension < 0:
         dimension = settings.mat_centers_radius + 2*settings.mat_radius
-    if not origin :
+    if origin is None:
         origin = op.origin
     vdata = np.asarray(((-1, 1), (-1, -1),(1, -1), (1, 1)))
     vertices = np.ndarray.tolist(vdata)        
@@ -395,14 +393,27 @@ def draw_active(op, cache, settings):
     mat_radius = settings.mat_radius
     if op.mat_selected == cache.mat_active:
         mat_radius = settings.selected_radius
-    R = settings.mat_centers_radius + mat_radius + settings.mat_line_width*2.5;
+    R = settings.mat_centers_radius + mat_radius + settings.mat_line_width*2.5
     pos = R*np.asarray([cos(th), sin(th)])
     draw_mark(op, settings, pos, radius, color)
 
+''' Draws the preview image of brushes '''
 def draw_bsh_previews(op, context, cache, settings, mat_id):
     bnames = cache.map_bsh[mat_id]
     brushes = [b for b in cache.brushes if b.name in bnames]
-    print("Displaying textures ", {b.name for b in brushes})
+    th = cache.angles[mat_id]
+    from math import cos, sin
+    mat_dir = np.asarray([cos(th), sin(th)])
+    R = settings.mat_centers_radius
+    radius = settings.mat_radius
+    r = settings.selected_radius + radius*1.5
+    for b in brushes:
+        tex = cache.bsh_prv[b.name]
+        if not tex:
+            continue
+        center = (R+r)*mat_dir
+        draw_centered_texture(op, settings, tex, center, radius)
+        r += radius*2.5
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
@@ -576,7 +587,6 @@ def draw_callback_px(op, context, cache, settings):
 
     if op.mat_selected >= 0:
         write_selected_mat_name(op, cache, settings)
-        draw_bsh_previews(op, context, cache, settings, mat_id=op.mat_selected)
         
     if cache.use_gpu_texture():
         draw_palette_image(op, context, cache, settings)
@@ -585,9 +595,13 @@ def draw_callback_px(op, context, cache, settings):
 
     if cache.mat_active >= 0:
         draw_active(op, cache, settings) 
+
     draw_picklines(op, cache, settings)
     draw_mat_previews(op, context, cache, settings)
 
+    if op.mat_selected >= 0:
+        draw_bsh_previews(op, context, cache, settings, mat_id=op.mat_selected)
+        
     if cache.from_palette:
         write_active_palette(op, context, settings)
 

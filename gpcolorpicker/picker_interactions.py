@@ -189,7 +189,7 @@ class CachedData:
             return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
 
         self.mat_prv = [ getGPUPreviewTexture(m) for m in self.materials ]
-        self.bsh_prv = [ getGPUPreviewTexture(b) for b in self.brushes ]
+        self.bsh_prv = { b.name:getGPUPreviewTexture(b) for b in self.brushes }
         print("Brushes map name :", self.map_bsh)
 
     def use_gpu_texture(self):
