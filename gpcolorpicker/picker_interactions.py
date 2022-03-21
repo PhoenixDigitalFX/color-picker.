@@ -162,9 +162,12 @@ class CachedData:
         self.mat_fill_colors = [ m.fill_color if m.show_fill else transp for m in mat_gp ]
         self.mat_line_colors = [ m.color if m.show_stroke else transp for m in mat_gp ] 
 
-        def getGPUPreviewTexture(item, use_icon=False):
+        def getGPUPreviewTexture(item, check_custom=False, use_icon=False):
             prv = item.preview
-            if not prv:
+            if check_custom and (not item.use_custom_icon):
+                print(f"INFO : Brush {item.name} has no custom icon")
+                return None
+            elif not prv:
                 item.asset_generate_preview()
                 print(f"ERROR : Item {item.name} has no preview image")
                 return None
@@ -189,8 +192,7 @@ class CachedData:
             return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
 
         self.mat_prv = [ getGPUPreviewTexture(m) for m in self.materials ]
-        self.bsh_prv = { b.name:getGPUPreviewTexture(b) for b in self.brushes }
-        print("Brushes map name :", self.map_bsh)
+        self.bsh_prv = { b.name:getGPUPreviewTexture(b, check_custom=True) for b in self.brushes }
 
     def use_gpu_texture(self):
         return self.from_palette and not (self.gpu_texture is None)

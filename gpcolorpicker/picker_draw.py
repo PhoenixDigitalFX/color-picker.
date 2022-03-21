@@ -383,7 +383,6 @@ def draw_picklines(op, cache, settings):
     
     batch.draw(shader)
 
-
 ''' Draws a dot mark to spot the active material '''
 def draw_active(op, cache, settings):
     color = settings.active_color
