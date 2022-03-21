@@ -3,7 +3,7 @@ import bpy
 import numpy as np
 from . picker_draw import draw_callback_px
 from . picker_settings import GPCOLORPICKER_settings
-from . picker_interactions import get_selected_mat_id, pick_material, CachedData
+from . picker_interactions import get_selected_mat_id, get_selected_brush_id, pick_material, CachedData
 import time
 
 class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
@@ -16,14 +16,27 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                 (context.mode == 'PAINT_GPENCIL') and \
                 (context.active_object is not None) and \
                 (context.active_object.type == 'GPENCIL')
+    
+    # Change the selected material & brush
+    def refresh_selections(self, event):
+        cache = self.cached_data
+        stg = self.settings
+
+        self.mat_selected = get_selected_mat_id(event, self.region_dim, self.origin, cache.mat_nb, \
+                                            stg.interaction_radius, cache.angles)
+        if self.mat_selected >= 0:
+            nb_brush = len(cache.map_bsh[self.mat_selected])
+            int_area = stg.mat_centers_radius + stg.mat_radius*stg.selection_ratio
+            self.brush_selected = get_selected_brush_id(event, self.region_dim, self.origin, nb_brush, \
+                                int_area, stg.brush_radius)
+        else:
+            self.brush_selected = -1
 
     def modal(self, context, event):
         context.area.tag_redraw()  
 
         if event.type == 'MOUSEMOVE':
-            # Change the selected material when the mouse moves
-            self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
-                                             self.settings.interaction_radius, self.cached_data.angles)
+            self.refresh_selections(event)
         
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
             # Change the active palette when the switch key is pressed (default: TAB)
@@ -32,9 +45,7 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                 dir = -1
             bpy.context.scene.gpmatpalettes.next(dir)
             self.cached_data.refresh(context)
-            self.mat_selected = get_selected_mat_id(event,self.region_dim, self.origin, self.cached_data.mat_nb, \
-                                             self.settings.interaction_radius, self.cached_data.angles)
-
+            self.refresh_selections(event)
 
         elif ((event.type == self.invoke_key) \
                 and (event.value == 'RELEASE') and (self.mat_selected != -1)) \

@@ -11,6 +11,7 @@ class GPCOLORPICKER_settings():
         self.pickline_width = 1.
         self.anti_aliasing_eps = 0.5
         self.mark_color = (0.5,0.5,0.5,1)
+        self.selection_ratio = 1.2
 
         # From user preferences
         if prefs:
@@ -36,7 +37,7 @@ class GPCOLORPICKER_settings():
         self.interaction_radius = 0.5*self.mc_outer_radius
 
         self.mat_radius = 0.1*self.mat_centers_radius
+        self.brush_radius = 0.8*self.mat_radius
 
-        self.selected_radius = 1.2*self.mat_radius
         self.text_size = ceil(0.04*self.icon_scale)
         self.tex_radius = self.mat_centers_radius-self.mat_radius

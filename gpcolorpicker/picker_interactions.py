@@ -93,7 +93,32 @@ def get_selected_mat_id(event, region_dim, origin, nmt, interaction_radius, mat_
         i += 1
     # case i = mat_nb-1 is handled by default
     return nmt-1
-        
+
+
+''' Computes the ID of the material in selection according to the location of the mouse '''
+def get_selected_brush_id(event, region_dim, origin, nbrush, interaction_radius, brush_radius):
+    if nbrush < 1:
+        return -1
+
+    mouse_pos = np.asarray([event.mouse_region_x,event.mouse_region_y]) - 0.5*region_dim
+    mouse_local = mouse_pos - origin
+
+    d_mouse = np.linalg.norm(mouse_local)
+    
+    if d_mouse < interaction_radius:
+        return -1 
+
+    if nbrush == 1:
+        return 0    
+
+    d_loc  = (d_mouse - interaction_radius)/(2*brush_radius)
+    brush_id = int(d_loc)
+
+    if brush_id > nbrush-1:
+        brush_id = nbrush-1
+    
+    return brush_id
+
 ''' Cache structure for better performances in displaying the picker 
     Mirrors the content of the active palette or the materials of the active object
 '''

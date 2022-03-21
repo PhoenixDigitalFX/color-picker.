@@ -411,7 +411,7 @@ def draw_picklines(op, cache, settings):
 
     shader, batch = setup_shader(op, settings, fsh)
 
-    shader.uniform_float("selected_radius", settings.selected_radius)
+    shader.uniform_float("selected_radius", settings.selection_ratio*settings.mat_radius)
     shader.uniform_float("mat_radius", settings.mat_radius)
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
     shader.uniform_int("mat_selected", op.mat_selected);   
@@ -431,7 +431,7 @@ def draw_active(op, cache, settings):
     from math import cos, sin
     mat_radius = settings.mat_radius
     if op.mat_selected == cache.mat_active:
-        mat_radius = settings.selected_radius
+        mat_radius *= settings.selection_ratio
     R = settings.mat_centers_radius + mat_radius + settings.mat_line_width*2.5
     pos = R*np.asarray([cos(th), sin(th)])
     draw_mark(op, settings, pos, radius, color)
@@ -443,19 +443,23 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
     th = cache.angles[mat_id]
     from math import cos, sin
     mat_dir = np.asarray([cos(th), sin(th)])
-    R = settings.mat_centers_radius
-    radius = settings.mat_radius
-    r = settings.selected_radius + radius*1.5
-    for b in brushes:
+
+    s = settings
+    R = s.mat_centers_radius
+    r = s.mat_radius*s.selection_ratio + s.brush_radius*1.5
+    for i,b in enumerate(brushes):
         tex = cache.bsh_prv[b.name]
         center = (R+r)*mat_dir
+        radius = s.brush_radius
+        if op.brush_selected == i:
+            radius *= s.selection_ratio
         if tex is None:
             org = op.origin + 0.5*op.region_dim
-            draw_flat_circle(op, settings, center, radius, fill_color=4*[0.5])
-            write_circle_centered(settings, org + center, radius*1.5, b.name, text_size_fact=0.5)
+            draw_flat_circle(op, s, center, radius, fill_color=4*[0.5])
+            write_circle_centered(s, org + center, radius*1.5, b.name, text_size_fact=0.5)
         else:
-            draw_centered_texture(op, settings, tex, center, radius)
-        r += radius*2.5
+            draw_centered_texture(op, s, tex, center, radius)
+        r += s.brush_radius*2.5
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
@@ -464,11 +468,11 @@ def draw_mat_previews(op, context, cache, settings):
         tx = None
 
         th = cache.angles[mat_id]
+        rds = settings.mat_radius
         if op.mat_selected == mat_id:
-            rds = settings.selected_radius
+            rds *= settings.selection_ratio
             R = settings.mat_centers_radius + rds - settings.mat_radius
         else:
-            rds = settings.mat_radius
             R = settings.mat_centers_radius
 
         from math import cos, sin

@@ -85,7 +85,7 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
         self.org = settings.mat_centers_radius*udir
-        self.rds = settings.selected_radius
+        self.rds = settings.mat_radius*settings.selection_ratio
 
     def display_not_in_selection(self, op, cache, settings, pos):
         if (op.mat_selected == self.id):
