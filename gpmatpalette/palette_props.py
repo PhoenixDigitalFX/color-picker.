@@ -23,12 +23,17 @@ class GPMatPickLine(PropertyGroup):
         if np_arr:
             return np.asarray([self.ox, self.oy])
         return [self.ox, self.oy]
-class GPBrushItem(PropertyGroup):
-    name      : StringProperty(name="Name")
-    image     : PointerProperty(type=bpy.types.Image, name="Preview")
-    index     : IntProperty(name="Index")
-    is_default: BoolProperty(name="Default", default=False)
 
+class GPBrushItem(PropertyGroup):
+    data: PointerProperty(type=bpy.types.Brush, name="Data")
+
+    def get_name(self):
+        return self.data.name
+
+def update_brush(self, context):
+    if (not self.pending_brush) or (self.pending_brush.preview) :
+        return
+    self.pending_brush.asset_generate_preview()
 class GPMatItem(PropertyGroup):
     # name: StringProperty(name= "Name")
     data: PointerProperty(type=bpy.types.Material, name="Data")
@@ -36,7 +41,7 @@ class GPMatItem(PropertyGroup):
     image: PointerProperty(type=bpy.types.Image, name="Image", description="Image to be displayed in the picker when material is in selection")
     layer: StringProperty(name="Layer", description="Layer to switch to when material is selected")
     brushes: CollectionProperty(type=GPBrushItem)
-    pending_brush : PointerProperty(type=bpy.types.Brush)
+    pending_brush : PointerProperty(type=bpy.types.Brush, update=update_brush)
 
     is_dirty: BoolProperty(default=False)
 
@@ -84,12 +89,14 @@ class GPMatItem(PropertyGroup):
         if not self.pending_brush:
             return
         bsh = self.brushes.add()
-        bsh.name = self.pending_brush.name
-        bsh.index = len(self.brushes)-1
+        bsh.data = self.pending_brush
                 
         self.pending_brush = None
         self.is_dirty = True
         return True
+    
+    def get_brushes_names(self):
+        return { b.get_name() for b in self.brushes }
 
 ''' --- Palette --- '''
 
@@ -260,6 +267,12 @@ class GPMatPalette(PropertyGroup):
         if self.count() == 0:
             return 0
         return max([m.count_picklines() for m in self.materials])
+
+    def get_brushes_names(self):
+        bnames = set()
+        for m in self.materials:
+            bnames = bnames.union(m.get_brushes_names())
+        return bnames
 
 ''' --- Palette collection container --- '''
 

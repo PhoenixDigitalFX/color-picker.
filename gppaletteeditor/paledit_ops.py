@@ -323,13 +323,15 @@ class GPCOLORPICKER_OT_addBrushInMaterial(bpy.types.Operator):
     bl_label = "GP Add Brush to Material"
 
     mat_index: bpy.props.IntProperty(default=-1)
-    bsh_index: bpy.props.IntProperty(default=-1)
 
     @classmethod
     def poll(cls, context):
         return context.scene.gpmatpalettes.active()
 
-    def execute(self, context):        
+    def execute(self, context):     
+        pal = context.scene.gpmatpalettes.active()
+        pal.materials[self.mat_index].accept_pending_brush()
+
         return {'FINISHED'}   
 
     def draw(self, context):
