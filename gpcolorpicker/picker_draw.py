@@ -226,6 +226,46 @@ def draw_centered_texture(op, settings, tx, center=[0,0], rds=1, \
     shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
     batch.draw(shader)
 
+def draw_flat_circle(op, settings, center, radius, \
+    fill_color=4*[0.], line_color=4*[0.], line_width=1.):
+    flat_prv_fsh = '''
+        #define PI 3.1415926538
+        uniform vec4 fill_color;
+        uniform vec4 line_color;
+        uniform float mat_line_width;
+        uniform float radius;
+        uniform float aa_eps;
+
+        in vec2 lpos;
+        in vec2 uv;
+        out vec4 fragColor;   
+
+        void main()
+        {          
+            float d = length(lpos);    
+
+            if( d > radius + aa_eps*2 ){
+                fragColor = vec4(0.);
+                return;
+            } 
+
+            vec4 fcolor = fill_color;
+            vec4 lcolor = line_color;
+            fcolor.a *= aa_circle(radius, d, aa_eps);
+            lcolor.a *= aa_contour(radius, mat_line_width, d, aa_eps);
+
+            fragColor = alpha_compose(lcolor, fcolor);
+        }
+    '''
+    abs_origin = np.asarray(op.origin) + np.asarray(center)
+    shader, batch = setup_shader(op, settings, fragsh=flat_prv_fsh, origin=abs_origin, dimension=radius*2.5)
+    shader.uniform_float("fill_color", fill_color)
+    shader.uniform_float("line_color", line_color)
+    shader.uniform_float("mat_line_width", line_width)
+    shader.uniform_float("radius",radius)   
+    shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
+    batch.draw(shader) 
+
 ''' --- Drawing functions --- '''
 
 ''' Sets up a shader program to draw an image in the dimensions given in the settings '''
@@ -408,92 +448,20 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
     r = settings.selected_radius + radius*1.5
     for b in brushes:
         tex = cache.bsh_prv[b.name]
-        if not tex:
-            continue
         center = (R+r)*mat_dir
-        draw_centered_texture(op, settings, tex, center, radius)
+        if tex is None:
+            org = op.origin + 0.5*op.region_dim
+            draw_flat_circle(op, settings, center, radius, fill_color=4*[0.5])
+            write_circle_centered(settings, org + center, radius*1.5, b.name, text_size_fact=0.5)
+        else:
+            draw_centered_texture(op, settings, tex, center, radius)
         r += radius*2.5
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
-    mat_prv_fsh = '''
-        #define PI 3.1415926538
-        uniform sampler2D tex;  
-        uniform float radius;
-        uniform float aa_eps;
-        uniform float th_i;
-        uniform float R;
-
-        in vec2 lpos;
-        in vec2 uv;
-        out vec4 fragColor;   
-
-        void main()
-        {          
-            /* compute the center of circle */
-            vec2 ci = R*vec2(cos(th_i),sin(th_i));
-            float d = length(lpos-ci);    
-
-            if( d > radius + aa_eps*2 ){
-                fragColor = vec4(0.);
-                return;
-            }
-
-            float aspect_ratio = textureSize(tex,0).x / float(textureSize(tex,0).y);
-            float w = 2*radius;
-            float h = 2*radius;
-            if(aspect_ratio > 1){
-                w *= aspect_ratio;
-            }
-            else{
-                h *= aspect_ratio;
-            }
-            vec2 uv_tex = (lpos-ci)/(vec2(w,h)) + vec2(0.5);
-
-            fragColor = srgb_to_linear_rgb(texture(tex, uv_tex));
-        }
-    '''
-    flat_prv_fsh = '''
-        #define PI 3.1415926538
-        uniform vec4 fill_color;
-        uniform vec4 line_color;
-        uniform float mat_line_width;
-        uniform float radius;
-        uniform float aa_eps;
-        uniform float th_i;
-        uniform float R;
-
-        in vec2 lpos;
-        in vec2 uv;
-        out vec4 fragColor;   
-
-        void main()
-        {          
-            /* compute the center of circle */
-            vec2 ci = R*vec2(cos(th_i),sin(th_i));
-            float d = length(lpos-ci);    
-
-            if( d > radius + aa_eps*2 ){
-                fragColor = vec4(0.);
-                return;
-            } 
-
-            /* draw circle */
-            vec4 fcolor = fill_color;
-            vec4 lcolor = line_color;
-            fcolor.a *= aa_circle(radius, d, aa_eps);
-            lcolor.a *= aa_contour(radius, mat_line_width, d, aa_eps);
-
-            fragColor = alpha_compose(lcolor, fcolor);
-        }
-    '''
     for mat_id in range(cache.mat_nb):
-        # tx = cache.mat_prv[mat_id]
+        #tx = cache.mat_prv[mat_id]
         tx = None
-        if tx:
-            fsh = mat_prv_fsh
-        else:
-            fsh = flat_prv_fsh
 
         th = cache.angles[mat_id]
         if op.mat_selected == mat_id:
@@ -502,20 +470,17 @@ def draw_mat_previews(op, context, cache, settings):
         else:
             rds = settings.mat_radius
             R = settings.mat_centers_radius
-        
-        shader, batch = setup_shader(op, settings, fsh)
+
+        from math import cos, sin
+        center = R*np.asarray([cos(th),sin(th)])
+
         if tx:
-            shader.uniform_sampler("tex",tx)
-            rds *= 1.3
+            draw_centered_texture(op, settings, tx, center, rds, convert_srgb=True)
         else:
-            shader.uniform_float("fill_color", cache.mat_fill_colors[mat_id])
-            shader.uniform_float("line_color", cache.mat_line_colors[mat_id])
-            shader.uniform_float("mat_line_width", settings.mat_line_width)
-        shader.uniform_float("radius",rds)    
-        shader.uniform_float("th_i", th)    
-        shader.uniform_float("R", R)    
-        shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
-        batch.draw(shader) 
+            fcol = cache.mat_fill_colors[mat_id]
+            lcol = cache.mat_line_colors[mat_id]
+            lwdt = settings.mat_line_width
+            draw_flat_circle(op, settings, center, rds, fcol, lcol, lwdt)
 
 
 ''' Draws the image of the palette in the middle of the icon '''
@@ -544,10 +509,10 @@ def draw_palette_image(op, context, cache, settings):
 ''' --- Writing functions --- '''
 
 ''' Useful function to write text centered in a circle of origin org, and of radius ird'''
-def write_circle_centered(settings, org, ird, text):
+def write_circle_centered(settings, org, ird, text, text_size_fact = 1.):
     font_id = 1
     blf.color(font_id, *(settings.text_color))
-    blf.size(font_id, settings.text_size, 72)
+    blf.size(font_id, int(text_size_fact*settings.text_size), 72)
     blf.enable(font_id,blf.CLIPPING)
     
     dmin, dmax = org - ird, org + ird
