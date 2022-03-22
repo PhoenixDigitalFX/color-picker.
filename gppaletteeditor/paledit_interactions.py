@@ -272,9 +272,47 @@ class AddBrushInteraction(RadialInteractionArea):
         nbrushes= len(cache.map_bsh[self.id])
         overall_rds += nbrushes*settings.brush_radius*2.5
         self.org = overall_rds*udir
-        self.rds = settings.mat_radius
+        self.rds = settings.brush_radius
         self.mark.position = self.org
     
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.scene.add_brush_mat('INVOKE_DEFAULT', mat_index=self.id)
 
+
+''' Moves Brush in material '''
+class MoveBrushInteraction(RadialInteractionArea):
+    def __init__(self, op, cache, settings, mat_id, bsh_name):
+        self.mat_id = mat_id
+        self.bsh_name = bsh_name
+        self.refresh(cache, settings)
+
+    def is_in_selection(self, op, cache, settings, pos):
+        return (op.mat_selected == self.mat_id) \
+            and (super().is_in_selection(op, cache, settings, pos))
+
+    def refresh(self, cache, settings):
+        self.bsh_id = cache.map_bsh[self.mat_id].index(self.bsh_name)
+        if self.bsh_id < 0:
+            print(f"ERROR : Brush {self.bsh_name} not assigned to material {self.mat_id}")
+            return            
+        self.th = cache.angles[self.mat_id]
+        udir = np.asarray([cos(self.th),sin(self.th)])       
+        self.R = settings.mat_centers_radius+2.5*settings.mat_radius
+        self.r = settings.brush_radius*2.5
+        overall_rds = self.R + self.bsh_id*self.r
+        self.org = overall_rds*udir
+        self.rds = settings.brush_radius
+    
+    def on_mouse_move(self, op, cache, settings, pos):
+        d = np.linalg.norm(pos)
+        nid = int((d-self.R)/self.r)
+        print(f"Old ID {self.bsh_id}, New ID {nid}")
+
+        lbsh = cache.map_bsh[self.mat_id]
+        lbsh[self.bsh_id], lbsh[nid] = lbsh[nid], lbsh[self.bsh_id]
+
+        cache.map_bsh[self.mat_id] = lbsh
+
+    def on_click_release(self, op, cache, settings, context):
+        self.refresh(cache, settings)
+        op.write_cache_in_palette(context)

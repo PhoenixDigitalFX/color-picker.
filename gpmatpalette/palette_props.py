@@ -88,6 +88,7 @@ class GPMatItem(PropertyGroup):
     def accept_pending_brush(self):
         if not self.pending_brush:
             return
+            
         bsh = self.brushes.add()
         bsh.data = self.pending_brush
                 
