@@ -81,6 +81,10 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         self.id = id
         self.refresh(cache, settings)
 
+    def is_in_selection(self, op, cache, settings, pos):
+        return (op.mat_selected == self.id) \
+            and (super().is_in_selection(op, cache, settings, pos))
+
     def refresh(self, cache, settings):
         self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
@@ -117,6 +121,10 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.overall_rds -= settings.mat_radius
         self.name = cache.materials[self.mat_id].name
         self.refresh(cache, settings)
+
+    def is_in_selection(self, op, cache, settings, pos):
+        return (op.mat_selected == self.mat_id) \
+            and (super().is_in_selection(op, cache, settings, pos))
 
     def refresh(self, cache, settings):
         o = cache.pick_origins[self.mat_id][self.pln_id]
@@ -166,6 +174,10 @@ class RemoveMaterialInteraction(RadialInteractionArea):
         self.mark.type = 0
         self.refresh(cache, settings)
 
+    def is_in_selection(self, op, cache, settings, pos):
+        return (op.mat_selected == self.id) \
+            and (super().is_in_selection(op, cache, settings, pos))
+
     def refresh(self, cache, settings):
         self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
@@ -187,6 +199,9 @@ class AddMaterialInteraction(InteractionArea):
         self.mark.type = 1 # cross-like mark
 
     def is_in_selection(self, op, cache, settings, pos):
+        if (op.mat_locked):
+            return False
+
         R = settings.mat_centers_radius
         r = settings.mat_radius + settings.mat_line_width
         d = np.linalg.norm(pos)
@@ -232,6 +247,10 @@ class EditImageInteraction(RadialInteractionArea):
         self.mark.color = settings.mc_fill_color
         self.mark.radius = self.rds*0.3
         self.mark.type = 0
+
+    def is_in_selection(self, op, cache, settings, pos):
+        return (not op.mat_locked) \
+            and (super().is_in_selection(op, cache, settings, pos))
 
     def on_click_release(self, op, cache, settings, context):
         bpy.ops.scene.edit_palette_image('INVOKE_DEFAULT')
