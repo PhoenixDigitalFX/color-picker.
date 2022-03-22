@@ -86,21 +86,22 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         udir = np.asarray([cos(self.th),sin(self.th)])
         self.org = settings.mat_centers_radius*udir
         self.rds = settings.mat_radius*settings.selection_ratio
-
-    def display_not_in_selection(self, op, cache, settings, pos):
-        if (op.mat_selected == self.id):
-            op.mat_selected = -1
-
-    def display_in_selection(self, op, cache, settings, pos):
-        op.mat_selected = self.id
+    
+    def on_click_press(self, op, cache, settings, context):
+        self.has_moved = False
     
     def on_mouse_move(self, op, cache, settings, pos):
         nth = atan2(pos[1], pos[0]) % (2*pi)
         
         cache.angles[self.id] = nth
         cache.is_custom_angle[self.id] = True
-    
+        self.has_moved = True
+
     def on_click_release(self, op, cache, settings, context):
+        if not self.has_moved:
+            op.mat_locked = not op.mat_locked
+            return
+
         self.refresh(cache, settings)
         op.write_cache_in_palette(context)
     
@@ -249,6 +250,8 @@ class AddBrushInteraction(RadialInteractionArea):
         self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
         overall_rds = settings.mat_centers_radius+2.5*settings.mat_radius
+        nbrushes= len(cache.map_bsh[self.id])
+        overall_rds += nbrushes*settings.brush_radius*2.5
         self.org = overall_rds*udir
         self.rds = settings.mat_radius
         self.mark.position = self.org

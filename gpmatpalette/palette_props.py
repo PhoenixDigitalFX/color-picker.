@@ -263,6 +263,16 @@ class GPMatPalette(PropertyGroup):
         self.lock_obsolete = val
         self.is_obsolete = self.lock_obsolete
 
+    ''' Checks if the collection or any material has recently been changed '''
+    def needs_refresh(self):
+        return (self.is_dirty) or any([m.is_dirty for m in self.materials])
+
+    ''' Removes all the dirty flags of the collection '''
+    def all_refreshed(self):
+        self.is_dirty = False
+        for m in self.materials:
+            m.is_dirty = False
+
     def get_nb_max_picklines(self):
         if self.count() == 0:
             return 0
@@ -365,13 +375,13 @@ class GPMatPalettes(PropertyGroup):
 
     ''' Checks if the collection or any palette has recently been changed '''
     def needs_refresh(self):
-        return (self.is_dirty) or any([p.is_dirty for p in self.palettes])
+        return (self.is_dirty) or any([p.needs_refresh() for p in self.palettes])
     
     ''' Removes all the dirty flags of the collection '''
     def all_refreshed(self):
         self.is_dirty = False
         for p in self.palettes:
-            p.is_dirty = False
+            p.all_refreshed()
 
 classes = [ GPBrushItem, GPMatPickLine, GPMatItem, GPMatPalette, GPMatPalettes]
 

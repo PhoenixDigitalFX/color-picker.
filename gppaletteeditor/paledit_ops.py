@@ -2,6 +2,7 @@
 import bpy, time
 import numpy as np
 from .. gpcolorpicker.picker_settings import GPCOLORPICKER_settings
+from .. gpcolorpicker.picker_interactions import get_selected_brush_id, get_selected_mat_id
 from . paledit_draw import draw_callback_px
 from . paledit_interactions import *
 
@@ -31,6 +32,27 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             matit.picklines.clear()
             matit.set_origins(cache.pick_origins[i])
     
+    # Change the selected material & brush
+    def refresh_selections(self, event):
+        cache = self.cached_data
+        stg = self.settings
+
+        # print(f"Mat locked {self.mat_locked}, mat selected {self.mat_selected}")
+
+        msel = get_selected_mat_id(event, self.region_dim, self.origin, cache.mat_nb, \
+                                            stg.interaction_radius, cache.angles)
+
+        if not self.mat_locked:    
+            self.mat_selected = msel
+
+        if (msel == self.mat_selected) and (self.mat_selected >= 0):
+            nb_brush = len(cache.map_bsh[self.mat_selected])
+            int_area = stg.mat_centers_radius + stg.mat_radius*stg.selection_ratio
+            self.brush_selected = get_selected_brush_id(event, self.region_dim, self.origin, nb_brush, \
+                                int_area, stg.brush_radius)
+        else:
+            self.brush_selected = -1
+
     def modal(self, context, event):       
         # Getting mouse location
         mouse_pos = np.asarray([event.mouse_region_x,event.mouse_region_y])
@@ -40,6 +62,8 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         stgs = self.settings
         itsel = self.interaction_in_selection
         gpmp = context.scene.gpmatpalettes
+
+        self.refresh_selections(event)
 
         # Refreshing cache and interaction areas if necessary
         if gpmp.needs_refresh():
@@ -53,7 +77,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 itar.refresh(cache, stgs)
 
         context.area.tag_redraw()  
-        if event.type == 'MOUSEMOVE':                
+        if event.type == 'MOUSEMOVE':      
             if not self.running_interaction is None:
                 self.running_interaction.on_mouse_move(self, cache, stgs, mouse_local)
             elif itsel and itsel.is_in_selection(self, cache, stgs, mouse_local):
@@ -113,6 +137,8 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
     ''' Sets up all interaction areas given the current palette content in the cache '''
     def init_interaction_areas(self, context, mouse_local=np.zeros(2)):
         self.mat_selected = -1
+        self.mat_locked = False
+        self.brush_selected = -1
         stgs = self.settings
         self.interaction_areas = []
         cache = self.cached_data
