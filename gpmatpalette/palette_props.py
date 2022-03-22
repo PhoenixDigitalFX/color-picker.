@@ -172,7 +172,7 @@ class GPMatPalette(PropertyGroup):
         old_id = self.count()
         index = index_
         if self.contains_material(name):
-            old_id = self.materials.find(name)
+            old_id = self.index_material(name)
             if old_id < index:
                 index = index - 1
         else:
