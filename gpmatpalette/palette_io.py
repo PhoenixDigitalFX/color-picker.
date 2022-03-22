@@ -251,7 +251,6 @@ def export_palettes_content(filepath):
 
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
-        dat_mats = {m.name:m.grease_pencil for m in bpy.data.materials if m.is_grease_pencil}
 
         if pdata.image:
             impath = write_image(pdata.image, filedir, ext)
