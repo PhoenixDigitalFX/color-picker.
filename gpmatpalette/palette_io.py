@@ -261,17 +261,19 @@ def export_palettes_content(filepath):
 
         pal_dct[pname]["materials"] = {}
         mat_dct = pal_dct[pname]["materials"]
-        for mname, mdata in pdata.materials.items(): 
-            mat_dct[mname] = get_material_data(dat_mats[mname], filedir)
+        for mat in pdata.materials: 
+            mname = mat.get_name()
 
-            mat_dct[mname]["position"] = mdata.get_angle(True)*180/math.pi
+            mat_dct[mname] = get_material_data(mat.data.grease_pencil, filedir)
 
-            if mdata.has_pickline():
-                mat_dct[mname]["origins"] = mdata.get_origins(np_arr = False)
+            mat_dct[mname]["position"] = mat.get_angle(True)*180/math.pi
 
-            if mdata.image:
-                mat_dct[mname]["image"] = os.path.basename(mdata.image.filepath)
+            if mat.has_pickline():
+                mat_dct[mname]["origins"] = mat.get_origins(np_arr = False)
 
-            if mdata.layer:
-                mat_dct[mname]["layer"] = mdata.layer
+            if mat.image:
+                mat_dct[mname]["image"] = os.path.basename(mat.image.filepath)
+
+            if mat.layer:
+                mat_dct[mname]["layer"] = mat.layer
     return pal_dct
