@@ -89,11 +89,54 @@ def load_gpu_texture(image):
         
     return None
 
+
+''' --- Drawing functions --- '''
+
+''' Sets up a shader program to draw an image in the dimensions given in the settings '''
+def setup_shader(op, settings, fragsh, libsh=common_libsh, \
+                    dimension = -1, origin = None):
+    vsh = '''            
+        uniform mat4 modelViewProjectionMatrix;
+        uniform float dimension;
+        uniform vec2 origin;
+        
+        in vec2 pos;
+        out vec2 lpos;
+        out vec2 uv;
+
+        void main()
+        {
+          gl_Position = modelViewProjectionMatrix*vec4(dimension*pos+origin, 0.0, 1.0);
+          lpos = dimension*pos;
+          uv = (pos+1)*0.5;
+        }
+    '''
+    shader = gpu.types.GPUShader(vsh, fragsh, libcode=libsh)
+
+        # Simple screen quad
+    if dimension < 0:
+        dimension = settings.mat_centers_radius + 2*settings.mat_radius
+    if origin is None:
+        origin = op.origin
+    vdata = np.asarray(((-1, 1), (-1, -1),(1, -1), (1, 1)))
+    vertices = np.ndarray.tolist(vdata)        
+    indices = ((0, 1, 2), (0, 2, 3))
+    
+    batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
+    shader.bind() 
+    
+        # Set up uniform variables
+    matrix = gpu.matrix.get_projection_matrix()*gpu.matrix.get_model_view_matrix()
+    shader.uniform_float("modelViewProjectionMatrix", matrix)     
+    shader.uniform_float("dimension",dimension)
+    shader.uniform_float("origin", origin)
+
+    return shader,batch 
+
 ''' Useful function to draw a single mark with common shape '''
 def draw_mark(op, settings, m_origin, m_radius, m_color, m_type=0):
     mark_fsh = '''
     #define PI 3.1415926538
-    uniform vec2 mark_origin;
     uniform vec4 mark_color;
     uniform float mark_radius;
     uniform float aa_eps;
@@ -104,14 +147,14 @@ def draw_mark(op, settings, m_origin, m_radius, m_color, m_type=0):
     out vec4 fragColor;   
 
     vec4 draw_circle_mark(){
-        float d = length(lpos-mark_origin); 
+        float d = length(lpos); 
         vec4 fragColor_circle= mark_color;
         fragColor_circle.a *= aa_circle(mark_radius, d, aa_eps); 
         return fragColor_circle;
     }
 
     vec4 draw_cross_mark(){
-        vec2 uv = abs(lpos-mark_origin);
+        vec2 uv = abs(lpos);
         float l = 0.1*mark_radius;
         if(((uv.x < l) && (uv.y < mark_radius)) 
                 || ((uv.y < l) && (uv.x < mark_radius))){
@@ -121,7 +164,7 @@ def draw_mark(op, settings, m_origin, m_radius, m_color, m_type=0):
     }
 
     vec4 draw_pencil_mark(){
-        vec2 uv = lpos-mark_origin;
+        vec2 uv = lpos;
         // rotation
         float th = -3*PI/4.;
         float cs = cos(th);
@@ -159,9 +202,9 @@ def draw_mark(op, settings, m_origin, m_radius, m_color, m_type=0):
         }
     }
     '''
-    shader, batch = setup_shader(op, settings, mark_fsh)
+    abs_origin = np.asarray(op.origin) + np.asarray(m_origin)
+    shader, batch = setup_shader(op, settings, fragsh=mark_fsh, origin=abs_origin, dimension=m_radius*2.5)
 
-    shader.uniform_float("mark_origin", m_origin) 
     shader.uniform_float("mark_radius", m_radius) 
     shader.uniform_float("mark_color", m_color) 
     shader.uniform_int("mark_type", m_type) 
@@ -265,49 +308,6 @@ def draw_flat_circle(op, settings, center, radius, \
     shader.uniform_float("radius",radius)   
     shader.uniform_float("aa_eps",settings.anti_aliasing_eps)    
     batch.draw(shader) 
-
-''' --- Drawing functions --- '''
-
-''' Sets up a shader program to draw an image in the dimensions given in the settings '''
-def setup_shader(op, settings, fragsh, libsh=common_libsh, \
-                    dimension = -1, origin = None):
-    vsh = '''            
-        uniform mat4 modelViewProjectionMatrix;
-        uniform float dimension;
-        uniform vec2 origin;
-        
-        in vec2 pos;
-        out vec2 lpos;
-        out vec2 uv;
-
-        void main()
-        {
-          gl_Position = modelViewProjectionMatrix*vec4(dimension*pos+origin, 0.0, 1.0);
-          lpos = dimension*pos;
-          uv = (pos+1)*0.5;
-        }
-    '''
-    shader = gpu.types.GPUShader(vsh, fragsh, libcode=libsh)
-
-        # Simple screen quad
-    if dimension < 0:
-        dimension = settings.mat_centers_radius + 2*settings.mat_radius
-    if origin is None:
-        origin = op.origin
-    vdata = np.asarray(((-1, 1), (-1, -1),(1, -1), (1, 1)))
-    vertices = np.ndarray.tolist(vdata)        
-    indices = ((0, 1, 2), (0, 2, 3))
-    
-    batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
-    shader.bind() 
-    
-        # Set up uniform variables
-    matrix = gpu.matrix.get_projection_matrix()*gpu.matrix.get_model_view_matrix()
-    shader.uniform_float("modelViewProjectionMatrix", matrix)     
-    shader.uniform_float("dimension",dimension)
-    shader.uniform_float("origin", origin)
-
-    return shader,batch 
 
 ''' In the case of "from active" material mode, or if there is no image in palette
     Draws a simple pie circle in the colors and scale given by the settings
@@ -426,14 +426,20 @@ def draw_picklines(op, cache, settings):
 ''' Draws a dot mark to spot the active material '''
 def draw_active(op, cache, settings):
     color = settings.active_color
-    radius = settings.mat_line_width
+    radius = settings.mat_line_width*0.8
     th = cache.angles[cache.mat_active]
-    from math import cos, sin
+
+    R = settings.mat_centers_radius
     mat_radius = settings.mat_radius
     if op.mat_selected == cache.mat_active:
         mat_radius *= settings.selection_ratio
-    R = settings.mat_centers_radius + mat_radius + settings.mat_line_width*2.5
-    pos = R*np.asarray([cos(th), sin(th)])
+        R += mat_radius - settings.mat_radius
+
+    from math import cos, sin
+    mat_center = R*np.asarray([cos(th), sin(th)])
+
+    pos = mat_center 
+
     draw_mark(op, settings, pos, radius, color)
 
 ''' Draws the preview image of brushes '''
@@ -469,11 +475,10 @@ def draw_mat_previews(op, context, cache, settings):
 
         th = cache.angles[mat_id]
         rds = settings.mat_radius
+        R = settings.mat_centers_radius
         if op.mat_selected == mat_id:
             rds *= settings.selection_ratio
-            R = settings.mat_centers_radius + rds - settings.mat_radius
-        else:
-            R = settings.mat_centers_radius
+            R += rds - settings.mat_radius
 
         from math import cos, sin
         center = R*np.asarray([cos(th),sin(th)])
@@ -561,8 +566,6 @@ def draw_callback_px(op, context, cache, settings):
     else:
         draw_pie_circle(op, settings)
 
-    if cache.mat_active >= 0:
-        draw_active(op, cache, settings) 
 
     draw_picklines(op, cache, settings)
     draw_mat_previews(op, context, cache, settings)
@@ -570,6 +573,9 @@ def draw_callback_px(op, context, cache, settings):
     if op.mat_selected >= 0:
         draw_bsh_previews(op, context, cache, settings, mat_id=op.mat_selected)
         
+    if cache.mat_active >= 0:
+        draw_active(op, cache, settings) 
+
     if cache.from_palette:
         write_active_palette(op, context, settings)
 
