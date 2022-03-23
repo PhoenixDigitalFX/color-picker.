@@ -449,22 +449,26 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
     from math import cos, sin
     mat_dir = np.asarray([cos(th), sin(th)])
 
-    s = settings
-    R = s.mat_centers_radius
-    r = s.mat_radius*s.selection_ratio + s.brush_radius*1.5
+    R = settings.overall_brush_radius
+    ri = settings.brush_interrad
+    rds = settings.brush_radius
+
     for i,b in enumerate(brushes):
         tex = cache.bsh_prv[b.name]
-        center = (R+r)*mat_dir
-        radius = s.brush_radius
+
+        x = cache.brushes_pos[mat_id][i]
+        center = (R + (x+0.5)*(2*rds+ri))*mat_dir
+
+        radius = settings.brush_radius
         if op.brush_selected == i:
-            radius *= s.selection_ratio
+            radius *= settings.selection_ratio
+            
         if tex is None:
             org = op.origin + 0.5*op.region_dim
-            draw_flat_circle(op, s, center, radius, fill_color=4*[0.5])
-            write_circle_centered(s, org + center, radius*1.5, b.name, text_size_fact=0.5)
+            draw_flat_circle(op, settings, center, radius, fill_color=4*[0.5])
+            write_circle_centered(settings, org + center, radius*1.5, b.name, text_size_fact=0.5)
         else:
-            draw_centered_texture(op, s, tex, center, radius)
-        r += s.brush_radius*2.5
+            draw_centered_texture(op, settings, tex, center, radius)
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):

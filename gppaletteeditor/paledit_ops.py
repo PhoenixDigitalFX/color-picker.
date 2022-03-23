@@ -152,6 +152,8 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                     self.interaction_areas.append(MoveMaterialPickerInteraction(self, cache, stgs, i, j))
                 self.interaction_areas.append(MoveMaterialAngleInteraction(self, cache, stgs, i))
                 self.interaction_areas.append(RemoveMaterialInteraction(self, cache, stgs, i))
+                for b in range(len(cache.brushes[i])):
+                    self.interaction_areas.append(MoveBrushInteraction(self, cache, stgs, i, b))
                 self.interaction_areas.append(AddBrushInteraction(self, cache, stgs, i))
             self.interaction_areas.append(AddMaterialInteraction(self, cache, stgs))
             self.interaction_areas.append(EditImageInteraction(self, cache, stgs))

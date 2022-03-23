@@ -38,6 +38,10 @@ class GPCOLORPICKER_settings():
 
         self.mat_radius = 0.1*self.mat_centers_radius
         self.brush_radius = 0.8*self.mat_radius
+        self.brush_interrad = 0.5*self.brush_radius
+        self.overall_brush_radius = self.mat_centers_radius + 0.5*self.brush_interrad
+        # offset due to mat selection ratio
+        self.overall_brush_radius += -(1.-2*self.selection_ratio)*self.mat_radius 
 
         self.text_size = ceil(0.04*self.icon_scale)
         self.tex_radius = self.mat_centers_radius-self.mat_radius

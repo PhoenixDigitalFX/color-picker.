@@ -159,6 +159,7 @@ class CachedData:
             self.is_custom_angle = [ not m.is_angle_movable for m in gpmp.materials ]
             self.pick_origins = [ m.get_origins() for m in gpmp.materials ]      
             self.brushes = [ [b.data for b in m.brushes] for m in gpmp.materials ]
+            self.brushes_pos = [ [float(i) for i,_ in enumerate(m.brushes)] for m in gpmp.materials ]
 
         elif ob and not self.from_palette:
             # From active cache

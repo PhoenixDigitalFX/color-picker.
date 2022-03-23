@@ -26,9 +26,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
                                             stg.interaction_radius, cache.angles)
         if self.mat_selected >= 0:
             nb_brush = len(cache.brushes[self.mat_selected])
-            int_area = stg.mat_centers_radius + stg.mat_radius*stg.selection_ratio
             self.brush_selected = get_selected_brush_id(event, self.region_dim, self.origin, nb_brush, \
-                                int_area, stg.brush_radius)
+                                stg.overall_brush_radius, stg.brush_radius + stg.brush_interrad*0.5)
         else:
             self.brush_selected = -1
 

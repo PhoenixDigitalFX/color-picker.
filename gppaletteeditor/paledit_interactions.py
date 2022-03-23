@@ -280,9 +280,10 @@ class AddBrushInteraction(RadialInteractionArea):
 
 ''' Moves Brush in material '''
 class MoveBrushInteraction(RadialInteractionArea):
-    def __init__(self, op, cache, settings, mat_id, bsh_name):
+    def __init__(self, op, cache, settings, mat_id, bsh_id):
         self.mat_id = mat_id
-        self.bsh_name = bsh_name
+        self.bsh_id = bsh_id
+        self.new_id = bsh_id
         self.refresh(cache, settings)
 
     def is_in_selection(self, op, cache, settings, pos):
@@ -290,25 +291,34 @@ class MoveBrushInteraction(RadialInteractionArea):
             and (super().is_in_selection(op, cache, settings, pos))
 
     def refresh(self, cache, settings):
-        self.bsh_id = cache.brushes[self.mat_id].index(self.bsh_name)
         if self.bsh_id < 0:
-            print(f"ERROR : Brush {self.bsh_name} not assigned to material {self.mat_id}")
+            print(f"ERROR : Brush {self.bsh_id} not assigned to material {self.mat_id}")
             return            
         self.th = cache.angles[self.mat_id]
         udir = np.asarray([cos(self.th),sin(self.th)])       
-        self.R = settings.mat_centers_radius+2.5*settings.mat_radius
-        self.r = settings.brush_radius*2.5
-        overall_rds = self.R + self.bsh_id*self.r
+
+        s = settings
+        ri = 0.5*s.brush_radius
+        self.R = s.mat_centers_radius + s.mat_radius + ri
+        self.r = s.brush_radius*2 + ri
+
+        overall_rds = self.R + (self.new_id + 0.5)*self.r
         self.org = overall_rds*udir
-        self.rds = settings.brush_radius
+        self.rds = s.brush_radius
     
     def on_mouse_move(self, op, cache, settings, pos):
         d = np.linalg.norm(pos)
-        nid = int((d-self.R)/self.r)
-        print(f"Old ID {self.bsh_id}, New ID {nid}")
+        self.new_id = int((d-self.R)/self.r)
+
+        nbrushes = len(cache.brushes[self.mat_id])
+        if self.new_id >= nbrushes:
+            self.new_id = nbrushes-1
+        
+        if self.new_id < 0:
+            self.new_id = 0
 
         lbsh = cache.brushes[self.mat_id]
-        lbsh[self.bsh_id], lbsh[nid] = lbsh[nid], lbsh[self.bsh_id]
+        lbsh[self.bsh_id], lbsh[self.new_id] = lbsh[self.new_id], lbsh[self.bsh_id]
 
         cache.brushes[self.mat_id] = lbsh
 
