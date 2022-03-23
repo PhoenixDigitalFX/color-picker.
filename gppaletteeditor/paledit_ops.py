@@ -34,8 +34,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
             bsh_pos = cache.brushes_pos[i]
             bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
-            if bsh_sorted == enumerate(bsh_pos):
-                print("No need to permute")
+            if bsh_sorted == list(enumerate(bsh_pos)):
                 continue
             matit.permute_brushes([ i for i,p in bsh_sorted ])
                 
