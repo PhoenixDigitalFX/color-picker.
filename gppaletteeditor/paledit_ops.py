@@ -46,7 +46,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             self.mat_selected = msel
 
         if (msel == self.mat_selected) and (self.mat_selected >= 0):
-            nb_brush = len(cache.map_bsh[self.mat_selected])
+            nb_brush = len(cache.brushes[self.mat_selected])
             int_area = stg.mat_centers_radius + stg.mat_radius*stg.selection_ratio
             self.brush_selected = get_selected_brush_id(event, self.region_dim, self.origin, nb_brush, \
                                 int_area, stg.brush_radius)

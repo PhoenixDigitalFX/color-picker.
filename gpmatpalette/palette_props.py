@@ -97,7 +97,7 @@ class GPMatItem(PropertyGroup):
         return True
     
     def get_brushes_names(self):
-        return { b.get_name() for b in self.brushes }
+        return [ b.get_name() for b in self.brushes ]
 
 ''' --- Palette --- '''
 
@@ -282,8 +282,8 @@ class GPMatPalette(PropertyGroup):
     def get_brushes_names(self):
         bnames = set()
         for m in self.materials:
-            bnames = bnames.union(m.get_brushes_names())
-        return bnames
+            bnames = bnames.union(set(m.get_brushes_names()))
+        return list(bnames)
 
     def get_brushes(self):
         return [ bpy.data.brushes[bname] for bname in self.get_brushes_names() ]

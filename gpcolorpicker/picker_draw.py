@@ -444,8 +444,7 @@ def draw_active(op, cache, settings):
 
 ''' Draws the preview image of brushes '''
 def draw_bsh_previews(op, context, cache, settings, mat_id):
-    bnames = cache.map_bsh[mat_id]
-    brushes = [b for b in cache.brushes if b.name in bnames]
+    brushes = cache.brushes[mat_id]
     th = cache.angles[mat_id]
     from math import cos, sin
     mat_dir = np.asarray([cos(th), sin(th)])

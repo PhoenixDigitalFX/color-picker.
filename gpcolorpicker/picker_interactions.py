@@ -14,8 +14,8 @@ def pick_material(cache, context, settings, id_in_cache, brush_id):
     def set_active_brush(mat_id, brush_id):
         if brush_id < 0:
             return
-        bname = cache.map_bsh[mat_id][brush_id]
-        brush = bpy.data.brushes[bname]
+
+        brush = cache.brushes[mat_id][brush_id]
         context.tool_settings.gpencil_paint.brush = brush
 
     def set_active_material(id_in_obj):
@@ -158,9 +158,7 @@ class CachedData:
             self.angles = [ m.get_angle() for m in gpmp.materials ]
             self.is_custom_angle = [ not m.is_angle_movable for m in gpmp.materials ]
             self.pick_origins = [ m.get_origins() for m in gpmp.materials ]      
-
-            self.brushes = gpmp.get_brushes()
-            self.map_bsh = [ list(m.get_brushes_names()) for m in gpmp.materials]
+            self.brushes = [ [b.data for b in m.brushes] for m in gpmp.materials ]
 
         elif ob and not self.from_palette:
             # From active cache
@@ -176,7 +174,6 @@ class CachedData:
             self.pick_origins= self.mat_nb*[[]]  
             
             self.brushes = []
-            self.map_bsh = []
         else:
             # Empty cache
             self.gpu_texture = None
@@ -189,7 +186,6 @@ class CachedData:
             self.angles = []
             self.pick_origins= []   
             self.brushes = []
-            self.map_bsh = []
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]
@@ -225,7 +221,8 @@ class CachedData:
             return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
 
         self.mat_prv = [ getGPUPreviewTexture(m) for m in self.materials ]
-        self.bsh_prv = { b.name:getGPUPreviewTexture(b, check_custom=True) for b in self.brushes }
+        all_brushes = { brush for mat_brushes in self.brushes for brush in mat_brushes } 
+        self.bsh_prv = { b.name:getGPUPreviewTexture(b, check_custom=True) for b in all_brushes }
 
     def use_gpu_texture(self):
         return self.from_palette and not (self.gpu_texture is None)

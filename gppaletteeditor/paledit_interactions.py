@@ -74,7 +74,6 @@ class RadialInteractionArea(InteractionArea):
     def is_in_selection(self, op, cache, settings, pos):
         return np.linalg.norm(pos-self.org) < self.rds 
 
-
 ''' Move Material position in the Palette Editor '''
 class MoveMaterialAngleInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, id):
@@ -269,7 +268,7 @@ class AddBrushInteraction(RadialInteractionArea):
         self.th = cache.angles[self.id]
         udir = np.asarray([cos(self.th),sin(self.th)])
         overall_rds = settings.mat_centers_radius+2.5*settings.mat_radius
-        nbrushes= len(cache.map_bsh[self.id])
+        nbrushes= len(cache.brushes[self.id])
         overall_rds += nbrushes*settings.brush_radius*2.5
         self.org = overall_rds*udir
         self.rds = settings.brush_radius
@@ -291,7 +290,7 @@ class MoveBrushInteraction(RadialInteractionArea):
             and (super().is_in_selection(op, cache, settings, pos))
 
     def refresh(self, cache, settings):
-        self.bsh_id = cache.map_bsh[self.mat_id].index(self.bsh_name)
+        self.bsh_id = cache.brushes[self.mat_id].index(self.bsh_name)
         if self.bsh_id < 0:
             print(f"ERROR : Brush {self.bsh_name} not assigned to material {self.mat_id}")
             return            
@@ -308,10 +307,10 @@ class MoveBrushInteraction(RadialInteractionArea):
         nid = int((d-self.R)/self.r)
         print(f"Old ID {self.bsh_id}, New ID {nid}")
 
-        lbsh = cache.map_bsh[self.mat_id]
+        lbsh = cache.brushes[self.mat_id]
         lbsh[self.bsh_id], lbsh[nid] = lbsh[nid], lbsh[self.bsh_id]
 
-        cache.map_bsh[self.mat_id] = lbsh
+        cache.brushes[self.mat_id] = lbsh
 
     def on_click_release(self, op, cache, settings, context):
         self.refresh(cache, settings)

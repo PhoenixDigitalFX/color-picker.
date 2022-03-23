@@ -345,7 +345,9 @@ def export_palettes_content(filepath):
             
             mat_dct[mname]["brushes"] = {}
             bsh_dct = mat_dct[mname]["brushes"]
-            for bname, bdata in mat.brushes.items():
+            for brush in mat.brushes:
+                bname = brush.get_name()
+                bdata = brush.data
                 brush_names.add(bname)
                 bsh_dct[bname] = {}
                 bsh_dct[bname]["index"] = bdata.index
