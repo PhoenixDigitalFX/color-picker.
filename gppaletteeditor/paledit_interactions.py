@@ -312,12 +312,9 @@ class MoveBrushInteraction(RadialInteractionArea):
         nbrushes = len(cache.brushes[self.mat_id])
         if xpos > nbrushes:
             xpos = nbrushes
-        
-        if xpos < -1:
-            xpos = -1
 
         cache.brushes_pos[self.mat_id][self.bsh_id] = xpos
 
-    def on_click_release(self, op, cache, settings, context):
+    def on_click_release(self, op, cache, settings, context):        
         self.refresh(cache, settings)
         op.write_cache_in_palette(context)

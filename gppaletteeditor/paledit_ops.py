@@ -38,7 +38,6 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 print("No need to permute")
                 continue
             matit.permute_brushes([ i for i,p in bsh_sorted ])
-            matit.is_dirty = True
                 
     
     # Change the selected material & brush

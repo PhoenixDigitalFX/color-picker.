@@ -89,22 +89,35 @@ class GPMatItem(PropertyGroup):
         if not self.pending_brush:
             return
             
-        bsh = self.brushes.add()
-        bsh.data = self.pending_brush
+        self.add_brush(self.pending_brush)
                 
         self.pending_brush = None
-        self.is_dirty = True
         return True
     
     def get_brushes_names(self):
         return [ b.get_name() for b in self.brushes ]
+
+    def add_brush(self, bdata):
+        if bdata is None:
+            return
+        bsh = self.brushes.add()
+        bsh.data = bdata
+        self.is_dirty = True
+
+    def add_brush_by_name(self, name):
+        bdata = bpy.data.brushes[name]
+        self.add_brush(bdata)
+
+    ''' Remove a brush from the collection (given by collection index) '''
+    def remove_brush(self, ind):
+        self.brush.remove(ind)
+        self.is_dirty = True
     
     def permute_brushes(self, ind):
         bdata = [ b.data for b in self.brushes ]
         self.brushes.clear()
         for i in ind:
-            bsh = self.brushes.add()
-            bsh.data = bdata[i]
+            self.add_brush(bdata[i])
 
 ''' --- Palette --- '''
 
