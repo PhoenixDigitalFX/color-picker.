@@ -283,7 +283,6 @@ class MoveBrushInteraction(RadialInteractionArea):
     def __init__(self, op, cache, settings, mat_id, bsh_id):
         self.mat_id = mat_id
         self.bsh_id = bsh_id
-        self.new_id = bsh_id
         self.refresh(cache, settings)
 
     def is_in_selection(self, op, cache, settings, pos):
@@ -297,30 +296,27 @@ class MoveBrushInteraction(RadialInteractionArea):
         self.th = cache.angles[self.mat_id]
         udir = np.asarray([cos(self.th),sin(self.th)])       
 
-        s = settings
-        ri = 0.5*s.brush_radius
-        self.R = s.mat_centers_radius + s.mat_radius + ri
-        self.r = s.brush_radius*2 + ri
+        R = settings.overall_brush_radius
+        r = 2*settings.brush_radius + settings.brush_interrad
 
-        overall_rds = self.R + (self.new_id + 0.5)*self.r
-        self.org = overall_rds*udir
-        self.rds = s.brush_radius
+        x = cache.brushes_pos[self.mat_id][self.bsh_id]
+        self.org = (R + (x+0.5)*r)*udir
+        self.rds = settings.brush_radius
     
     def on_mouse_move(self, op, cache, settings, pos):
         d = np.linalg.norm(pos)
-        self.new_id = int((d-self.R)/self.r)
+        R = settings.overall_brush_radius
+        r = 2*settings.brush_radius + settings.brush_interrad
+        xpos = (d-R)/r
 
         nbrushes = len(cache.brushes[self.mat_id])
-        if self.new_id >= nbrushes:
-            self.new_id = nbrushes-1
+        if xpos > nbrushes-1:
+            xpos = nbrushes-1
         
-        if self.new_id < 0:
-            self.new_id = 0
+        if xpos < 0:
+            xpos = 0
 
-        lbsh = cache.brushes[self.mat_id]
-        lbsh[self.bsh_id], lbsh[self.new_id] = lbsh[self.new_id], lbsh[self.bsh_id]
-
-        cache.brushes[self.mat_id] = lbsh
+        cache.brushes_pos[self.mat_id][self.bsh_id] = xpos
 
     def on_click_release(self, op, cache, settings, context):
         self.refresh(cache, settings)
