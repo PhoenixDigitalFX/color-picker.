@@ -31,6 +31,15 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 pal.is_dirty = True
             matit.picklines.clear()
             matit.set_origins(cache.pick_origins[i])
+
+            bsh_pos = cache.brushes_pos[i]
+            bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
+            if bsh_sorted == enumerate(bsh_pos):
+                print("No need to permute")
+                continue
+            matit.permute_brushes([ i for i,p in bsh_sorted ])
+            matit.is_dirty = True
+                
     
     # Change the selected material & brush
     def refresh_selections(self, event):

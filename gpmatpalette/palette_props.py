@@ -98,6 +98,13 @@ class GPMatItem(PropertyGroup):
     
     def get_brushes_names(self):
         return [ b.get_name() for b in self.brushes ]
+    
+    def permute_brushes(self, ind):
+        bdata = [ b.data for b in self.brushes ]
+        self.brushes.clear()
+        for i in ind:
+            bsh = self.brushes.add()
+            bsh.data = bdata[i]
 
 ''' --- Palette --- '''
 

@@ -310,11 +310,11 @@ class MoveBrushInteraction(RadialInteractionArea):
         xpos = (d-R)/r
 
         nbrushes = len(cache.brushes[self.mat_id])
-        if xpos > nbrushes-1:
-            xpos = nbrushes-1
+        if xpos > nbrushes:
+            xpos = nbrushes
         
-        if xpos < 0:
-            xpos = 0
+        if xpos < -1:
+            xpos = -1
 
         cache.brushes_pos[self.mat_id][self.bsh_id] = xpos
 
