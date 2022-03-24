@@ -13,6 +13,7 @@ class CachedData:
     def refresh(self, context):
         ob = context.active_object   
         gpmp = context.scene.gpmatpalettes.active()
+        act_brush = context.tool_settings.gpencil_paint.brush
 
         if gpmp and self.from_palette:
             gpmp.compatibility_check()
@@ -32,8 +33,16 @@ class CachedData:
             self.angles = [ m.get_angle() for m in gpmp.materials ]
             self.is_custom_angle = [ not m.is_angle_movable for m in gpmp.materials ]
             self.pick_origins = [ m.get_origins() for m in gpmp.materials ]      
+
             self.brushes = [ [b.data for b in m.brushes] for m in gpmp.materials ]
             self.brushes_pos = [ [float(i) for i,_ in enumerate(m.brushes)] for m in gpmp.materials ]
+
+            print("Active brush : ", act_brush)
+            if act_brush:
+                self.bsh_active = [ m.index_brush(act_brush.name) for m in gpmp.materials]
+                print(f"ACT BSH name {act_brush.name} : ID {self.bsh_active}")
+            else:        
+                self.bsh_active = self.mat_nb*[-1]
 
         elif ob and not self.from_palette:
             # From active cache
@@ -49,6 +58,8 @@ class CachedData:
             self.pick_origins= self.mat_nb*[[]]  
             
             self.brushes = []
+            self.bsh_active = self.mat_nb*[-1]
+
         else:
             # Empty cache
             self.gpu_texture = None
@@ -61,6 +72,7 @@ class CachedData:
             self.angles = []
             self.pick_origins= []   
             self.brushes = []
+            self.bsh_active = self.mat_nb*[-1]
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]

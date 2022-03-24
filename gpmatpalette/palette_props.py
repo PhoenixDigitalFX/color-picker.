@@ -120,6 +120,14 @@ class GPMatItem(PropertyGroup):
         for i in ind:
             self.add_brush(bdata[i])
 
+    ''' Get brush index from name
+    '''
+    def index_brush(self, name):
+        bnames = [b.get_name() for b in self.brushes]
+        if not (name in bnames):
+            return -1
+        return bnames.index(name)
+
 ''' --- Palette --- '''
 
 ''' Update callback for the Image property

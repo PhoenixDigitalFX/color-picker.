@@ -424,7 +424,7 @@ def draw_picklines(op, cache, settings):
     batch.draw(shader)
 
 ''' Draws a dot mark to spot the active material '''
-def draw_active(op, cache, settings):
+def draw_active_mat(op, cache, settings):
     color = settings.active_color
     radius = settings.mat_line_width*0.8
     th = cache.angles[cache.mat_active]
@@ -446,8 +446,9 @@ def draw_active(op, cache, settings):
 def draw_bsh_previews(op, context, cache, settings, mat_id):
     brushes = cache.brushes[mat_id]
     th = cache.angles[mat_id]
-    from math import cos, sin
+    from math import cos, sin, pi
     mat_dir = np.asarray([cos(th), sin(th)])
+    a = th + pi*0.5
 
     R = settings.overall_brush_radius
     ri = settings.brush_interrad
@@ -469,6 +470,12 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
             write_circle_centered(settings, org + center, radius*1.5, b.name, text_size_fact=0.5)
         else:
             draw_centered_texture(op, settings, tex, center, radius)
+
+        mark_color = settings.active_color
+        mark_radius = settings.mat_line_width*0.8
+        mark_pos = center + 1.4*radius*np.asarray([cos(a),sin(a)])
+        if i == cache.bsh_active[mat_id]:
+            draw_mark(op, settings, mark_pos, mark_radius, mark_color)
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
@@ -569,7 +576,6 @@ def draw_callback_px(op, context, cache, settings):
     else:
         draw_pie_circle(op, settings)
 
-
     draw_picklines(op, cache, settings)
     draw_mat_previews(op, context, cache, settings)
 
@@ -577,7 +583,7 @@ def draw_callback_px(op, context, cache, settings):
         draw_bsh_previews(op, context, cache, settings, mat_id=op.mat_selected)
         
     if cache.mat_active >= 0:
-        draw_active(op, cache, settings) 
+        draw_active_mat(op, cache, settings) 
 
     if cache.from_palette:
         write_active_palette(op, context, settings)
