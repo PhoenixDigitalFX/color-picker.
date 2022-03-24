@@ -29,7 +29,7 @@ def pick_material(cache, context, settings, id_in_cache, brush_id):
             return True
 
         if not gpmt.layer in obj.data.layers:
-            bpy.ops.gapencil.layer_add()
+            bpy.ops.gpencil.layer_add()
             obj.data.layers.active.info = gpmt.layer
         else:
             obj.data.layers.active = obj.data.layers[gpmt.layer]
