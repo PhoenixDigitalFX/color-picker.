@@ -472,7 +472,7 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
             draw_centered_texture(op, settings, tex, center, radius)
 
         mark_color = settings.active_color
-        mark_radius = settings.mat_line_width*0.8
+        mark_radius = settings.mat_line_width*0.6
         mark_pos = center + 1.4*radius*np.asarray([cos(a),sin(a)])
         if i == cache.bsh_active[mat_id]:
             draw_mark(op, settings, mark_pos, mark_radius, mark_color)

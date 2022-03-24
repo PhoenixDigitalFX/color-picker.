@@ -37,10 +37,8 @@ class CachedData:
             self.brushes = [ [b.data for b in m.brushes] for m in gpmp.materials ]
             self.brushes_pos = [ [float(i) for i,_ in enumerate(m.brushes)] for m in gpmp.materials ]
 
-            print("Active brush : ", act_brush)
             if act_brush:
                 self.bsh_active = [ m.index_brush(act_brush.name) for m in gpmp.materials]
-                print(f"ACT BSH name {act_brush.name} : ID {self.bsh_active}")
             else:        
                 self.bsh_active = self.mat_nb*[-1]
 
@@ -57,7 +55,7 @@ class CachedData:
             self.angles = np.linspace(0,2*pi,self.mat_nb+1)[:-1]  
             self.pick_origins= self.mat_nb*[[]]  
             
-            self.brushes = []
+            self.brushes = self.mat_nb*[[]]
             self.bsh_active = self.mat_nb*[-1]
 
         else:
@@ -71,7 +69,8 @@ class CachedData:
             self.mat_active = -1
             self.angles = []
             self.pick_origins= []   
-            self.brushes = []
+            
+            self.brushes = self.mat_nb*[[]]
             self.bsh_active = self.mat_nb*[-1]
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
