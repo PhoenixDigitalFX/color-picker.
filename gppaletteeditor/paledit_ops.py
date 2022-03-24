@@ -33,9 +33,9 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             matit.set_origins(cache.pick_origins[i])
 
             bsh_pos = [p for p in cache.brushes_pos[i] if p > -1]
-            bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
-            if bsh_sorted == list(enumerate(cache.brushes_pos[i])):
+            if bsh_pos == [i for i in range(len(bsh_pos))]:
                 continue
+            bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
             matit.permute_brushes([ i for i,p in bsh_sorted ])            
             cache.brushes_pos[i] = sorted(bsh_pos)
                 
@@ -101,7 +101,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'PRESS'):
             if itsel:
-                itsel.on_click_press(self, cache, stgs, context)
+                itsel.on_click_press(self, cache, stgs, context, mouse_local)
                 self.running_interaction = itsel
 
         elif (event.type == 'LEFTMOUSE') and (event.value == 'RELEASE'):

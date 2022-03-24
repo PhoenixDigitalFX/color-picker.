@@ -46,7 +46,7 @@ class InteractionArea():
         pass
     
     ''' Called when interaction area is in selection and the mouse left click is pressed '''
-    def on_click_press(self, op, cache, settings, context):
+    def on_click_press(self, op, cache, settings, context, pos):
         pass
 
     ''' Called when interaction area is running and the mouse is moved (left click still pressed) '''
@@ -90,7 +90,7 @@ class MoveMaterialAngleInteraction(RadialInteractionArea):
         self.org = settings.mat_centers_radius*udir
         self.rds = settings.mat_radius*settings.selection_ratio
     
-    def on_click_press(self, op, cache, settings, context):
+    def on_click_press(self, op, cache, settings, context, pos):
         self.has_moved = False
     
     def on_mouse_move(self, op, cache, settings, pos):
@@ -155,7 +155,7 @@ class AddMaterialPickerInteraction(MoveMaterialPickerInteraction):
         else:
             super().refresh(cache, settings)
     
-    def on_click_press(self, op, cache, settings, context):
+    def on_click_press(self, op, cache, settings, context, pos):
         cache.pick_origins[self.mat_id].append(self.org)
         self.was_added = True
 
@@ -302,19 +302,25 @@ class MoveBrushInteraction(RadialInteractionArea):
         x = cache.brushes_pos[self.mat_id][self.bsh_id]
         self.org = (R + (x+0.5)*r)*udir
         self.rds = settings.brush_radius
-    
+
+    def on_click_press(self, op, cache, settings, context, pos):    
+        self.init_pos = np.linalg.norm(pos)
+
     def on_mouse_move(self, op, cache, settings, pos):
-        d = np.linalg.norm(pos)
-        R = settings.overall_brush_radius
         r = 2*settings.brush_radius + settings.brush_interrad
-        xpos = (d-R)/r
+        dpos = (np.linalg.norm(pos) - self.init_pos)/r
+
+        cpos = cache.brushes_pos[self.mat_id][self.bsh_id] + dpos
+        if cpos == int(cpos):
+            cpos += 0.001
 
         nbrushes = len(cache.brushes[self.mat_id])
-        if xpos > nbrushes:
-            xpos = nbrushes
+        if cpos > nbrushes:
+            cpos = nbrushes
 
-        cache.brushes_pos[self.mat_id][self.bsh_id] = xpos
+        cache.brushes_pos[self.mat_id][self.bsh_id] = cpos
+        self.init_pos = np.linalg.norm(pos)
 
-    def on_click_release(self, op, cache, settings, context):        
+    def on_click_release(self, op, cache, settings, context):      
         self.refresh(cache, settings)
         op.write_cache_in_palette(context)

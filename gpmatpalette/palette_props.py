@@ -116,6 +116,7 @@ class GPMatItem(PropertyGroup):
     def permute_brushes(self, ind):
         bdata = [ b.data for b in self.brushes ]
         self.brushes.clear()
+        print(f"Brush permutation {[bdata[i].name for i in ind]}")
         for i in ind:
             self.add_brush(bdata[i])
 
