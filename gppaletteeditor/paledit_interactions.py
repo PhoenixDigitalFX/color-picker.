@@ -3,7 +3,7 @@ import bpy
 import numpy as np
 from math import pi, cos, sin, atan2
 from . paledit_maths import is_in_boundaries, pol2cart
-from .. gpcolorpicker import picker_interactions as gpcp
+from .. gpcolorpicker import picker_cache as gpcp
 
 ''' Simple override of the picker's cache data structure ''' 
 class CachedData(gpcp.CachedData):

@@ -3,7 +3,8 @@ import bpy
 import numpy as np
 from . picker_draw import draw_callback_px
 from . picker_settings import GPCOLORPICKER_settings
-from . picker_interactions import get_selected_mat_id, get_selected_brush_id, pick_material, CachedData
+from . picker_interactions import get_selected_mat_id, get_selected_brush_id, pick_material
+from . picker_cache import CachedData
 import time
 
 class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
