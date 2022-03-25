@@ -323,4 +323,13 @@ class MoveBrushInteraction(RadialInteractionArea):
 
     def on_click_release(self, op, cache, settings, context):      
         self.refresh(cache, settings)
+
+        m = self.mat_id
+        bsh_pos = cache.brushes_pos[m]
+        bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
+        id_bsh = [i for (i,pos) in bsh_sorted if pos > -1]
+
+        cache.brushes[m] = [cache.brushes[m][i] for i in id_bsh]
+        cache.brushes_pos[m] = [cache.brushes_pos[m][i] for i in id_bsh]
+
         op.write_cache_in_palette(context)

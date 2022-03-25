@@ -108,18 +108,6 @@ class GPMatItem(PropertyGroup):
         bdata = bpy.data.brushes[name]
         self.add_brush(bdata)
 
-    ''' Remove a brush from the collection (given by collection index) '''
-    def remove_brush(self, ind):
-        self.brush.remove(ind)
-        self.is_dirty = True
-    
-    def permute_brushes(self, ind):
-        bdata = [ b.data for b in self.brushes ]
-        self.brushes.clear()
-        print(f"Brush permutation {[bdata[i].name for i in ind]}")
-        for i in ind:
-            self.add_brush(bdata[i])
-
     ''' Get brush index from name
     '''
     def index_brush(self, name):
@@ -127,6 +115,9 @@ class GPMatItem(PropertyGroup):
         if not (name in bnames):
             return -1
         return bnames.index(name)
+
+    def count_brushes(self):
+        return len(self.brushes)
 
 ''' --- Palette --- '''
 

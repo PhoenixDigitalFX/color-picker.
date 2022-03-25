@@ -32,13 +32,12 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
             matit.picklines.clear()
             matit.set_origins(cache.pick_origins[i])
 
-            bsh_pos = [p for p in cache.brushes_pos[i] if p > -1]
-            if bsh_pos == [i for i in range(len(bsh_pos))]:
-                continue
-            bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
-            matit.permute_brushes([ i for i,p in bsh_sorted ])            
-            cache.brushes_pos[i] = sorted(bsh_pos)
-                
+            cached_brush_names = [b.name for b in cache.brushes[i]]
+            if (matit.count_brushes() != len(cache.brushes[i])) \
+                or any([ cname != pname for cname, pname in zip(cached_brush_names, matit.get_brushes_names()) ]):                
+                matit.brushes.clear()
+                for b in cache.brushes[i]:
+                    matit.add_brush(b)                
     
     # Change the selected material & brush
     def refresh_selections(self, event):
