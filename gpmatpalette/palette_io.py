@@ -4,7 +4,6 @@ from . palette_maths import hex2rgba
 import datetime as dt
 
 ''' ---------- IMPORT PALETTES ---------- '''
-
 ''' Load an image in Blender database and pack it '''
 def load_image(imname, path_prefix, check_existing=True):
     fullpath = os.path.join(path_prefix, imname)
@@ -12,6 +11,27 @@ def load_image(imname, path_prefix, check_existing=True):
     if im:
         im.pack()
     return im
+
+def parse_attr(name_attr, val_attr, item, fdir):
+    if not hasattr(item, name_attr):
+        return False
+
+    # Color Attributes
+    if name_attr.endswith("color")  \
+        and isinstance(val_attr[0], str):
+            setattr(item, name_attr, hex2rgba(val_attr[0],val_attr[1]))
+            return True
+    # Image attributes
+    if (name_attr.find("image") >= 0) \
+        and (not val_attr is None):
+        im = load_image(val_attr, fdir)
+        setattr(item, name_attr, im)
+        return True
+    # Curve attributes
+    if (name_attr.find("curve") >= 0):
+        return False
+    setattr(item, name_attr, val_attr)
+    return True
 
 ''' Reads and loads a GP material in Blender database '''
 def upload_material(name, mdat, fdir):
@@ -30,20 +50,7 @@ def upload_material(name, mdat, fdir):
     # Setting up material settings
     m = mat.grease_pencil
     for k,v in mdat.items():
-        if not hasattr(m, k):
-            continue
-        # Color Attributes
-        if (k.find("color") >= 0)  \
-            and isinstance(v[0], str):
-                setattr(m, k, hex2rgba(v[0],v[1]))
-                continue
-        # Image attributes
-        if (k.find("image") >= 0) \
-            and (not v is None):
-            im = load_image(v, fdir)
-            setattr(m, k, im)
-            continue
-        setattr(m, k, v)
+        parse_attr(k, v, m, fdir)
 
     return True
 
@@ -53,27 +60,22 @@ def upload_brush(name, bdat, fdir):
     bsh = bpy.data.brushes.get(name)
     if bsh is None:
         # create brush
-        bsh = bpy.data.brushes.new(name=name)
+        bsh = bpy.data.brushes.new(name=name, mode='PAINT_GPENCIL')
+        bpy.data.brushes.create_gpencil_data(bsh)
         bsh.use_fake_user = True
 
     # Setting up brush settings
-    # TODO
-    m = bsh.grease_pencil
+    gpstg = "gpencil_settings"
     for k,v in bdat.items():
-        if not hasattr(m, k):
+        if k == gpstg:
             continue
-        # Color Attributes
-        if (k.find("color") >= 0)  \
-            and isinstance(v[0], str):
-                setattr(m, k, hex2rgba(v[0],v[1]))
-                continue
-        # Image attributes
-        if (k.find("image") >= 0) \
-            and (not v is None):
-            im = load_image(v, fdir)
-            setattr(m, k, im)
-            continue
-        setattr(m, k, v)
+        parse_attr(k, v, bsh, fdir)
+    
+    if not gpstg in bdat:
+        return
+
+    for k,v in bdat[gpstg].items():
+        parse_attr(k, v, bsh.gpencil_settings, fdir)
 
     return True
 
@@ -261,6 +263,7 @@ mat_attr = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_i
     side effect : writes image files if the material contains texture attributes
 '''
 def get_material_data(mat, fdir):
+    default_mat = bpy.data.materials["__DefaultMat__"].grease_pencil
     def parse_attr(attr):
         dtp = [int, float, bool, str]
         if (attr is None) or any([isinstance(attr, t) for t in dtp]):
@@ -269,22 +272,66 @@ def get_material_data(mat, fdir):
             impath = write_image(attr, fdir, ".png")
             return os.path.basename(impath)
         return [attr[k] for k in range(len(attr))]
-    mdat = { v:parse_attr(getattr(mat,v)) for v in mat_attr }
+    mdat = { v:parse_attr(getattr(mat,v)) for v in mat_attr  \
+            if (getattr(mat,v) != getattr(default_mat, v))}
 
     return mdat
 
-''' GP Brushes attributes taken into account for export '''
-    # TODO
-bsh_attr = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
-            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
-            "show_fill",  "show_stroke", "stroke_image", "stroke_style", "texture_angle", "texture_offset", "texture_scale", \
-            "use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
+''' GP Brushes attributes taken into account for export '''   
+bsh_gp_attr = ["active_smooth_factor","angle","angle_factor","aspect","brush_draw_mode","caps_type",\
+    # "curve_jitter","curve_random_hue","curve_random_pressure","curve_random_saturation",\
+    # "curve_random_strength","curve_random_uv","curve_random_value","curve_sensitivity","curve_strength",\
+    "dilate","direction","eraser_mode","eraser_strength_factor","eraser_thickness_factor",\
+    "extend_stroke_factor","fill_direction","fill_draw_mode","fill_factor","fill_layer_mode",\
+    "fill_leak","fill_simplify_level","fill_threshold","gpencil_paint_icon","gpencil_sculpt_icon",\
+    "gpencil_vertex_icon","gpencil_weight_icon","hardness","input_samples","material","pen_jitter",\
+    "pen_smooth_factor","pen_smooth_steps","pen_strength","pen_subdivision_steps","pin_draw_mode",\
+    "random_hue_factor","random_pressure","random_saturation_factor","random_strength","random_value_factor",\
+    "show_fill","show_fill_boundary","show_fill_extend","show_lasso","simplify_factor","use_default_eraser",\
+    "use_edit_position","use_edit_strength","use_edit_thickness","use_edit_uv","use_fill_limit","use_jitter_pressure",\
+    "use_material_pin","use_occlude_eraser","use_pressure","use_random_press_hue","use_random_press_radius",\
+    "use_random_press_sat","use_random_press_strength","use_random_press_uv","use_random_press_val",\
+    "use_settings_postprocess","use_settings_random","use_settings_stabilizer","use_strength_pressure",\
+    "use_stroke_random_hue","use_stroke_random_radius","use_stroke_random_sat","use_stroke_random_strength",\
+    "use_stroke_random_uv","use_stroke_random_val","use_trim","uv_random","vertex_color_factor","vertex_mode"]
+
+bsh_attr = ["area_radius_factor","auto_smooth_factor","automasking_boundary_edges_propagation_steps",\
+    "blend","blur_kernel_radius","blur_mode","boundary_deform_type","boundary_falloff_type","boundary_offset",\
+    "clone_alpha","clone_image","clone_offset","color","color_type","crease_pinch_factor","cursor_color_add",\
+    "cursor_color_subtract","cursor_overlay_alpha","curve_preset","dash_ratio","dash_samples","deform_target",\
+    "density","direction","disconnected_distance_max","elastic_deform_type","elastic_deform_volume_preservation",\
+    "falloff_angle","falloff_shape","fill_threshold","flow","gpencil_sculpt_tool","gpencil_tool",\
+    "gpencil_vertex_tool","gpencil_weight_tool","grad_spacing","gradient_fill_mode","gradient_stroke_mode",\
+    "hardness","height","icon_filepath","image_tool","invert_density_pressure","invert_flow_pressure",\
+    "invert_hardness_pressure","invert_to_scrape_fill","invert_wet_mix_pressure","invert_wet_persistence_pressure",\
+    "jitter","jitter_absolute","jitter_unit","mask_overlay_alpha","mask_stencil_dimension","mask_stencil_pos",\
+    "mask_tool","multiplane_scrape_angle","normal_radius_factor","normal_weight","plane_offset","plane_trim",\
+    "pose_deform_type","pose_ik_segments","pose_offset","pose_origin_type","pose_smooth_iterations","rake_factor",\
+    "rate","sculpt_plane","sculpt_tool","secondary_color","sharp_threshold","show_multiplane_scrape_planes_preview",\
+    "size","slide_deform_type","smear_deform_type","smooth_deform_type","smooth_stroke_factor","smooth_stroke_radius",\
+    "snake_hook_deform_type","spacing","stencil_dimension","stencil_pos","strength","stroke_method",\
+    "surface_smooth_current_vertex","surface_smooth_iterations","surface_smooth_shape_preservation","texture_overlay_alpha",\
+    "texture_sample_bias","tilt_strength_factor","tip_roundness","tip_scale_x","topology_rake_factor","unprojected_radius",\
+    "use_accumulate","use_adaptive_space","use_airbrush","use_alpha","use_anchor","use_automasking_boundary_edges",\
+    "use_automasking_boundary_face_sets","use_automasking_face_sets","use_automasking_topology","use_cloth_collision",\
+    "use_cloth_pin_simulation_boundary","use_connected_only","use_cursor_overlay","use_cursor_overlay_override","use_curve",\
+    "use_custom_icon","use_density_pressure","use_edge_to_edge","use_fake_user","use_flow_pressure","use_frontface",\
+    "use_frontface_falloff","use_grab_active_vertex","use_grab_silhouette","use_hardness_pressure",\
+    "use_inverse_smooth_pressure","use_line","use_locked_size","use_multiplane_scrape_dynamic","use_offset_pressure",\
+    "use_original_normal","use_original_plane","use_paint_antialiasing","use_paint_grease_pencil","use_paint_image",\
+    "use_paint_sculpt","use_paint_uv_sculpt","use_paint_vertex","use_paint_weight","use_persistent","use_plane_trim",\
+    "use_pose_ik_anchored","use_pose_lock_rotation","use_pressure_area_radius","use_pressure_jitter","use_pressure_masking",\
+    "use_pressure_size","use_pressure_spacing","use_pressure_strength","use_primary_overlay","use_primary_overlay_override",\
+    "use_restore_mesh","use_scene_spacing","use_secondary_overlay","use_secondary_overlay_override","use_smooth_stroke",\
+    "use_space","use_space_attenuation","use_vertex_grease_pencil","use_wet_mix_pressure","use_wet_persistence_pressure",\
+    "uv_sculpt_tool","vertex_tool","weight","weight_tool","wet_mix","wet_paint_radius_factor","wet_persistence"]
 
 ''' Reads all brush attributes from the Blender file data
     returns a dictionnary containing all the attributes
     side effect : writes image files if the brush contains texture attributes
 '''
 def get_brush_data(bsh, fdir):
+    default_bsh = bpy.data.brushes["__DefaultBrush__"]
     def parse_attr(attr):
         dtp = [int, float, bool, str]
         if (attr is None) or any([isinstance(attr, t) for t in dtp]):
@@ -292,8 +339,19 @@ def get_brush_data(bsh, fdir):
         if (isinstance(attr, bpy.types.Image)):
             impath = write_image(attr, fdir, ".png")
             return os.path.basename(impath)
+        if (isinstance(attr, bpy.types.CurveMapping)):
+            print("Curve output not yet implemented")
+            return None
         return [attr[k] for k in range(len(attr))]
-    bdat = { v:parse_attr(getattr(bsh,v)) for v in bsh_attr }
+
+    bdat = { v:parse_attr(getattr(bsh,v)) for v in bsh_attr \
+            if (getattr(bsh,v) != getattr(default_bsh, v))}
+
+    bshgp = bsh.gpencil_settings
+    bdat["gpencil_settings"] = { v:parse_attr(getattr(bshgp,v)) for v in bsh_gp_attr \
+                    if (getattr(bshgp,v) != getattr(default_bsh.gpencil_settings, v))}
+    bdat["gpencil_settings"] = { k:v for k,v in bdat["gpencil_settings"].items() \
+                    if not (isinstance(v,str) and (len(v) == 0)) }
 
     return bdat
 
@@ -326,7 +384,7 @@ def export_palettes_content(filepath):
             pal_dct[pname]["image"] = {"path":imname, "relative":relpath} 
 
         pal_dct[pname]["materials"] = {}
-        mat_dct = pal_dct[pname]["materials"]
+        mat_dct = pal_dct[pname]["materials"]    
         
         for mat in pdata.materials: 
             mname = mat.get_name()
@@ -342,31 +400,29 @@ def export_palettes_content(filepath):
 
             if mat.layer:
                 mat_dct[mname]["layer"] = mat.layer
-            
-            mat_dct[mname]["brushes"] = {}
-            bsh_dct = mat_dct[mname]["brushes"]
-            for brush in mat.brushes:
-                bname = brush.get_name()
-                bdata = brush.data
-                brush_names.add(bname)
-                bsh_dct[bname] = {}
-                bsh_dct[bname]["index"] = bdata.index
-                bsh_dct[bname]["is_default"] = bdata.is_default                
-                if bdata.image:
-                    bsh_dct[bname]["image"] = os.path.basename(bdata.image.filepath)
 
+            bnames = set(mat.get_brushes_names())
+            mat_dct[mname]["brushes"] = {b:{} for b in bnames}
+            brush_names = brush_names.union(bnames)
+                
     # Materials
+    default_mat = bpy.data.materials.new(name="__DefaultMat__")
+    bpy.data.materials.create_gpencil_data(default_mat)
     pal_dct["__materials__"] = {}
     mat_dct = pal_dct["__materials__"]
     for mname in mat_names:
         mdat = bpy.data.materials[mname].grease_pencil
         mat_dct[mname] = get_material_data(mdat, filedir)
+    bpy.data.materials.remove(default_mat)
 
     # Brushes
+    default_bsh = bpy.data.brushes.new(name="__DefaultBrush__", mode='PAINT_GPENCIL')
+    bpy.data.brushes.create_gpencil_data(default_bsh)
     pal_dct["__brushes__"] = {}
     bsh_dct = pal_dct["__brushes__"]
     for bname in brush_names:
         bdat = bpy.data.brushes[bname]
         bsh_dct[bname] = get_brush_data(bdat, filedir)
+    bpy.data.brushes.remove(default_bsh)
 
     return pal_dct
