@@ -1,6 +1,6 @@
 # Import/Export Palette useful functions
 import json, os, bpy, gpu, math
-from . palette_maths import hex2rgba
+from . palette_maths import hex2rgba, rgba2hex
 import datetime as dt
 
 ''' ---------- IMPORT PALETTES ---------- '''
@@ -278,81 +278,48 @@ def get_material_data(mat, fdir):
     return mdat
 
 ''' GP Brushes attributes taken into account for export '''   
-bsh_gp_attr = ["active_smooth_factor","angle","angle_factor","aspect","brush_draw_mode","caps_type",\
-    # "curve_jitter","curve_random_hue","curve_random_pressure","curve_random_saturation",\
-    # "curve_random_strength","curve_random_uv","curve_random_value","curve_sensitivity","curve_strength",\
-    "dilate","direction","eraser_mode","eraser_strength_factor","eraser_thickness_factor",\
-    "extend_stroke_factor","fill_direction","fill_draw_mode","fill_factor","fill_layer_mode",\
-    "fill_leak","fill_simplify_level","fill_threshold","gpencil_paint_icon","gpencil_sculpt_icon",\
-    "gpencil_vertex_icon","gpencil_weight_icon","hardness","input_samples","material","pen_jitter",\
-    "pen_smooth_factor","pen_smooth_steps","pen_strength","pen_subdivision_steps","pin_draw_mode",\
-    "random_hue_factor","random_pressure","random_saturation_factor","random_strength","random_value_factor",\
-    "show_fill","show_fill_boundary","show_fill_extend","show_lasso","simplify_factor","use_default_eraser",\
-    "use_edit_position","use_edit_strength","use_edit_thickness","use_edit_uv","use_fill_limit","use_jitter_pressure",\
-    "use_material_pin","use_occlude_eraser","use_pressure","use_random_press_hue","use_random_press_radius",\
-    "use_random_press_sat","use_random_press_strength","use_random_press_uv","use_random_press_val",\
-    "use_settings_postprocess","use_settings_random","use_settings_stabilizer","use_strength_pressure",\
-    "use_stroke_random_hue","use_stroke_random_radius","use_stroke_random_sat","use_stroke_random_strength",\
-    "use_stroke_random_uv","use_stroke_random_val","use_trim","uv_random","vertex_color_factor","vertex_mode"]
+def get_props_dict(item):    
+    def equals_default(item, pname, prop):
+        ptype = prop.type
+        val = getattr(item,pname)
+        if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
+            return all([ (v==d) for v,d in zip(val,prop.default_array) ])  
 
-bsh_attr = ["area_radius_factor","auto_smooth_factor","automasking_boundary_edges_propagation_steps",\
-    "blend","blur_kernel_radius","blur_mode","boundary_deform_type","boundary_falloff_type","boundary_offset",\
-    "clone_alpha","clone_image","clone_offset","color","color_type","crease_pinch_factor","cursor_color_add",\
-    "cursor_color_subtract","cursor_overlay_alpha","curve_preset","dash_ratio","dash_samples","deform_target",\
-    "density","direction","disconnected_distance_max","elastic_deform_type","elastic_deform_volume_preservation",\
-    "falloff_angle","falloff_shape","fill_threshold","flow","gpencil_sculpt_tool","gpencil_tool",\
-    "gpencil_vertex_tool","gpencil_weight_tool","grad_spacing","gradient_fill_mode","gradient_stroke_mode",\
-    "hardness","height","icon_filepath","image_tool","invert_density_pressure","invert_flow_pressure",\
-    "invert_hardness_pressure","invert_to_scrape_fill","invert_wet_mix_pressure","invert_wet_persistence_pressure",\
-    "jitter","jitter_absolute","jitter_unit","mask_overlay_alpha","mask_stencil_dimension","mask_stencil_pos",\
-    "mask_tool","multiplane_scrape_angle","normal_radius_factor","normal_weight","plane_offset","plane_trim",\
-    "pose_deform_type","pose_ik_segments","pose_offset","pose_origin_type","pose_smooth_iterations","rake_factor",\
-    "rate","sculpt_plane","sculpt_tool","secondary_color","sharp_threshold","show_multiplane_scrape_planes_preview",\
-    "size","slide_deform_type","smear_deform_type","smooth_deform_type","smooth_stroke_factor","smooth_stroke_radius",\
-    "snake_hook_deform_type","spacing","stencil_dimension","stencil_pos","strength","stroke_method",\
-    "surface_smooth_current_vertex","surface_smooth_iterations","surface_smooth_shape_preservation","texture_overlay_alpha",\
-    "texture_sample_bias","tilt_strength_factor","tip_roundness","tip_scale_x","topology_rake_factor","unprojected_radius",\
-    "use_accumulate","use_adaptive_space","use_airbrush","use_alpha","use_anchor","use_automasking_boundary_edges",\
-    "use_automasking_boundary_face_sets","use_automasking_face_sets","use_automasking_topology","use_cloth_collision",\
-    "use_cloth_pin_simulation_boundary","use_connected_only","use_cursor_overlay","use_cursor_overlay_override","use_curve",\
-    "use_custom_icon","use_density_pressure","use_edge_to_edge","use_fake_user","use_flow_pressure","use_frontface",\
-    "use_frontface_falloff","use_grab_active_vertex","use_grab_silhouette","use_hardness_pressure",\
-    "use_inverse_smooth_pressure","use_line","use_locked_size","use_multiplane_scrape_dynamic","use_offset_pressure",\
-    "use_original_normal","use_original_plane","use_paint_antialiasing","use_paint_grease_pencil","use_paint_image",\
-    "use_paint_sculpt","use_paint_uv_sculpt","use_paint_vertex","use_paint_weight","use_persistent","use_plane_trim",\
-    "use_pose_ik_anchored","use_pose_lock_rotation","use_pressure_area_radius","use_pressure_jitter","use_pressure_masking",\
-    "use_pressure_size","use_pressure_spacing","use_pressure_strength","use_primary_overlay","use_primary_overlay_override",\
-    "use_restore_mesh","use_scene_spacing","use_secondary_overlay","use_secondary_overlay_override","use_smooth_stroke",\
-    "use_space","use_space_attenuation","use_vertex_grease_pencil","use_wet_mix_pressure","use_wet_persistence_pressure",\
-    "uv_sculpt_tool","vertex_tool","weight","weight_tool","wet_mix","wet_paint_radius_factor","wet_persistence"]
+        elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
+            return (val == prop.default)
+
+        elif ptype == 'POINTER':
+            pass
+
+        return True
+
+    def parse_prop(item, pname, pval):
+        ptype = pval.type
+        if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and pval.is_array:
+            arr = getattr(item,pname)
+            if pval.subtype in {'COLOR', 'COLOR_GAMMA'}:
+                return rgba2hex(arr)
+            return [v for v in arr]
+
+        elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
+            return getattr(item,pname)
+
+        elif ptype == 'POINTER':
+            pass
+        
+        else:
+            print(f"Unknown property type {pname} : {ptype}")
+        return None
+     
+    return { k:parse_prop(item, k, v) for k,v in item.bl_rna.properties.items() if not equals_default(item, k, v)}
 
 ''' Reads all brush attributes from the Blender file data
     returns a dictionnary containing all the attributes
     side effect : writes image files if the brush contains texture attributes
 '''
 def get_brush_data(bsh, fdir):
-    default_bsh = bpy.data.brushes["__DefaultBrush__"]
-    def parse_attr(attr):
-        dtp = [int, float, bool, str]
-        if (attr is None) or any([isinstance(attr, t) for t in dtp]):
-            return attr
-        if (isinstance(attr, bpy.types.Image)):
-            impath = write_image(attr, fdir, ".png")
-            return os.path.basename(impath)
-        if (isinstance(attr, bpy.types.CurveMapping)):
-            print("Curve output not yet implemented")
-            return None
-        return [attr[k] for k in range(len(attr))]
-
-    bdat = { v:parse_attr(getattr(bsh,v)) for v in bsh_attr \
-            if (getattr(bsh,v) != getattr(default_bsh, v))}
-
-    bshgp = bsh.gpencil_settings
-    bdat["gpencil_settings"] = { v:parse_attr(getattr(bshgp,v)) for v in bsh_gp_attr \
-                    if (getattr(bshgp,v) != getattr(default_bsh.gpencil_settings, v))}
-    bdat["gpencil_settings"] = { k:v for k,v in bdat["gpencil_settings"].items() \
-                    if not (isinstance(v,str) and (len(v) == 0)) }
-
+    bdat = get_props_dict(bsh)
+    bdat["gpencil_settings"] = get_props_dict(bsh.gpencil_settings)
     return bdat
 
 ''' Writes all palettes contained in a JSON file

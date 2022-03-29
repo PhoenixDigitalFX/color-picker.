@@ -16,6 +16,12 @@ def hex2rgba(hex, alpha):
     b = (h & 0x0000ff)
     return tuple([srgb_to_linearrgb(c/0xff) for c in (r,g,b)] + [alpha])
 
+def rgba2hex(rgba):
+    hex = '#'
+    for k in range(len(rgba)):
+        hex += '{:02x}'.format( int(255*rgba[k]) )
+    return hex
+
 ''' Get all intervals of value -1 in a list containing sorted values and -1 '''
 def get_unset_intervals(sorted_items):
     nit = len(sorted_items)
