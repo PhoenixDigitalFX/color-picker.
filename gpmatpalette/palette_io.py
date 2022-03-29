@@ -33,6 +33,47 @@ def parse_attr(name_attr, val_attr, item, fdir):
     setattr(item, name_attr, val_attr)
     return True
 
+def set_brush_props(item, data):   
+    def set_default(item, pname, prop):
+        ptype = prop.type
+        if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
+            setattr(item,pname,prop.default_array)
+
+        elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
+            setattr(item,pname,prop.default)
+
+        elif ptype == 'POINTER':
+            pass
+        
+    def set_prop(item, pname, prop, val):
+        ptype = prop.type
+        if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
+            if (prop.subtype in {'COLOR', 'COLOR_GAMMA'}) \
+                and (isinstance(val,str)):
+                setattr(item,pname,hex2rgba(val))
+                return
+            setattr(item,pname,val)
+
+        elif (ptype in {'ENUM'}) and (val == ""):
+            set_default(item,pname,prop)
+
+        elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
+            setattr(item,pname,val)
+
+        elif ptype == 'POINTER':
+            pass        
+
+        else:
+            print(f"Unknown property type {pname} : {ptype}")
+    props = item.bl_rna.properties
+    for pname, prop in props.items():
+        if prop.is_readonly:
+            continue
+        if not pname in data:
+            set_default(item, pname, prop)
+        else:
+            set_prop(item, pname, prop, data[pname])
+
 ''' Reads and loads a GP material in Blender database '''
 def upload_material(name, mdat, fdir):
     # Get material
@@ -63,19 +104,9 @@ def upload_brush(name, bdat, fdir):
         bsh = bpy.data.brushes.new(name=name, mode='PAINT_GPENCIL')
         bpy.data.brushes.create_gpencil_data(bsh)
         bsh.use_fake_user = True
-
-    # Setting up brush settings
-    gpstg = "gpencil_settings"
-    for k,v in bdat.items():
-        if k == gpstg:
-            continue
-        parse_attr(k, v, bsh, fdir)
-    
-    if not gpstg in bdat:
-        return
-
-    for k,v in bdat[gpstg].items():
-        parse_attr(k, v, bsh.gpencil_settings, fdir)
+ 
+    set_brush_props(bsh, bdat)
+    set_brush_props(bsh.gpencil_settings, bdat["gpencil_settings"])
 
     return True
 
@@ -127,6 +158,11 @@ def upload_palette(pname, data, fpt, palette):
         # Material layer
         if "layer" in mat_data.keys():
             gpmatit.layer = mat_data["layer"]
+
+        # Material brushes
+        if "brushes" in mat_data.keys():
+            for bname in mat_data["brushes"].keys():
+                gpmatit.add_brush_by_name(bname)
     
     if palette.count() == 0:
         print(f"No materials in palette {pname} Aborting upload")
@@ -277,12 +313,12 @@ def get_material_data(mat, fdir):
 
     return mdat
 
-''' GP Brushes attributes taken into account for export '''   
 def get_props_dict(item):    
     def equals_default(item, pname, prop):
         ptype = prop.type
         val = getattr(item,pname)
         if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
+            # print(f"{pname} subtype {prop.subtype}")
             return all([ (v==d) for v,d in zip(val,prop.default_array) ])  
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
@@ -311,7 +347,8 @@ def get_props_dict(item):
             print(f"Unknown property type {pname} : {ptype}")
         return None
      
-    return { k:parse_prop(item, k, v) for k,v in item.bl_rna.properties.items() if not equals_default(item, k, v)}
+    return { k:parse_prop(item, k, v) for k,v in item.bl_rna.properties.items() \
+                    if (not v.is_readonly) and (not equals_default(item, k, v))}
 
 ''' Reads all brush attributes from the Blender file data
     returns a dictionnary containing all the attributes
@@ -320,6 +357,7 @@ def get_props_dict(item):
 def get_brush_data(bsh, fdir):
     bdat = get_props_dict(bsh)
     bdat["gpencil_settings"] = get_props_dict(bsh.gpencil_settings)
+
     return bdat
 
 ''' Writes all palettes contained in a JSON file
