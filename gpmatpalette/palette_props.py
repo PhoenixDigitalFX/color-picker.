@@ -35,7 +35,6 @@ def update_brush(self, context):
         return
     self.pending_brush.asset_generate_preview()
 class GPMatItem(PropertyGroup):
-    # name: StringProperty(name= "Name")
     data: PointerProperty(type=bpy.types.Material, name="Data")
 
     image: PointerProperty(type=bpy.types.Image, name="Image", description="Image to be displayed in the picker when material is in selection")
@@ -49,6 +48,17 @@ class GPMatItem(PropertyGroup):
     is_angle_movable: BoolProperty(name="Movable", description="The angle is computed dynamically",default=True)
 
     picklines: CollectionProperty(name="Picklines", type=GPMatPickLine)
+
+    ''' Automatic data update for palettes using old material indexation system
+    '''
+    def compatibility_check(self):
+        bmats = bpy.data.materials
+        if self.name and (not self.data):
+            if not (self.name in bmats):
+                self.report({'ERROR'}, f"Material {self.name} not in blend data")
+                return False
+            self.data = bmats[self.name]
+        return True
 
     ''' Clear all material item data '''
     def clear(self):
@@ -83,6 +93,9 @@ class GPMatItem(PropertyGroup):
         return self.count_picklines() > 0
 
     def get_name(self):
+        if (self.name) and (not self.data) \
+            and (not self.compatibility_check()):
+            return None
         return self.data.name
     
     def accept_pending_brush(self):
@@ -157,11 +170,8 @@ class GPMatPalette(PropertyGroup):
     def compatibility_check(self):
         bmats = bpy.data.materials
         for ind, matit in enumerate(self.materials):
-            if matit.name and (not matit.data):
-                if not (matit.name in bmats):
-                    self.report({'ERROR'}, f"Material {matit.name} not in blend data")
-                    self.remove_material(ind)
-                matit.data = bmats[matit.name]
+            if not matit.compatibility_check():
+                self.remove_material(ind)
 
 
     ''' Automatic completion of material angle positions

@@ -265,9 +265,9 @@ def getJSONfiles(dir, max_rec_level=2, level=0):
     at the given file directory with the given extension format
     returns the full image file path
 '''
-def write_image(image, filedir, ext):
+def write_image(image, filedir, ext, subdir=""):
     import os.path as pth
-    impath = pth.join(filedir, image.name)
+    impath = pth.join(filedir, subdir, image.name)
     if (not impath.endswith(ext.upper())) \
         and (not impath.endswith(ext)):
         impath += ext   
@@ -288,44 +288,24 @@ def write_image(image, filedir, ext):
     
     return impath
 
-''' GP Material attributes taken into account for export '''
-mat_attr = ["alignment_mode", "alignment_rotation", "color","fill_color","fill_image","fill_style","flip","ghost", \
-            "gradient_type","hide","lock","mix_color", "mix_factor", "mix_stroke_factor", "mode", "pass_index", "pixel_size", \
-            "show_fill",  "show_stroke", "stroke_image", "stroke_style", "texture_angle", "texture_offset", "texture_scale", \
-            "use_fill_holdout", "use_overlap_strokes", "use_stroke_holdout"]
-
-''' Reads all material attributes from the Blender file data
-    returns a dictionnary containing all the attributes
-    side effect : writes image files if the material contains texture attributes
-'''
-def get_material_data(mat, fdir):
-    default_mat = bpy.data.materials["__DefaultMat__"].grease_pencil
-    def parse_attr(attr):
-        dtp = [int, float, bool, str]
-        if (attr is None) or any([isinstance(attr, t) for t in dtp]):
-            return attr
-        if (isinstance(attr, bpy.types.Image)):
-            impath = write_image(attr, fdir, ".png")
-            return os.path.basename(impath)
-        return [attr[k] for k in range(len(attr))]
-    mdat = { v:parse_attr(getattr(mat,v)) for v in mat_attr  \
-            if (getattr(mat,v) != getattr(default_mat, v))}
-
-    return mdat
-
-def get_props_dict(item):    
+def get_props_dict(item, fdir):    
     def equals_default(item, pname, prop):
         ptype = prop.type
         val = getattr(item,pname)
         if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
-            # print(f"{pname} subtype {prop.subtype}")
-            return all([ (v==d) for v,d in zip(val,prop.default_array) ])  
+            varr, darr = [v for v in val], [d for d in prop.default_array]
+            is_equal = all([ (v==d) for v,d in zip(varr,darr) ])  
+            # if not is_equal:
+            #     print(f"PROP {pname} : val ({varr}), default ({darr})")
+            return is_equal
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
             return (val == prop.default)
 
         elif ptype == 'POINTER':
-            pass
+            if isinstance(getattr(item,pname), bpy.types.Image):
+                print(f"Got image {pname}")   
+                return (getattr(item,pname) is None)
 
         return True
 
@@ -341,8 +321,9 @@ def get_props_dict(item):
             return getattr(item,pname)
 
         elif ptype == 'POINTER':
-            pass
-        
+            if isinstance(getattr(item,pname), bpy.types.Image):
+                impath = write_image(getattr(item,pname), fdir, ".png")
+                return os.path.basename(impath)
         else:
             print(f"Unknown property type {pname} : {ptype}")
         return None
@@ -355,8 +336,8 @@ def get_props_dict(item):
     side effect : writes image files if the brush contains texture attributes
 '''
 def get_brush_data(bsh, fdir):
-    bdat = get_props_dict(bsh)
-    bdat["gpencil_settings"] = get_props_dict(bsh.gpencil_settings)
+    bdat = get_props_dict(bsh,fdir)
+    bdat["gpencil_settings"] = get_props_dict(bsh.gpencil_settings,fdir)
 
     return bdat
 
@@ -417,7 +398,7 @@ def export_palettes_content(filepath):
     mat_dct = pal_dct["__materials__"]
     for mname in mat_names:
         mdat = bpy.data.materials[mname].grease_pencil
-        mat_dct[mname] = get_material_data(mdat, filedir)
+        mat_dct[mname] = get_props_dict(mdat,filedir)
     bpy.data.materials.remove(default_mat)
 
     # Brushes
@@ -427,7 +408,8 @@ def export_palettes_content(filepath):
     bsh_dct = pal_dct["__brushes__"]
     for bname in brush_names:
         bdat = bpy.data.brushes[bname]
-        bsh_dct[bname] = get_brush_data(bdat, filedir)
+        bsh_dct[bname] = get_props_dict(bdat,filedir)
+        bsh_dct[bname]["gpencil_settings"] = get_props_dict(bdat.gpencil_settings,filedir)
     bpy.data.brushes.remove(default_bsh)
 
     return pal_dct
