@@ -6,7 +6,7 @@ class GPCOLORPICKER_settings():
         # Const values
         self.switch_key = 'TAB'
         self.active_color =  (0.01,0.01,0.01,1)
-        self.default_color =  (0.3,0.4,0.3,1)
+        self.default_color =  (0.3,0.33,0.3,1)
         self.mat_line_width = 5.
         self.mc_line_width = 1.
         self.pickline_width = 1.

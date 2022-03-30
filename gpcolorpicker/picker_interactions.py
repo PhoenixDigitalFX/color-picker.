@@ -36,7 +36,11 @@ def pick_material(cache, context, settings, id_in_cache, brush_id):
 
         return True
 
-    set_active_brush(id_in_cache, brush_id)
+    bsh_def = cache.bsh_default[id_in_cache]
+    bsh_id = brush_id
+    if (brush_id < 0):
+        bsh_id = cache.bsh_default[id_in_cache]
+    set_active_brush(id_in_cache, bsh_id)
 
     if not cache.from_palette:
         return set_active_material(id_in_cache)
