@@ -361,7 +361,8 @@ class MoveBrushInteraction(RadialInteractionArea):
 
             cache.brushes[m] = [cache.brushes[m][i] for i in id_bsh]
             cache.brushes_pos[m] = [float(i) for i,_ in enumerate(cache.brushes[m])]
-
+            cache.bsh_default[m] = id_bsh.index(cache.bsh_default[m])
+            
         else:
             inter_rad = settings.brush_radius
 
