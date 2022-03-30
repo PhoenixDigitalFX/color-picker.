@@ -5,16 +5,11 @@ def srgb_to_linearrgb(c):
     if   c < 0:       return 0
     elif c < 0.04045: return c/12.92
     else:             return ((c+0.055)/1.055)**2.4
-
-def hex2rgba(hex, alpha):
-    '''from https://blender.stackexchange.com/a/158902/4979'''
-    h = hex
-    if type(h) is str:
-        h = int(h, 16)
-    r = (h & 0xff0000) >> 16
-    g = (h & 0x00ff00) >> 8
-    b = (h & 0x0000ff)
-    return tuple([srgb_to_linearrgb(c/0xff) for c in (r,g,b)] + [alpha])
+    
+def hex2rgba(hex):
+    h = hex.lstrip('#')
+    irgba = [int(h[2*i:2*i+2], 16) for i in range(len(h)//2)]
+    return [ float(x)/255. for x in irgba ]
 
 def rgba2hex(rgba):
     hex = '#'

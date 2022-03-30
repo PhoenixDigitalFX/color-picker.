@@ -15,7 +15,6 @@ def load_image(imname, path_prefix, check_existing=True):
 def parse_attr(name_attr, val_attr, item, fdir):
     if not hasattr(item, name_attr):
         return False
-
     # Color Attributes
     if name_attr.endswith("color")  \
         and isinstance(val_attr[0], str):
@@ -33,7 +32,7 @@ def parse_attr(name_attr, val_attr, item, fdir):
     setattr(item, name_attr, val_attr)
     return True
 
-def set_brush_props(item, data):   
+def set_props(item, data, fdir):   
     def set_default(item, pname, prop):
         ptype = prop.type
         if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
@@ -61,8 +60,12 @@ def set_brush_props(item, data):
             setattr(item,pname,val)
 
         elif ptype == 'POINTER':
-            pass        
-
+            if pname.endswith("image") \
+                and (not val is None):
+                im = load_image(val, fdir)
+                setattr(item, pname, im)
+            else:
+                setattr(item, pname, val)
         else:
             print(f"Unknown property type {pname} : {ptype}")
     props = item.bl_rna.properties
@@ -78,6 +81,7 @@ def set_brush_props(item, data):
 def upload_material(name, mdat, fdir):
     # Get material
     mat = bpy.data.materials.get(name)
+
     if mat is None:
         # create material
         mat = bpy.data.materials.new(name=name)
@@ -88,10 +92,9 @@ def upload_material(name, mdat, fdir):
         print(f"Error: Material {name} exists and is not GP.")
         return False
 
-    # Setting up material settings
-    m = mat.grease_pencil
-    for k,v in mdat.items():
-        parse_attr(k, v, m, fdir)
+    set_props(mat.grease_pencil, mdat, fdir)
+
+    mat.asset_generate_preview()
 
     return True
 
@@ -105,13 +108,13 @@ def upload_brush(name, bdat, fdir):
         bpy.data.brushes.create_gpencil_data(bsh)
         bsh.use_fake_user = True
  
-    set_brush_props(bsh, bdat)
-    set_brush_props(bsh.gpencil_settings, bdat["gpencil_settings"])
+    set_props(bsh, bdat, fdir)
+    set_props(bsh.gpencil_settings, bdat["gpencil_settings"], fdir)
 
     return True
 
 ''' Reads and loads a palette content in Blender data'''
-def upload_palette(pname, data, fpt, palette):
+def upload_palette(pname, data, fpt, palette, old_mat_sys=False):
     # Image
     is_relative_path = False
     fdir = ""
@@ -124,7 +127,7 @@ def upload_palette(pname, data, fpt, palette):
 
     for name,mat_data in data["materials"].items():
         # [obsolete] Material content
-        if not upload_material(name, mat_data, fdir):
+        if old_mat_sys and (not upload_material(name, mat_data, fdir)):
             continue
         
         # Material position in picker
@@ -206,7 +209,9 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
         timestamp  = data["__meta__"]["timestamp"]
 
     # Parse JSON
+    old_mat_sys = True
     if "__materials__" in data:
+        old_mat_sys = False
         mat_dct = data["__materials__"]
         for mname, mdat in mat_dct.items():
             upload_material(mname, mdat, fdir)
@@ -234,7 +239,7 @@ def parseJSONFile(json_file, palette_names=set(), clear_existing = False):
                 palette.clear()
         
         palette.timestamp = timestamp
-        upload_palette(pname, pdata, json_file, palette)
+        upload_palette(pname, pdata, json_file, palette, old_mat_sys)
 
         if not palette:
             print("Nothing found in palette ", pname)
