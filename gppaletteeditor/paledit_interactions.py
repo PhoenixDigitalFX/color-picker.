@@ -306,6 +306,7 @@ class MoveBrushInteraction(RadialInteractionArea):
     def on_click_press(self, op, cache, settings, context, pos):    
         self.init_pos = pos
         self.dir_defined = False
+        cache.bsh_selected_offset = 0
 
     def on_mouse_move(self, op, cache, settings, pos):
         dpos = np.asarray(pos) - np.asarray(self.init_pos)
@@ -331,8 +332,8 @@ class MoveBrushInteraction(RadialInteractionArea):
 
             cache.brushes_pos[self.mat_id][self.bsh_id] = cpos
         else:
-            ndir = np.asarray([ -rdir[1], rdir[0] ])
-            cache.brush_selected_offset = np.dot(dpos,ndir)
+            ndir = np.asarray([ -rdir[1], rdir[0] ])/np.linalg.norm(rdir)
+            cache.bsh_selected_offset += np.dot(dpos,ndir)
 
         self.init_pos = pos
 
@@ -351,12 +352,15 @@ class MoveBrushInteraction(RadialInteractionArea):
             cache.brushes[m] = [cache.brushes[m][i] for i in id_bsh]
             cache.brushes_pos[m] = [cache.brushes_pos[m][i] for i in id_bsh]
         else:
-            inter_rad = settings.brush_radius*0.5
-            if cache.brush_selected_offset > inter_rad:
+            inter_rad = settings.brush_radius
+
+            if cache.bsh_selected_offset > inter_rad:
                 cache.bsh_default[self.mat_id] = self.bsh_id
-            if (cache.brush_selected_offset < -inter_rad) \
+
+            if (cache.bsh_selected_offset < -inter_rad) \
                 and (cache.bsh_default[self.mat_id] == self.bsh_id) :
                 cache.bsh_default[self.mat_id] = -1
-            cache.brush_selected_offset = False
+
+            cache.bsh_selected_offset = 0
 
         op.write_cache_in_palette(context)

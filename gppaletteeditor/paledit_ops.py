@@ -39,7 +39,6 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 for b in cache.brushes[i]:
                     matit.add_brush(b)   
 
-            print(f"Setting default brush {i}")
             if cache.bsh_default[i] >= 0:
                 matit.set_default_brush(cached_brush_names[cache.bsh_default[i]])
 

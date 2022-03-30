@@ -458,12 +458,24 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
         tex = cache.bsh_prv[b.name]
 
         x = cache.brushes_pos[mat_id][i]
+
         center = (R + (x+0.5)*(2*rds+ri))*mat_dir
+
+        if (op.mat_selected == mat_id) \
+            and (op.brush_selected == i) \
+            and (cache.bsh_selected_offset != 0):
+
+            mat_orth = np.asarray([-sin(th), cos(th)])
+            center += cache.bsh_selected_offset*mat_orth
 
         radius = settings.brush_radius
         if op.brush_selected == i:
             radius *= settings.selection_ratio
             
+        if i == cache.bsh_default[mat_id]:
+            draw_flat_circle(op, settings, center, radius*1.1, \
+                line_width=radius*0.3, line_color=settings.default_color)
+
         if tex is None:
             org = op.origin + 0.5*op.region_dim
             draw_flat_circle(op, settings, center, radius, fill_color=4*[0.5])
@@ -476,10 +488,6 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
         mark_pos = center - 1.4*radius*np.asarray([cos(a),sin(a)])
         if i == cache.bsh_active[mat_id]:
             draw_mark(op, settings, mark_pos, mark_radius, mark_color)
-
-        if i == cache.bsh_default[mat_id]:
-            draw_flat_circle(op, settings, center, radius*1.3, \
-                line_width=radius*0.3, line_color=settings.default_color)
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
