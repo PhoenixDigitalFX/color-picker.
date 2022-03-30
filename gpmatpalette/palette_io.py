@@ -11,7 +11,7 @@ def load_image(imname, path_prefix, check_existing=True):
     if im:
         im.pack()
     return im
-    
+
 def set_props(item, data, fdir):   
     def set_default(item, pname, prop):
         ptype = prop.type
@@ -251,11 +251,15 @@ def getJSONfiles(dir, max_rec_level=2, level=0):
     returns the full image file path
 '''
 def write_image(image, filedir, ext, subdir=""):
-    import os.path as pth
-    impath = pth.join(filedir, subdir, image.name)
+    import os
+    imdir = os.path.join(filedir,subdir)
+    if not os.path.isdir(imdir):
+        os.mkdir(imdir)
+
+    impath = os.path.join(imdir, image.name)
     if (not impath.endswith(ext.upper())) \
         and (not impath.endswith(ext)):
-        impath += ext   
+        impath += ext 
 
     saved_format = image.file_format
     image.file_format = (ext[1:]).upper()     
@@ -271,9 +275,9 @@ def write_image(image, filedir, ext, subdir=""):
 
     image.file_format = saved_format  
     
-    return impath
+    return os.path.relpath(impath,start=filedir)
 
-def get_props_dict(item, fdir):    
+def get_props_dict(item, fdir, imdir):    
     def equals_default(item, pname, prop):
         ptype = prop.type
         val = getattr(item,pname)
@@ -307,8 +311,7 @@ def get_props_dict(item, fdir):
 
         elif ptype == 'POINTER':
             if isinstance(getattr(item,pname), bpy.types.Image):
-                impath = write_image(getattr(item,pname), fdir, ".png")
-                return os.path.basename(impath)
+                return write_image(getattr(item,pname), fdir, ".png", imdir)
         else:
             print(f"Unknown property type {pname} : {ptype}")
         return None
@@ -320,9 +323,9 @@ def get_props_dict(item, fdir):
     returns a dictionnary containing all the attributes
     side effect : writes image files if the brush contains texture attributes
 '''
-def get_brush_data(bsh, fdir):
-    bdat = get_props_dict(bsh,fdir)
-    bdat["gpencil_settings"] = get_props_dict(bsh.gpencil_settings,fdir)
+def get_brush_data(bsh, fdir, imdir):
+    bdat = get_props_dict(bsh, fdir, imdir)
+    bdat["gpencil_settings"] = get_props_dict(bsh.gpencil_settings,fdir, imdir)
 
     return bdat
 
@@ -343,16 +346,18 @@ def export_palettes_content(filepath):
 
     filedir= os.path.dirname(filepath)
 
+    im_folder = "img"
+    tex_folder = "tex"
+
     # Palettes
     mat_names, brush_names = set(), set()
     for pname,pdata in gpmp.items():
         pal_dct[pname] = {}
 
         if pdata.image:
-            impath = write_image(pdata.image, filedir, ext)
-            imname = os.path.basename(impath)
+            impath = write_image(pdata.image, filedir, ext, im_folder)
             relpath = True
-            pal_dct[pname]["image"] = {"path":imname, "relative":relpath} 
+            pal_dct[pname]["image"] = {"path":impath, "relative":relpath} 
 
         pal_dct[pname]["materials"] = {}
         mat_dct = pal_dct[pname]["materials"]    
@@ -367,7 +372,7 @@ def export_palettes_content(filepath):
                 mat_dct[mname]["origins"] = mat.get_origins(np_arr = False)
 
             if mat.image:
-                mat_dct[mname]["image"] = os.path.basename(mat.image.filepath)
+                mat_dct[mname]["image"] = write_image(mat.image, filedir, ext, im_folder)
 
             if mat.layer:
                 mat_dct[mname]["layer"] = mat.layer
@@ -383,7 +388,7 @@ def export_palettes_content(filepath):
     mat_dct = pal_dct["__materials__"]
     for mname in mat_names:
         mdat = bpy.data.materials[mname].grease_pencil
-        mat_dct[mname] = get_props_dict(mdat,filedir)
+        mat_dct[mname] = get_props_dict(mdat,filedir,tex_folder)
     bpy.data.materials.remove(default_mat)
 
     # Brushes
@@ -393,8 +398,8 @@ def export_palettes_content(filepath):
     bsh_dct = pal_dct["__brushes__"]
     for bname in brush_names:
         bdat = bpy.data.brushes[bname]
-        bsh_dct[bname] = get_props_dict(bdat,filedir)
-        bsh_dct[bname]["gpencil_settings"] = get_props_dict(bdat.gpencil_settings,filedir)
+        bsh_dct[bname] = get_props_dict(bdat,filedir,tex_folder)
+        bsh_dct[bname]["gpencil_settings"] = get_props_dict(bdat.gpencil_settings,filedir,tex_folder)
     bpy.data.brushes.remove(default_bsh)
 
     return pal_dct
