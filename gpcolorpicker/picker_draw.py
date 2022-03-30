@@ -473,9 +473,13 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
 
         mark_color = settings.active_color
         mark_radius = settings.mat_line_width*0.6
-        mark_pos = center + 1.4*radius*np.asarray([cos(a),sin(a)])
+        mark_pos = center - 1.4*radius*np.asarray([cos(a),sin(a)])
         if i == cache.bsh_active[mat_id]:
             draw_mark(op, settings, mark_pos, mark_radius, mark_color)
+
+        if i == cache.bsh_default[mat_id]:
+            draw_flat_circle(op, settings, center, radius*1.3, \
+                line_width=radius*0.3, line_color=settings.default_color)
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):

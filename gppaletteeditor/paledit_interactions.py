@@ -304,32 +304,59 @@ class MoveBrushInteraction(RadialInteractionArea):
         self.rds = settings.brush_radius
 
     def on_click_press(self, op, cache, settings, context, pos):    
-        self.init_pos = np.linalg.norm(pos)
+        self.init_pos = pos
+        self.dir_defined = False
 
     def on_mouse_move(self, op, cache, settings, pos):
-        r = 2*settings.brush_radius + settings.brush_interrad
-        dpos = (np.linalg.norm(pos) - self.init_pos)/r
+        dpos = np.asarray(pos) - np.asarray(self.init_pos)
+        rdir = np.asarray(self.init_pos)
 
-        cpos = cache.brushes_pos[self.mat_id][self.bsh_id] + dpos
-        if cpos == int(cpos):
-            cpos += 0.001
+        if not self.dir_defined:
+            dpos_u = dpos/np.linalg.norm(dpos)
+            rdir_u = rdir/np.linalg.norm(rdir)
+            self.dir_radial = abs(np.dot(dpos_u,rdir_u)) > 0.5
+            self.dir_defined = True
 
-        nbrushes = len(cache.brushes[self.mat_id])
-        if cpos > nbrushes:
-            cpos = nbrushes
+        if self.dir_radial:
+            r = 2*settings.brush_radius + settings.brush_interrad
+            ddist = (np.linalg.norm(pos) - np.linalg.norm(self.init_pos))/r
 
-        cache.brushes_pos[self.mat_id][self.bsh_id] = cpos
-        self.init_pos = np.linalg.norm(pos)
+            cpos = cache.brushes_pos[self.mat_id][self.bsh_id] + ddist
+            if cpos == int(cpos):
+                cpos += 0.001
+
+            nbrushes = len(cache.brushes[self.mat_id])
+            if cpos > nbrushes:
+                cpos = nbrushes
+
+            cache.brushes_pos[self.mat_id][self.bsh_id] = cpos
+        else:
+            ndir = np.asarray([ -rdir[1], rdir[0] ])
+            cache.brush_selected_offset = np.dot(dpos,ndir)
+
+        self.init_pos = pos
 
     def on_click_release(self, op, cache, settings, context):      
         self.refresh(cache, settings)
 
-        m = self.mat_id
-        bsh_pos = cache.brushes_pos[m]
-        bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
-        id_bsh = [i for (i,pos) in bsh_sorted if pos > -1]
+        if not self.dir_defined:
+            return
+        
+        if self.dir_radial:
+            m = self.mat_id
+            bsh_pos = cache.brushes_pos[m]
+            bsh_sorted = sorted(enumerate(bsh_pos), key=lambda item: (item[1]))
+            id_bsh = [i for (i,pos) in bsh_sorted if pos > -1]
 
-        cache.brushes[m] = [cache.brushes[m][i] for i in id_bsh]
-        cache.brushes_pos[m] = [cache.brushes_pos[m][i] for i in id_bsh]
+            cache.brushes[m] = [cache.brushes[m][i] for i in id_bsh]
+            cache.brushes_pos[m] = [cache.brushes_pos[m][i] for i in id_bsh]
+        else:
+            inter_rad = settings.brush_radius*0.5
+            if cache.brush_selected_offset > inter_rad:
+                cache.bsh_default[self.mat_id] = self.bsh_id
+            if (cache.brush_selected_offset < -inter_rad) \
+                and (cache.bsh_default[self.mat_id] == self.bsh_id) :
+                cache.bsh_default[self.mat_id] = -1
+            cache.brush_selected_offset = False
 
         op.write_cache_in_palette(context)

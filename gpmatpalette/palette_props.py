@@ -26,22 +26,35 @@ class GPMatPickLine(PropertyGroup):
 
 class GPBrushItem(PropertyGroup):
     data: PointerProperty(type=bpy.types.Brush, name="Data")
-    is_default: BoolProperty(name="Default brush", default=False)
 
     def get_name(self):
         return self.data.name
 
-def update_brush(self, context):
+def update_pending_brush(self, context):
     if (not self.pending_brush) or (self.pending_brush.preview) :
         return
     self.pending_brush.asset_generate_preview()
+
+def update_default_brush(self, context):
+    if (not self.default_brush):
+        return
+    ind = self.index_brush(self.default_brush.name)
+    if ind == 1:
+        return
+    if ind < 0:
+        self.default_brush = None
+    else:
+        self.materials.move(ind, 1)            
+    self.is_dirty = True   
+
 class GPMatItem(PropertyGroup):
     data: PointerProperty(type=bpy.types.Material, name="Data")
 
     image: PointerProperty(type=bpy.types.Image, name="Image", description="Image to be displayed in the picker when material is in selection")
     layer: StringProperty(name="Layer", description="Layer to switch to when material is selected")
     brushes: CollectionProperty(type=GPBrushItem)
-    pending_brush : PointerProperty(type=bpy.types.Brush, update=update_brush)
+    pending_brush : PointerProperty(type=bpy.types.Brush, update=update_pending_brush)
+    default_brush: PointerProperty(type=bpy.types.Brush, update=update_default_brush)
 
     is_dirty: BoolProperty(default=False)
 
@@ -134,6 +147,12 @@ class GPMatItem(PropertyGroup):
     def count_brushes(self):
         return len(self.brushes)
 
+    def has_default_brush(self):
+        return not (self.default_brush is None)
+    
+    def set_default_brush(self, bname):
+        self.default_brush = bpy.data.brushes[bname]
+
 ''' --- Palette --- '''
 
 ''' Update callback for the Image property
@@ -170,11 +189,9 @@ class GPMatPalette(PropertyGroup):
     ''' Automatic data update for palettes using old material indexation system
     '''
     def compatibility_check(self):
-        bmats = bpy.data.materials
         for ind, matit in enumerate(self.materials):
             if not matit.compatibility_check():
                 self.remove_material(ind)
-
 
     ''' Automatic completion of material angle positions
         useful when some are not specified

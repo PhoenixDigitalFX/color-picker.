@@ -37,8 +37,12 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 or any([ cname != pname for cname, pname in zip(cached_brush_names, matit.get_brushes_names()) ]):                
                 matit.brushes.clear()
                 for b in cache.brushes[i]:
-                    matit.add_brush(b)                
-    
+                    matit.add_brush(b)   
+
+            print(f"Setting default brush {i}")
+            if cache.bsh_default[i] >= 0:
+                matit.set_default_brush(cached_brush_names[cache.bsh_default[i]])
+
     # Change the selected material & brush
     def refresh_selections(self, event):
         cache = self.cached_data

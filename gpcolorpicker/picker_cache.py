@@ -42,6 +42,9 @@ class CachedData:
             else:        
                 self.bsh_active = self.mat_nb*[-1]
 
+            self.bsh_default = [ m.index_brush(m.default_brush.name) if m.has_default_brush() else -1 for m in gpmp.materials]
+            self.bsh_selected_offset = 0
+
         elif ob and not self.from_palette:
             # From active cache
             self.gpu_texture = None
@@ -57,6 +60,8 @@ class CachedData:
             
             self.brushes = self.mat_nb*[[]]
             self.bsh_active = self.mat_nb*[-1]
+            self.bsh_default = self.mat_nb*[-1]
+            self.bsh_selected_offset = 0
 
         else:
             # Empty cache
@@ -72,6 +77,8 @@ class CachedData:
             
             self.brushes = self.mat_nb*[[]]
             self.bsh_active = self.mat_nb*[-1]
+            self.bsh_default = self.mat_nb*[-1]
+            self.bsh_selected_offset = 0
 
         mat_gp = [ m.grease_pencil for m in self.materials ]
         transp = [0.,0.,0.,0.]

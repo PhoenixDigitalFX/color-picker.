@@ -112,7 +112,8 @@ def upload_palette(pname, data, fpt, palette, old_mat_sys=False):
         
         # Material position in picker
         gpmatit = None        
-        if "position" in mat_data.keys():
+        mat_fields = mat_data.keys()
+        if "position" in mat_fields:
             def posdeg2rad(deg):
                 rad = deg*math.pi/180.
                 while rad < 0:
@@ -128,26 +129,27 @@ def upload_palette(pname, data, fpt, palette, old_mat_sys=False):
             continue
         
         # Material pickline
-        if "origin" in mat_data.keys():
+        if "origin" in mat_fields:
             gpmatit.set_origins([mat_data["origin"]])
 
-        if "origins" in mat_data.keys():
+        if "origins" in mat_fields:
             gpmatit.set_origins(mat_data["origins"])
         
         # Material Image
-        if palette.image and ("image" in mat_data.keys()):
+        if palette.image and ("image" in mat_fields):
             gpmatit.image = load_image(mat_data["image"], fdir)
 
         # Material layer
-        if "layer" in mat_data.keys():
+        if "layer" in mat_fields:
             gpmatit.layer = mat_data["layer"]
 
         # Material brushes
-        if "brushes" in mat_data.keys():
-            for bname,bdat in mat_data["brushes"].items():
-                bsh = gpmatit.add_brush_by_name(bname)
-                if ("default" in bdat) and bdat["default"]:
-                    bsh.is_default = True
+        if "brushes" in mat_fields:
+            for bname in mat_data["brushes"].keys():
+                gpmatit.add_brush_by_name(bname)   
+
+        if "default_brush" in mat_fields:
+            gpmatit.set_default_brush(mat_data["default_brush"])
     
     if palette.count() == 0:
         print(f"No materials in palette {pname} Aborting upload")
@@ -380,13 +382,11 @@ def export_palettes_content(filepath):
                 mat_dct[mname]["layer"] = mat.layer
 
             bnames = set(mat.get_brushes_names())
-            brush_names = brush_names.union(bnames)
             mat_dct[mname]["brushes"] = {b:{} for b in bnames}
-            bsh_dct = mat_dct[mname]["brushes"]
-            for bsh in mat.brushes:
-                if not bsh.is_default:
-                    continue
-                bsh_dct[bsh.get_name()]["default"] = True
+            brush_names = brush_names.union(bnames)
+
+            if mat.has_default_brush():
+                mat_dct[mname]["default_brush"] = mat.default_brush().name
                 
     # Materials
     default_mat = bpy.data.materials.new(name="__DefaultMat__")
