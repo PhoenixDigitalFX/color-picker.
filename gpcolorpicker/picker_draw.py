@@ -472,7 +472,8 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
         if op.brush_selected == i:
             radius *= settings.selection_ratio
             
-        if i == cache.bsh_default[mat_id]:
+        if (settings.use_default_brushes) \
+            and (i == cache.bsh_default[mat_id]):
             draw_flat_circle(op, settings, center, radius*1.1, \
                 line_width=radius*0.3, line_color=settings.default_color)
 

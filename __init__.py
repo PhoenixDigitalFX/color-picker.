@@ -137,6 +137,7 @@ class GPCOLORPICKER_preferences(AddonPreferences):
     autoload_mode: PointerProperty(type=GPCOLORPICKER_autoloadPalette, name="Autoload")
     picker_keymap: PointerProperty(type=GPCOLORPICKER_PickerKM, name="Picker keymap")
     palette_edit_keymap: PointerProperty(type=GPCOLORPICKER_EditPaletteKM, name="Palette Edit keymap")
+    use_default_brushes: BoolProperty(name="Use default brushes", default=True, description="With this mode, you can define a default brush for any material, the brush will be selected when the material is picked with the GP Color Picker")
 
     def draw(self, context):
         layout = self.layout
@@ -172,6 +173,10 @@ class GPCOLORPICKER_preferences(AddonPreferences):
             row.prop(self.autoload_mode, "autocheck")
             if self.autoload_mode.autocheck:
                 row.prop(self.autoload_mode, "timerval")
+
+            # DEFAULT BRUSH mode
+            row = mats.row()
+            row.prop(self, "use_default_brushes")
 
         # KEYMAPPING prefs
         prv = scol.box()

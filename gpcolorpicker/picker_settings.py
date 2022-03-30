@@ -22,6 +22,7 @@ class GPCOLORPICKER_settings():
             self.mc_line_color = prefs.theme.line_color
             self.text_color = prefs.theme.text_color
             self.set_icon_scale(prefs.icon_scale)
+            self.use_default_brushes = prefs.use_default_brushes
         else:
             self.mat_from_active = True
             self.mat_assign = False
@@ -29,6 +30,7 @@ class GPCOLORPICKER_settings():
             self.mc_line_color = (0.96,0.96,0.96,1.)
             self.text_color = (0.,0.,0.,1.)
             self.set_icon_scale(250)
+            self.use_default_brushes = True
 
     def set_icon_scale(self,scale):
         self.icon_scale = scale

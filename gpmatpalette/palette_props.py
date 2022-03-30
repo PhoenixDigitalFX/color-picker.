@@ -39,12 +39,8 @@ def update_default_brush(self, context):
     if (not self.default_brush):
         return
     ind = self.index_brush(self.default_brush.name)
-    if ind == 0:
-        return
     if ind < 0:
-        self.default_brush = None
-    else:
-        self.brushes.move(ind, 0)            
+        self.default_brush = None           
     self.is_dirty = True   
 
 class GPMatItem(PropertyGroup):
