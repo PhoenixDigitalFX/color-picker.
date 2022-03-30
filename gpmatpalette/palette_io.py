@@ -11,27 +11,7 @@ def load_image(imname, path_prefix, check_existing=True):
     if im:
         im.pack()
     return im
-
-def parse_attr(name_attr, val_attr, item, fdir):
-    if not hasattr(item, name_attr):
-        return False
-    # Color Attributes
-    if name_attr.endswith("color")  \
-        and isinstance(val_attr[0], str):
-            setattr(item, name_attr, hex2rgba(val_attr[0],val_attr[1]))
-            return True
-    # Image attributes
-    if (name_attr.find("image") >= 0) \
-        and (not val_attr is None):
-        im = load_image(val_attr, fdir)
-        setattr(item, name_attr, im)
-        return True
-    # Curve attributes
-    if (name_attr.find("curve") >= 0):
-        return False
-    setattr(item, name_attr, val_attr)
-    return True
-
+    
 def set_props(item, data, fdir):   
     def set_default(item, pname, prop):
         ptype = prop.type
