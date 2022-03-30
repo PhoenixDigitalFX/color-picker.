@@ -313,8 +313,10 @@ class MoveBrushInteraction(RadialInteractionArea):
         rdir = np.asarray(self.init_pos)
 
         if not self.dir_defined:
-            dpos_u = dpos/np.linalg.norm(dpos)
-            rdir_u = rdir/np.linalg.norm(rdir)
+            if np.linalg.norm(dpos) != 0:
+                dpos_u = dpos/np.linalg.norm(dpos)
+            if np.linalg.norm(rdir) != 0:
+                rdir_u = rdir/np.linalg.norm(rdir)
             self.dir_radial = abs(np.dot(dpos_u,rdir_u)) > 0.5
             self.dir_defined = True
 
@@ -350,7 +352,8 @@ class MoveBrushInteraction(RadialInteractionArea):
             id_bsh = [i for (i,pos) in bsh_sorted if pos > -1]
 
             cache.brushes[m] = [cache.brushes[m][i] for i in id_bsh]
-            cache.brushes_pos[m] = [cache.brushes_pos[m][i] for i in id_bsh]
+            cache.brushes_pos[m] = [float(i) for i,_ in enumerate(cache.brushes[m])]
+
         else:
             inter_rad = settings.brush_radius
 
