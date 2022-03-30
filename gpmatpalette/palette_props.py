@@ -26,6 +26,7 @@ class GPMatPickLine(PropertyGroup):
 
 class GPBrushItem(PropertyGroup):
     data: PointerProperty(type=bpy.types.Brush, name="Data")
+    is_default: BoolProperty(name="Default brush", default=False)
 
     def get_name(self):
         return self.data.name
@@ -116,10 +117,11 @@ class GPMatItem(PropertyGroup):
         bsh = self.brushes.add()
         bsh.data = bdata
         self.is_dirty = True
+        return bsh
 
     def add_brush_by_name(self, name):
         bdata = bpy.data.brushes[name]
-        self.add_brush(bdata)
+        return self.add_brush(bdata)
 
     ''' Get brush index from name
     '''

@@ -144,8 +144,10 @@ def upload_palette(pname, data, fpt, palette, old_mat_sys=False):
 
         # Material brushes
         if "brushes" in mat_data.keys():
-            for bname in mat_data["brushes"].keys():
-                gpmatit.add_brush_by_name(bname)
+            for bname,bdat in mat_data["brushes"].items():
+                bsh = gpmatit.add_brush_by_name(bname)
+                if ("default" in bdat) and bdat["default"]:
+                    bsh.is_default = True
     
     if palette.count() == 0:
         print(f"No materials in palette {pname} Aborting upload")
@@ -378,8 +380,13 @@ def export_palettes_content(filepath):
                 mat_dct[mname]["layer"] = mat.layer
 
             bnames = set(mat.get_brushes_names())
-            mat_dct[mname]["brushes"] = {b:{} for b in bnames}
             brush_names = brush_names.union(bnames)
+            mat_dct[mname]["brushes"] = {b:{} for b in bnames}
+            bsh_dct = mat_dct[mname]["brushes"]
+            for bsh in mat.brushes:
+                if not bsh.is_default:
+                    continue
+                bsh_dct[bsh.get_name()]["default"] = True
                 
     # Materials
     default_mat = bpy.data.materials.new(name="__DefaultMat__")
