@@ -296,26 +296,35 @@ def get_props_dict(item, fdir, imdir):
             return (val == prop.default)
 
         elif ptype == 'POINTER':
-            if isinstance(getattr(item,pname), bpy.types.Image):
+            if isinstance(val, bpy.types.Image):
                 print(f"Got image {pname}")   
-                return (getattr(item,pname) is None)
+                return (val is None)
+            # print(f"Got PointerProperty {pname} of type {type(val)}")
 
         return True
 
     def parse_prop(item, pname, pval):
         ptype = pval.type
+        val = getattr(item,pname)
         if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and pval.is_array:
-            arr = getattr(item,pname)
             if pval.subtype in {'COLOR', 'COLOR_GAMMA'}:
-                return rgba2hex(arr)
-            return [v for v in arr]
+                return rgba2hex(val)
+            return [v for v in val]
+        elif (ptype == 'STRING') and (pname.endswith("filepath")):
+            # filepath to image that needs to be saved during export
+            vpath = bpy.path.abspath(val)
+            fname = bpy.path.basename(val)
+            fpath = os.path.join(fdir,imdir,fname)
+            from shutil import copy
+            copy(vpath,fpath)
+            return os.path.relpath(fpath,start=fdir)
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
-            return getattr(item,pname)
+            return val
 
         elif ptype == 'POINTER':
-            if isinstance(getattr(item,pname), bpy.types.Image):
-                return write_image(getattr(item,pname), fdir, ".png", imdir)
+            if isinstance(val, bpy.types.Image):
+                return write_image(val, fdir, ".png", imdir)
         else:
             print(f"Unknown property type {pname} : {ptype}")
         return None
@@ -386,27 +395,21 @@ def export_palettes_content(filepath):
             brush_names = brush_names.union(bnames)
 
             if mat.has_default_brush():
-                mat_dct[mname]["default_brush"] = mat.default_brush().name
+                mat_dct[mname]["default_brush"] = mat.default_brush.name
                 
     # Materials
-    default_mat = bpy.data.materials.new(name="__DefaultMat__")
-    bpy.data.materials.create_gpencil_data(default_mat)
     pal_dct["__materials__"] = {}
     mat_dct = pal_dct["__materials__"]
     for mname in mat_names:
         mdat = bpy.data.materials[mname].grease_pencil
         mat_dct[mname] = get_props_dict(mdat,filedir,tex_folder)
-    bpy.data.materials.remove(default_mat)
 
     # Brushes
-    default_bsh = bpy.data.brushes.new(name="__DefaultBrush__", mode='PAINT_GPENCIL')
-    bpy.data.brushes.create_gpencil_data(default_bsh)
     pal_dct["__brushes__"] = {}
     bsh_dct = pal_dct["__brushes__"]
     for bname in brush_names:
         bdat = bpy.data.brushes[bname]
         bsh_dct[bname] = get_props_dict(bdat,filedir,tex_folder)
         bsh_dct[bname]["gpencil_settings"] = get_props_dict(bdat.gpencil_settings,filedir,tex_folder)
-    bpy.data.brushes.remove(default_bsh)
 
     return pal_dct
