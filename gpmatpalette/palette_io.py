@@ -35,6 +35,10 @@ def set_props(item, data, fdir):
 
         elif (ptype in {'ENUM'}) and (val == ""):
             set_default(item,pname,prop)
+        
+        elif (ptype == 'STRING') and pname.endswith('filepath'):
+            abspath = os.path.join(fdir,val)
+            setattr(item,pname,abspath)
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
             setattr(item,pname,val)
@@ -317,6 +321,7 @@ def get_props_dict(item, fdir, imdir):
             fpath = os.path.join(fdir,imdir,fname)
             from shutil import copy
             copy(vpath,fpath)
+            print(f"FILEPATH {bpy.path.relpath(fpath,start=fdir)}")
             return os.path.relpath(fpath,start=fdir)
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
