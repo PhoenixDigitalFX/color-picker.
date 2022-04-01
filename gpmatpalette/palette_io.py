@@ -321,7 +321,6 @@ def get_props_dict(item, fdir, imdir):
             fpath = os.path.join(fdir,imdir,fname)
             from shutil import copy
             copy(vpath,fpath)
-            print(f"FILEPATH {bpy.path.relpath(fpath,start=fdir)}")
             return os.path.relpath(fpath,start=fdir)
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
