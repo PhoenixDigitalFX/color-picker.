@@ -3,7 +3,7 @@ import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba, rgba2hex
 import datetime as dt
 
-readonly_excepts = ["gpencil_settings", "curves", "curve_strength"]
+readonly_excepts = {"curves", "curve_strength"}
 
 ''' ---------- IMPORT PALETTES ---------- '''
 ''' Load an image in Blender database and pack it '''
@@ -131,8 +131,11 @@ def upload_brush(name, bdat, fdir):
         bsh = bpy.data.brushes.new(name=name, mode='PAINT_GPENCIL')
         bpy.data.brushes.create_gpencil_data(bsh)
         bsh.use_fake_user = True
- 
-    set_props(bsh, bdat, fdir)
+    
+    set_props(bsh.gpencil_settings, bdat, fdir)
+
+    if 'size' in bdat:
+        bsh.size = bdat['size']
 
     return True
 
@@ -456,6 +459,7 @@ def export_palettes_content(filepath):
     pal_dct["__brushes__"] = {}
     bsh_dct = pal_dct["__brushes__"]
     for bname in brush_names:
-        bdat = bpy.data.brushes[bname]
+        bdat = bpy.data.brushes[bname].gpencil_settings
         bsh_dct[bname] = get_props_dict(bdat, filedir, tex_folder)
+        bsh_dct[bname]['size'] = bpy.data.brushes[bname].size
     return pal_dct
