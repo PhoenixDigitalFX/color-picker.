@@ -3,7 +3,7 @@ import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba, rgba2hex
 import datetime as dt
 
-readonly_excepts = {"curves", "curve_strength"}
+readonly_excepts = {'curves', 'curve_sensitivity', 'curve_strength', 'curve_jitter', 'curve_random_pressure', 'curve_random_strength', 'curve_random_uv', 'curve_random_hue', 'curve_random_saturation', 'curve_random_value'}
 
 ''' ---------- IMPORT PALETTES ---------- '''
 ''' Load an image in Blender database and pack it '''
@@ -38,7 +38,6 @@ def load_curves(item, val):
             if (point_id == 0) or (point_id == len(curve_dat)-1):
                 continue
             curve.points.new(point_dat[0],point_dat[1])
-
 
 def set_props(item, data, fdir, rec_level=0):   
     if rec_level > 6:
