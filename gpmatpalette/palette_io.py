@@ -3,6 +3,8 @@ import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba, rgba2hex
 import datetime as dt
 
+readonly_excepts = ["gpencil_settings", "curves", "curve_strength"]
+
 ''' ---------- IMPORT PALETTES ---------- '''
 ''' Load an image in Blender database and pack it '''
 def load_image(imname, path_prefix, check_existing=True):
@@ -12,7 +14,36 @@ def load_image(imname, path_prefix, check_existing=True):
         im.pack()
     return im
 
-def set_props(item, data, fdir):   
+def load_curves(item, val):
+    for curve_id, curve_dat in enumerate(val):
+        if curve_id >= len(item.curves):
+            print("ERROR : Loading too many curves")
+            return
+
+        curve = item.curves[curve_id]
+
+        if len(curve_dat) < 2:
+            print("ERROR : Trying to load a curve with less than 2 points")
+            continue
+
+        while(len(curve.points) > 2):
+            curve.points.remove(curve.points[1])
+        
+        curve.points[0].location[0] = curve_dat[0][0]
+        curve.points[0].location[1] = curve_dat[0][1]
+        curve.points[1].location[0] = curve_dat[-1][0]
+        curve.points[1].location[1] = curve_dat[-1][1]
+
+        for point_id, point_dat in enumerate(curve_dat):
+            if (point_id == 0) or (point_id == len(curve_dat)-1):
+                continue
+            curve.points.new(point_dat[0],point_dat[1])
+
+
+def set_props(item, data, fdir, rec_level=0):   
+    if rec_level > 6:
+        return
+
     def set_default(item, pname, prop):
         ptype = prop.type
         if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
@@ -26,6 +57,7 @@ def set_props(item, data, fdir):
         
     def set_prop(item, pname, prop, val):
         ptype = prop.type
+
         if (ptype in {'INT','FLOAT', 'BOOLEAN'}) and prop.is_array:
             if (prop.subtype in {'COLOR', 'COLOR_GAMMA'}) \
                 and (isinstance(val,str)):
@@ -48,13 +80,21 @@ def set_props(item, data, fdir):
                 and (not val is None):
                 im = load_image(val, fdir)
                 setattr(item, pname, im)
+            if pname.endswith("material") \
+                and (not val is None):
+                if val in bpy.data.materials:
+                    setattr(item, pname, bpy.data.materials[val])
             else:
-                setattr(item, pname, val)
+                set_props(getattr(item,pname), val, fdir, rec_level+1)
+        elif ptype == 'COLLECTION':
+            if pname == "curves":
+                load_curves(item, val)
         else:
             print(f"Unknown property type {pname} : {ptype}")
+
     props = item.bl_rna.properties
     for pname, prop in props.items():
-        if prop.is_readonly:
+        if (prop.is_readonly) and (not pname in readonly_excepts):
             continue
         if not pname in data:
             set_default(item, pname, prop)
@@ -71,7 +111,7 @@ def upload_material(name, mdat, fdir):
         mat = bpy.data.materials.new(name=name)
         mat.use_fake_user = True
         bpy.data.materials.create_gpencil_data(mat)
-        mat.asset_generate_preview()
+
     elif not mat.is_grease_pencil:
         print(f"Error: Material {name} exists and is not GP.")
         return False
@@ -93,7 +133,6 @@ def upload_brush(name, bdat, fdir):
         bsh.use_fake_user = True
  
     set_props(bsh, bdat, fdir)
-    set_props(bsh.gpencil_settings, bdat["gpencil_settings"], fdir)
 
     return True
 
@@ -285,7 +324,10 @@ def write_image(image, filedir, ext, subdir=""):
     
     return os.path.relpath(impath,start=filedir)
 
-def get_props_dict(item, fdir, imdir):    
+def get_props_dict(item, fdir, imdir, rec_level=0): 
+    if rec_level > 6:
+        return {}
+
     def equals_default(item, pname, prop):
         ptype = prop.type
         val = getattr(item,pname)
@@ -300,12 +342,13 @@ def get_props_dict(item, fdir, imdir):
             return (val == prop.default)
 
         elif ptype == 'POINTER':
-            if isinstance(val, bpy.types.Image):
-                print(f"Got image {pname}")   
-                return (val is None)
-            # print(f"Got PointerProperty {pname} of type {type(val)}")
+            return val is None
+            
+        elif ptype == 'COLLECTION':
+            if pname in {'nodes', 'links'}:
+                return True
 
-        return True
+        return False
 
     def parse_prop(item, pname, pval):
         ptype = pval.type
@@ -320,7 +363,8 @@ def get_props_dict(item, fdir, imdir):
             fname = bpy.path.basename(val)
             fpath = os.path.join(fdir,imdir,fname)
             from shutil import copy
-            copy(vpath,fpath)
+            if vpath != fpath:
+                copy(vpath,fpath)
             return os.path.relpath(fpath,start=fdir)
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
@@ -329,22 +373,22 @@ def get_props_dict(item, fdir, imdir):
         elif ptype == 'POINTER':
             if isinstance(val, bpy.types.Image):
                 return write_image(val, fdir, ".png", imdir)
+            if isinstance(val, bpy.types.Material):
+                return val.name
+            return get_props_dict(val, fdir, imdir,rec_level+1)
+
+        elif ptype == 'COLLECTION':
+            if (len(val) > 0) and isinstance(val[0], bpy.types.CurveMap):
+                return [[ [x.location[0],x.location[1]] for x in curve.points] for curve in val]
+            return [get_props_dict(v,fdir,imdir,rec_level+1) for v in val.values()]
         else:
             print(f"Unknown property type {pname} : {ptype}")
         return None
      
-    return { k:parse_prop(item, k, v) for k,v in item.bl_rna.properties.items() \
-                    if (not v.is_readonly) and (not equals_default(item, k, v))}
+    props_dict = { k:parse_prop(item, k, v) for k,v in item.bl_rna.properties.items() \
+                    if ((not v.is_readonly) or (k in readonly_excepts)) and (not equals_default(item, k, v))}
+    return props_dict
 
-''' Reads all brush attributes from the Blender file data
-    returns a dictionnary containing all the attributes
-    side effect : writes image files if the brush contains texture attributes
-'''
-def get_brush_data(bsh, fdir, imdir):
-    bdat = get_props_dict(bsh, fdir, imdir)
-    bdat["gpencil_settings"] = get_props_dict(bsh.gpencil_settings,fdir, imdir)
-
-    return bdat
 
 ''' Writes all palettes contained in a JSON file
     at the given file path
@@ -413,7 +457,5 @@ def export_palettes_content(filepath):
     bsh_dct = pal_dct["__brushes__"]
     for bname in brush_names:
         bdat = bpy.data.brushes[bname]
-        bsh_dct[bname] = get_props_dict(bdat,filedir,tex_folder)
-        bsh_dct[bname]["gpencil_settings"] = get_props_dict(bdat.gpencil_settings,filedir,tex_folder)
-
+        bsh_dct[bname] = get_props_dict(bdat, filedir, tex_folder)
     return pal_dct
