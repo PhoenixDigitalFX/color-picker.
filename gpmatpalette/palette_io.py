@@ -369,6 +369,10 @@ def get_props_dict(item, fdir, imdir, rec_level=0):
                 copy(vpath,fpath)
             return os.path.relpath(fpath,start=fdir)
 
+        elif (ptype == 'ENUM') and (pname.endswith("icon")) and  (not val):
+            print(f"Prop {pname} is empty (default is {pval.default})")
+            return pval.default
+
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
             return val
 
