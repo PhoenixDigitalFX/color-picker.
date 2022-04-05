@@ -3,7 +3,8 @@ import json, os, bpy, gpu, math
 from . palette_maths import hex2rgba, rgba2hex
 import datetime as dt
 
-readonly_excepts = {'curves', 'curve_sensitivity', 'curve_strength', 'curve_jitter', 'curve_random_pressure', 'curve_random_strength', 'curve_random_uv', 'curve_random_hue', 'curve_random_saturation', 'curve_random_value'}
+readonly_excepts = {'gpencil_settings','curves', 'curve_sensitivity', 'curve_strength', 'curve_jitter', 'curve_random_pressure', 'curve_random_strength', 'curve_random_uv', 'curve_random_hue', 'curve_random_saturation', 'curve_random_value'}
+prop_exempt = {'unprojected_radius', 'grad_spacing', 'cloth_constraint_softbody_strength', 'cloth_damping', 'cloth_deform_type', 'cloth_force_falloff_type', 'cloth_mass', 'cloth_sim_falloff', 'cloth_sim_limit', 'cloth_simulation_area_type', 'surface_smooth_iterations'}
 
 ''' ---------- IMPORT PALETTES ---------- '''
 ''' Load an image in Blender database and pack it '''
@@ -65,11 +66,17 @@ def set_props(item, data, fdir, rec_level=0):
             setattr(item,pname,val)
 
         elif (ptype in {'ENUM'}) and (val == ""):
-            set_default(item,pname,prop)
+            pass
+        #     set_default(item,pname,prop)
         
         elif (ptype == 'STRING') and pname.endswith('filepath'):
             abspath = os.path.join(fdir,val)
             setattr(item,pname,abspath)
+
+        elif (ptype == 'BOOLEAN') and pname == 'use_material_pin':
+            mat = item.material
+            setattr(item,pname,val)
+            item.material = mat
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
             setattr(item,pname,val)
@@ -79,6 +86,7 @@ def set_props(item, data, fdir, rec_level=0):
                 and (not val is None):
                 im = load_image(val, fdir)
                 setattr(item, pname, im)
+
             if pname.endswith("material") \
                 and (not val is None):
                 if val in bpy.data.materials:
@@ -91,9 +99,13 @@ def set_props(item, data, fdir, rec_level=0):
         else:
             print(f"Unknown property type {pname} : {ptype}")
 
+    if item is None : 
+        return
+
     props = item.bl_rna.properties
     for pname, prop in props.items():
-        if (prop.is_readonly) and (not pname in readonly_excepts):
+        if (pname in prop_exempt) \
+            or ((prop.is_readonly) and (not pname in readonly_excepts)):
             continue
         if not pname in data:
             set_default(item, pname, prop)
@@ -131,10 +143,7 @@ def upload_brush(name, bdat, fdir):
         bpy.data.brushes.create_gpencil_data(bsh)
         bsh.use_fake_user = True
     
-    set_props(bsh.gpencil_settings, bdat, fdir)
-
-    if 'size' in bdat:
-        bsh.size = bdat['size']
+    set_props(bsh, bdat, fdir)
 
     return True
 
@@ -359,6 +368,7 @@ def get_props_dict(item, fdir, imdir, rec_level=0):
             if pval.subtype in {'COLOR', 'COLOR_GAMMA'}:
                 return rgba2hex(val)
             return [v for v in val]
+
         elif (ptype == 'STRING') and (pname.endswith("filepath")):
             # filepath to image that needs to be saved during export
             vpath = bpy.path.abspath(val)
@@ -369,9 +379,9 @@ def get_props_dict(item, fdir, imdir, rec_level=0):
                 copy(vpath,fpath)
             return os.path.relpath(fpath,start=fdir)
 
-        elif (ptype == 'ENUM') and (pname.endswith("icon")) and  (not val):
-            print(f"Prop {pname} is empty (default is {pval.default})")
-            return pval.default
+        # elif (ptype == 'ENUM') and (pname.endswith("icon")) and  (not val):
+        #     print(f"Prop {pname} is empty (default is {pval.default})")
+        #     return pval.default
 
         elif ptype in {'INT','FLOAT', 'BOOLEAN','STRING','ENUM'}:
             return val
@@ -392,7 +402,7 @@ def get_props_dict(item, fdir, imdir, rec_level=0):
         return None
      
     props_dict = { k:parse_prop(item, k, v) for k,v in item.bl_rna.properties.items() \
-                    if ((not v.is_readonly) or (k in readonly_excepts)) and (not equals_default(item, k, v))}
+                    if (not k in prop_exempt) and ((not v.is_readonly) or (k in readonly_excepts)) and (not equals_default(item, k, v))}
     return props_dict
 
 
@@ -462,7 +472,7 @@ def export_palettes_content(filepath):
     pal_dct["__brushes__"] = {}
     bsh_dct = pal_dct["__brushes__"]
     for bname in brush_names:
-        bdat = bpy.data.brushes[bname].gpencil_settings
+        bdat = bpy.data.brushes[bname]
         bsh_dct[bname] = get_props_dict(bdat, filedir, tex_folder)
-        bsh_dct[bname]['size'] = bpy.data.brushes[bname].size
+        # bsh_dct[bname]['size'] = bpy.data.brushes[bname].size
     return pal_dct
