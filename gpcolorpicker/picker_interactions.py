@@ -4,7 +4,7 @@ import numpy as np
 import bpy
 
 ''' Sets the given material as active '''
-def pick_material(cache, context, settings, id_in_cache, brush_id):
+def pick_material(cache, context, settings, id_in_cache, brush_id, use_default_brush = True):
     if (id_in_cache < 0) or (id_in_cache >= cache.mat_nb):
         return True
     
@@ -37,7 +37,7 @@ def pick_material(cache, context, settings, id_in_cache, brush_id):
         return True
 
     bsh_id = brush_id
-    if (brush_id < 0) and (settings.use_default_brushes):
+    if (brush_id < 0) and use_default_brush and (settings.use_default_brushes):
         bsh_id = cache.bsh_default[id_in_cache]
     set_active_brush(id_in_cache, bsh_id)
 
