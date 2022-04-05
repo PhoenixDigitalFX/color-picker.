@@ -423,7 +423,7 @@ def export_palettes_content(filepath):
 
     filedir= os.path.dirname(filepath)
 
-    im_folder = "img"
+    im_folder = ""
     tex_folder = "tex"
 
     # Palettes
