@@ -493,9 +493,7 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
     for mat_id in range(cache.mat_nb):
-        #tx = cache.mat_prv[mat_id]
-        tx = None
-
+        tx = cache.mat_prv[mat_id]
         th = cache.angles[mat_id]
         rds = settings.mat_radius
         R = settings.mat_centers_radius

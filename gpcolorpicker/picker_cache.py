@@ -109,11 +109,20 @@ class CachedData:
                 print(f"ERROR : Could not load mat {item.name} preview image")
                 return None
 
+            if all([ (d==0) for d in dat ]):
+                item.asset_generate_preview()
+                print(f"ERROR : Could not load mat {item.name} preview image")
+                return None
+
             import gpu
             pbf = gpu.types.Buffer('FLOAT', ts, dat)
             return gpu.types.GPUTexture(s, data=pbf, format='RGBA16F')
 
-        self.mat_prv = [ getGPUPreviewTexture(m) for m in self.materials ]
+        def is_flat(material):
+            return (material.grease_pencil.fill_style == 'SOLID') \
+                and (material.grease_pencil.stroke_style == 'SOLID')
+
+        self.mat_prv = [ getGPUPreviewTexture(m) if not is_flat(m) else None for m in self.materials ]  
         all_brushes = { brush for mat_brushes in self.brushes for brush in mat_brushes } 
         self.bsh_prv = { b.name:getGPUPreviewTexture(b, check_custom=True) for b in all_brushes }
 
