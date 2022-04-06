@@ -7,8 +7,6 @@ Two available modes :
 
 ## Workflow 
 
-The workflow is also described in this demo video : https://vimeo.com/684303456/0d4f7936e7 
-
 ### Picker FROM PALETTE
 * Go to Properties > Scene > Grease Pencil palettes, and click on the *Load File* icon.
 * Select the JSON file you want to import, the palettes should appear in the list on the panel
