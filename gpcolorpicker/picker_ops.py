@@ -91,12 +91,15 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
         # Get addon preferences
         pname = (__package__).split('.')[0]
-        prefs = context.preferences.addons[pname].preferences
-        if prefs is None : 
+        addon_prefs = context.preferences.addons[pname].preferences
+        if addon_prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
+        theme = None
+        if len(context.preferences.themes) > 0:
+            theme = context.preferences.themes[0]
 
         # Initialize picker appearance settings
-        self.settings = GPCOLORPICKER_settings(prefs)  
+        self.settings = GPCOLORPICKER_settings(addon_prefs, theme)
 
         # Get active palette
         gpmp = context.scene.gpmatpalettes.active()

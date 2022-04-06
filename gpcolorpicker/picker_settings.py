@@ -2,7 +2,7 @@
 from math import ceil
 
 class GPCOLORPICKER_settings():
-    def __init__(self, prefs = None):
+    def __init__(self, addon_prefs = None, theme = None):
         # Const values
         self.switch_key = 'TAB'
         self.mat_line_width = 5.
@@ -13,14 +13,14 @@ class GPCOLORPICKER_settings():
         self.selection_ratio = 1.2
 
         # From user preferences
-        if prefs:
-            self.mat_from_active = (prefs.mat_mode == "from_active")
-            self.mat_assign = prefs.assign_mat
-            self.mc_fill_color = prefs.theme.pie_color
-            self.mc_line_color = prefs.theme.line_color
-            self.text_color = prefs.theme.text_color
-            self.set_icon_scale(prefs.icon_scale)
-            self.use_default_brushes = prefs.use_default_brushes
+        if addon_prefs:
+            self.mat_from_active = (addon_prefs.mat_mode == "from_active")
+            self.mat_assign = addon_prefs.assign_mat
+            self.mc_fill_color = addon_prefs.theme.pie_color
+            self.mc_line_color = addon_prefs.theme.line_color
+            self.text_color = addon_prefs.theme.text_color
+            self.set_icon_scale(addon_prefs.icon_scale)
+            self.use_default_brushes = addon_prefs.use_default_brushes
         else:
             self.mat_from_active = True
             self.mat_assign = False
@@ -29,6 +29,17 @@ class GPCOLORPICKER_settings():
             self.text_color = (0.,0.,0.,1.)
             self.set_icon_scale(250)
             self.use_default_brushes = True
+
+        if theme:
+            self.active_color = theme.view_3d.object_active
+            self.active_color = [c for c in self.active_color] + [1.]
+
+            self.select_color = theme.view_3d.object_selected
+            self.select_color = [c for c in self.select_color] + [1.]
+        
+        else:
+            self.active_color = (0.4,0.4,0.4,1.)
+            self.select_color = (0.4,0.4,0.4,1.)
 
     def set_icon_scale(self,scale):
         self.icon_scale = scale

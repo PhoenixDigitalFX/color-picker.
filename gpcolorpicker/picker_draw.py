@@ -414,13 +414,7 @@ def draw_picklines(op, context, cache, settings):
     fsh = picklines_fsh
     fsh = fsh.replace("__NPLM__",str(nplm))
     fsh = fsh.replace("__NMAT__",str(cache.mat_nb))
-
-    active_color = context.preferences.themes[0].view_3d.object_active
-    active_color = [c for c in active_color] + [1.]
-
-    select_color = context.preferences.themes[0].view_3d.object_selected
-    select_color = [c for c in select_color] + [1.]
-
+    
     shader, batch = setup_shader(op, settings, fsh)
 
     shader.uniform_float("selected_radius", settings.selection_ratio*settings.mat_radius)
@@ -432,8 +426,8 @@ def draw_picklines(op, context, cache, settings):
     set_uniform_vector_float(shader, picklines, "mat_picklines")
     shader.uniform_float("pickline_width", settings.pickline_width)
     shader.uniform_float("pickline_color", settings.mc_line_color)
-    shader.uniform_float("active_color", active_color)
-    shader.uniform_float("select_color", select_color)
+    shader.uniform_float("active_color", settings.active_color)
+    shader.uniform_float("select_color", settings.select_color)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
     batch.draw(shader)
@@ -469,12 +463,6 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
     ri = settings.brush_interrad
     rds = settings.brush_radius
 
-    active_color = context.preferences.themes[0].view_3d.object_active
-    active_color = [c for c in active_color] + [1.]
-
-    select_color = context.preferences.themes[0].view_3d.object_selected
-    select_color = [c for c in select_color] + [1.]
-
     for i,b in enumerate(brushes):
         tex = cache.bsh_prv[b.name]
 
@@ -495,16 +483,16 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
 
         if i == cache.bsh_active[mat_id]:
             draw_flat_circle(op, settings, center, radius*1.05, \
-                line_width=radius*0.15, line_color=active_color)
+                line_width=radius*0.15, line_color=settings.active_color)
 
         if op.brush_selected == i:
             draw_flat_circle(op, settings, center, radius*1.05, \
-                line_width=radius*0.15, line_color=select_color)
+                line_width=radius*0.15, line_color=settings.select_color)
             
         if (settings.use_default_brushes) \
             and (i == cache.bsh_default[mat_id]) and (op.brush_selected == -1):
             draw_flat_circle(op, settings, center, radius*1.05, \
-                line_width=radius*0.15, line_color=select_color)
+                line_width=radius*0.15, line_color=settings.select_color)
 
         if tex is None:
             org = op.origin + 0.5*op.region_dim
