@@ -454,6 +454,12 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
     ri = settings.brush_interrad
     rds = settings.brush_radius
 
+    active_color = context.preferences.themes[0].view_3d.object_active
+    active_color = [c for c in active_color] + [1.]
+
+    default_color = context.preferences.themes[0].view_3d.object_selected
+    default_color = [c for c in default_color] + [1.]
+
     for i,b in enumerate(brushes):
         tex = cache.bsh_prv[b.name]
 
@@ -467,15 +473,23 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
 
             mat_orth = np.asarray([-sin(th), cos(th)])
             center += cache.bsh_selected_offset*mat_orth
-
+                
         radius = settings.brush_radius
         if op.brush_selected == i:
             radius *= settings.selection_ratio
+
+        if i == cache.bsh_active[mat_id]:
+            draw_flat_circle(op, settings, center, radius*1.05, \
+                line_width=radius*0.15, line_color=active_color)
+
+        if op.brush_selected == i:
+            draw_flat_circle(op, settings, center, radius*1.05, \
+                line_width=radius*0.15, line_color=default_color)
             
         if (settings.use_default_brushes) \
-            and (i == cache.bsh_default[mat_id]):
-            draw_flat_circle(op, settings, center, radius*1.1, \
-                line_width=radius*0.3, line_color=settings.default_color)
+            and (i == cache.bsh_default[mat_id]) and (op.brush_selected == -1):
+            draw_flat_circle(op, settings, center, radius*1.05, \
+                line_width=radius*0.15, line_color=default_color)
 
         if tex is None:
             org = op.origin + 0.5*op.region_dim
@@ -484,11 +498,6 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
         else:
             draw_centered_texture(op, settings, tex, center, radius)
 
-        mark_color = settings.active_color
-        mark_radius = settings.mat_line_width*0.6
-        mark_pos = center - 1.4*radius*np.asarray([cos(a),sin(a)])
-        if i == cache.bsh_active[mat_id]:
-            draw_mark(op, settings, mark_pos, mark_radius, mark_color)
 
 ''' Draws the preview image of materials '''
 def draw_mat_previews(op, context, cache, settings):
