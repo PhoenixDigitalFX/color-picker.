@@ -356,17 +356,20 @@ def draw_pie_circle(op, settings):
 
 ''' Draws materials picklines if there are some
 '''
-def draw_picklines(op, cache, settings):
+def draw_picklines(op, context, cache, settings):
     picklines_fsh = '''
     #define PI 3.1415926538
     uniform float selected_radius;
     uniform float mat_radius;
     uniform float mat_centers_radius;
     uniform int mat_selected;
+    uniform int mat_active;
     uniform float mat_thetas[__NMAT__];
     uniform vec3 mat_picklines[__NPLM__];
     uniform float pickline_width;
     uniform vec4 pickline_color;
+    uniform vec4 active_color;
+    uniform vec4 select_color;
     uniform float aa_eps;
 
     in vec2 lpos;
@@ -382,6 +385,7 @@ def draw_picklines(op, cache, settings):
         for(int k = 0; k < __NPLM__; ++k){
             int i = int(mat_picklines[k].z);
             bool is_selected = (i == mat_selected);
+            bool is_active = (i == mat_active);
 
             float th_i = mat_thetas[i];
             float R = is_selected?(mat_centers_radius + selected_radius - mat_radius):mat_centers_radius;
@@ -391,8 +395,10 @@ def draw_picklines(op, cache, settings):
             vec2 s0 = rds*mat_picklines[k].xy;
             vec2 s1 = rds*vec2(cos(th_i), sin(th_i));
 
-            vec4 fragColor_line = pickline_color;
-            fragColor_line.a *= ((mat_selected >=0) && !is_selected)?0.3:1;
+            vec4 fragColor_line = is_active?active_color:pickline_color;
+            fragColor_line = is_selected?select_color:fragColor_line;
+
+            fragColor_line.a *= ((mat_selected >=0) && !is_selected && !is_active)?0.3:1;
             fragColor_line.a *= aa_seg(s0, s1, lpos, pickline_width, aa_eps);
 
             fragColor = alpha_compose(fragColor, fragColor_line);
@@ -409,23 +415,34 @@ def draw_picklines(op, cache, settings):
     fsh = fsh.replace("__NPLM__",str(nplm))
     fsh = fsh.replace("__NMAT__",str(cache.mat_nb))
 
+    active_color = context.preferences.themes[0].view_3d.object_active
+    active_color = [c for c in active_color] + [1.]
+
+    select_color = context.preferences.themes[0].view_3d.object_selected
+    select_color = [c for c in select_color] + [1.]
+
     shader, batch = setup_shader(op, settings, fsh)
 
     shader.uniform_float("selected_radius", settings.selection_ratio*settings.mat_radius)
     shader.uniform_float("mat_radius", settings.mat_radius)
     shader.uniform_float("mat_centers_radius", settings.mat_centers_radius)
     shader.uniform_int("mat_selected", op.mat_selected);   
+    shader.uniform_int("mat_active", cache.mat_active);   
     set_uniform_vector_float(shader, cache.angles, "mat_thetas") 
     set_uniform_vector_float(shader, picklines, "mat_picklines")
     shader.uniform_float("pickline_width", settings.pickline_width)
     shader.uniform_float("pickline_color", settings.mc_line_color)
+    shader.uniform_float("active_color", active_color)
+    shader.uniform_float("select_color", select_color)
     shader.uniform_float("aa_eps", settings.anti_aliasing_eps)
     
     batch.draw(shader)
 
 ''' Draws a dot mark to spot the active material '''
-def draw_active_mat(op, cache, settings):
-    color = settings.active_color
+def draw_active_mat(op, context, cache, settings):
+    active_color = context.preferences.themes[0].view_3d.object_active
+    active_color = [c for c in active_color] + [1.]
+    color = active_color
     radius = settings.mat_line_width*0.8
     th = cache.angles[cache.mat_active]
 
@@ -436,9 +453,7 @@ def draw_active_mat(op, cache, settings):
         R += mat_radius - settings.mat_radius
 
     from math import cos, sin
-    mat_center = R*np.asarray([cos(th), sin(th)])
-
-    pos = mat_center 
+    pos = (R-mat_radius*1.3)*np.asarray([cos(th), sin(th)])
 
     draw_mark(op, settings, pos, radius, color)
 
@@ -457,8 +472,8 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
     active_color = context.preferences.themes[0].view_3d.object_active
     active_color = [c for c in active_color] + [1.]
 
-    default_color = context.preferences.themes[0].view_3d.object_selected
-    default_color = [c for c in default_color] + [1.]
+    select_color = context.preferences.themes[0].view_3d.object_selected
+    select_color = [c for c in select_color] + [1.]
 
     for i,b in enumerate(brushes):
         tex = cache.bsh_prv[b.name]
@@ -484,12 +499,12 @@ def draw_bsh_previews(op, context, cache, settings, mat_id):
 
         if op.brush_selected == i:
             draw_flat_circle(op, settings, center, radius*1.05, \
-                line_width=radius*0.15, line_color=default_color)
+                line_width=radius*0.15, line_color=select_color)
             
         if (settings.use_default_brushes) \
             and (i == cache.bsh_default[mat_id]) and (op.brush_selected == -1):
             draw_flat_circle(op, settings, center, radius*1.05, \
-                line_width=radius*0.15, line_color=default_color)
+                line_width=radius*0.15, line_color=select_color)
 
         if tex is None:
             org = op.origin + 0.5*op.region_dim
@@ -596,14 +611,15 @@ def draw_callback_px(op, context, cache, settings):
     else:
         draw_pie_circle(op, settings)
 
-    draw_picklines(op, cache, settings)
+    draw_picklines(op, context, cache, settings)
     draw_mat_previews(op, context, cache, settings)
 
     if op.mat_selected >= 0:
         draw_bsh_previews(op, context, cache, settings, mat_id=op.mat_selected)
         
-    if cache.mat_active >= 0:
-        draw_active_mat(op, cache, settings) 
+    if (cache.mat_active >= 0) and \
+        (len(cache.pick_origins[cache.mat_active]) == 0):
+        draw_active_mat(op, context, cache, settings) 
 
     if cache.from_palette:
         write_active_palette(op, context, settings)

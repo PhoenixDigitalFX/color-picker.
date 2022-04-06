@@ -23,6 +23,8 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
         cache = self.cached_data
         stg = self.settings
 
+        stg.use_default_brushes = not event.shift
+
         self.mat_selected = get_selected_mat_id(event, self.region_dim, self.origin, cache.mat_nb, \
                                             stg.interaction_radius, cache.angles)
         if self.mat_selected >= 0:
@@ -34,8 +36,14 @@ class GPCOLORPICKER_OT_wheel(bpy.types.Operator):
 
     def modal(self, context, event):
         context.area.tag_redraw()  
+        
+        if (event.type in {'LEFT_SHIFT', 'RIGHT_SHIFT'}):
+            if event.value == 'PRESS':
+                self.settings.use_default_brushes = False
+            elif event.value == 'RELEASE':
+                self.settings.use_default_brushes = True
 
-        if event.type == 'MOUSEMOVE':
+        if (event.type == 'MOUSEMOVE'):
             self.refresh_selections(event)
         
         elif (event.type == self.settings.switch_key) and (event.value == 'PRESS'):
