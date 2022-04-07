@@ -196,11 +196,17 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
         self.tsart = time.time()
         self.timeout = False
 
+        # Get addon preferences
         pname = (__package__).split('.')[0]
-        prefs = context.preferences.addons[pname].preferences
-        if prefs is None : 
+        addon_prefs = context.preferences.addons[pname].preferences
+        if addon_prefs is None : 
             self.report({'WARNING'}, "Could not load user preferences, running with default values")
-        self.settings = GPCOLORPICKER_settings(prefs)  
+        theme = None
+        if len(context.preferences.themes) > 0:
+            theme = context.preferences.themes[0]
+
+        # Initialize picker appearance settings
+        self.settings = GPCOLORPICKER_settings(addon_prefs, theme)
 
         # Get event related data
         self.invoke_key = event.type
