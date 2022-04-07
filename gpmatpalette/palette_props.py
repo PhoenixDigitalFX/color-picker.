@@ -107,9 +107,14 @@ class GPMatItem(PropertyGroup):
             and (not self.compatibility_check()):
             return None
         return self.data.name
+
+    def is_brush_available(self, bsh):
+        if (not bsh) or (not bsh.gpencil_settings):
+            return False
+        return not self.contains_brush(bsh.name)
     
     def accept_pending_brush(self):
-        if not self.pending_brush:
+        if not self.is_brush_available(self.pending_brush):
             return
             
         self.add_brush(self.pending_brush)
@@ -140,6 +145,9 @@ class GPMatItem(PropertyGroup):
             return -1
         return bnames.index(name)
 
+    def contains_brush(self, name):
+        return (self.index_brush(name) >= 0)
+
     def count_brushes(self):
         return len(self.brushes)
 
@@ -164,6 +172,7 @@ def update_im(self, context):
 def update_with_lock(self, context):
     if self.is_obsolete != self.lock_obsolete:
         self.is_obsolete = self.lock_obsolete
+
 class GPMatPalette(PropertyGroup):
     bl_idname= "scene.gpmatpalettes.palette"
 

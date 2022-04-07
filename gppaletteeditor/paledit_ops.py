@@ -382,6 +382,14 @@ class GPCOLORPICKER_OT_addBrushInMaterial(bpy.types.Operator):
         row = layout.row()
         row.template_ID(mat, "pending_brush")  
 
+        row = layout.row()
+        if (mat.pending_brush) and (not mat.is_brush_available(mat.pending_brush)):
+            row.label(text="Brush not available")
+        elif mat.pending_brush:
+            bsh = mat.pending_brush.gpencil_settings
+            if bsh.use_material_pin and (bsh.material.name != mat.get_name()):
+                row.label(text="Warning: Brush is pinned to another material")
+
     def invoke(self, context, event):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
