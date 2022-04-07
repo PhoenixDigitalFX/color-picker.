@@ -46,6 +46,9 @@ Various actions are then available to edit an existing palette :
 
 ![Editor Operations](doc/editor_operations.png "Overview of the actions available in the palette editor")
 
+### Autoload mode
+You can also set to automatically load some palettes in every blender file. To do so, you need to check the autoload mode in the addon preferences panel. There, you can select a directory from which all palettes will be picked (only checking for 2 levels of recursivity). By default, the directory is set to the user scripts directory, under the folder called *GPPalettes*.
+
 ## License
 
 Published under GPLv3 license.
