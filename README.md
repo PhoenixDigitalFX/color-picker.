@@ -33,8 +33,12 @@ Note that during the export, all palettes in the current blender file will be ex
 
 ### Editing palettes
 In the viewport, press Ctrl+Shift+A to launch the palette editor mode.
-Add a palette by clicking on the cross in the gray circle, and entering a name.
-You can then : 
+
+If your file contains no palette, then you can create one by clicking on the cross that appears at the center of the icon. Otherwise, to create a new palette, you need to first go to the end of the existing palettes by pressing Tab.
+
+![New Palette](doc/new_palette.png "Creation of a new palette")
+
+Various actions are then available to edit an existing palette :
 * Add, move or remove a material in the palette,
 * add or edit a palette image,
 * add, move or remove picklines for each material,
