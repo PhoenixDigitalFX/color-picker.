@@ -38,6 +38,7 @@ class GPCOLORPICKER_OT_paletteEditor(bpy.types.Operator):
                 matit.brushes.clear()
                 for b in cache.brushes[i]:
                     matit.add_brush(b)   
+                matit.is_dirty = True
 
             if cache.bsh_default[i] >= 0:
                 matit.set_default_brush(cached_brush_names[cache.bsh_default[i]])

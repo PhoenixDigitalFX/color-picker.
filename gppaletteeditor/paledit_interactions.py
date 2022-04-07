@@ -290,7 +290,7 @@ class MoveBrushInteraction(RadialInteractionArea):
             and (super().is_in_selection(op, cache, settings, pos))
 
     def refresh(self, cache, settings):
-        if self.bsh_id < 0:
+        if (self.bsh_id < 0) or (self.bsh_id >= len(cache.brushes[self.mat_id])):
             print(f"ERROR : Brush {self.bsh_id} not assigned to material {self.mat_id}")
             return            
         self.th = cache.angles[self.mat_id]
