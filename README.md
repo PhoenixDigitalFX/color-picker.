@@ -1,11 +1,17 @@
 # Grease Pencil Color Picker
 
-Blender add-on to quickly switch between materials of an active Grease pencil object.
-Two available modes : 
-* *from active* which allows you to switch between the existing materials of the active object,
-* *from palette* which allows you to use specific material palettes described in a JSON file. 
+Blender add-on to quickly switch between a given set of grease pencil materials.
 
-## Workflow 
+## Usage
+
+### Create palette
+In the viewport, press Ctrl+Shift+A to launch the palette editor mode.
+Add a palette by clicking on the cross in the gray circle, and entering a name.
+You can then : 
+* Add, move or remove a material in the palette,
+* add or edit a palette image,
+* add, move or remove picklines for each material,
+* assign brushes for materials.
 
 ### Picker FROM PALETTE
 * Go to Properties > Scene > Grease Pencil palettes, and click on the *Load File* icon.
