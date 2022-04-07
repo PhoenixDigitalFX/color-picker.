@@ -38,7 +38,7 @@ You can then :
 * Add, move or remove a material in the palette,
 * add or edit a palette image,
 * add, move or remove picklines for each material,
-* assign brushes for materials.
+* assign brushes for materials. 
 
 ### Picker FROM PALETTE
 * Go to Properties > Scene > Grease Pencil palettes, and click on the *Load File* icon.
