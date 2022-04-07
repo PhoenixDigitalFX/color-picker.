@@ -44,6 +44,8 @@ Various actions are then available to edit an existing palette :
 * add, move or remove picklines for each material,
 * assign brushes for materials. 
 
+![Editor Operations](doc/editor_operations.png "Overview of the actions available in the palette editor")
+
 ## License
 
 Published under GPLv3 license.
