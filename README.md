@@ -6,7 +6,7 @@ Blender add-on to quickly switch between a given set of grease pencil materials.
 
 The file demo_picker.blend contains a ready-to-use example.
 
-### General usage
+### General use
 You need to be in draw mode, with a grease pencil object active to use the picker. In such context, press A anywhere in the view to invoke it.
 
 ![Picker Overview](doc/picker_overview.png "Overview of the GP Color Picker")
