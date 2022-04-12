@@ -65,7 +65,7 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
 
         # Palettes List
         row = layout.row()
-        gpmp = bpy.context.scene.gpmatpalettes
+        gpmp = context.scene.gpmatpalettes
         row.template_list("GPCOLORPICKER_UL_PaletteList",'GP_Palettes', \
                         dataptr=gpmp, propname="palettes", \
                         active_dataptr=gpmp, active_propname="active_index", \
