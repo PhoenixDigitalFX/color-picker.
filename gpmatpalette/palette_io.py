@@ -10,7 +10,10 @@ prop_exempt = {'unprojected_radius', 'grad_spacing', 'cloth_constraint_softbody_
 ''' Load an image in Blender database and pack it '''
 def load_image(imname, path_prefix, check_existing=True):
     fullpath = os.path.join(path_prefix, imname)
-    im = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
+    try:
+        im = bpy.data.images.load(filepath=fullpath, check_existing=check_existing)
+    except RuntimeError:
+        return None
     if im:
         im.pack()
     return im
@@ -322,14 +325,17 @@ def write_image(image, filedir, ext, subdir=""):
     saved_format = image.file_format
     image.file_format = (ext[1:]).upper()     
 
-    if not image.has_data:
-        image.save_render(impath)     
-    else:
-        saved_fpath = image.filepath
-        image.pack()
-        image.filepath = impath
-        image.save()
-        image.filepath = saved_fpath
+    try:
+        if not image.has_data:
+                image.save_render(impath)     
+        else:
+            saved_fpath = image.filepath
+            image.pack()
+            image.filepath = impath
+            image.save()
+            image.filepath = saved_fpath
+    except RuntimeError:
+        print(f"Error : Could not write image {image.name}")
 
     image.file_format = saved_format  
     
