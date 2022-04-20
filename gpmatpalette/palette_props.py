@@ -267,6 +267,7 @@ class GPMatPalette(PropertyGroup):
         if (index >= 0) and (index != old_id):
             self.materials.move(old_id, index)
         self.autocomp_positions()
+        self.is_dirty = True
         return self.materials[index]
     
     ''' Remove a material from the collection (given by collection index) '''

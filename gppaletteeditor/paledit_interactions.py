@@ -122,8 +122,11 @@ class MoveMaterialPickerInteraction(RadialInteractionArea):
         self.refresh(cache, settings)
 
     def is_in_selection(self, op, cache, settings, pos):
-        return (op.mat_selected == self.mat_id) \
-            and (super().is_in_selection(op, cache, settings, pos))
+        if not super().is_in_selection(op, cache, settings, pos):
+            return False
+        if op.mat_locked:
+            return (op.mat_selected == self.mat_id)
+        return True
 
     def refresh(self, cache, settings):
         o = cache.pick_origins[self.mat_id][self.pln_id]
