@@ -372,12 +372,11 @@ class MoveBrushInteraction(RadialInteractionArea):
         else:
             inter_rad = settings.brush_radius
 
-            if cache.bsh_selected_offset > inter_rad:
-                cache.bsh_default[self.mat_id] = self.bsh_id
-
-            if (cache.bsh_selected_offset < -inter_rad) \
-                and (cache.bsh_default[self.mat_id] == self.bsh_id) :
-                cache.bsh_default[self.mat_id] = -1
+            if abs(cache.bsh_selected_offset) > inter_rad:
+                if cache.bsh_default[self.mat_id] == self.bsh_id:
+                    cache.bsh_default[self.mat_id] = -1
+                else:
+                    cache.bsh_default[self.mat_id] = self.bsh_id
 
             cache.bsh_selected_offset = 0
 
