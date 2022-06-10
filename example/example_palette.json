@@ -1,0 +1,150 @@
+{
+    "__meta__": {
+        "timestamp": "2022-06-10 12:39:58.443438"
+    },
+    "Blender Logo": {
+        "image": {
+            "path": "blender_insigna.png",
+            "relative": true
+        },
+        "materials": {
+            "bl_fill_orange": {
+                "position": 23.75992976381865,
+                "origins": [
+                    [
+                        0.3188405930995941,
+                        0.08115942031145096
+                    ]
+                ],
+                "brushes": {}
+            },
+            "bl_fill_text": {
+                "position": 88.23217196236045,
+                "origins": [
+                    [
+                        -0.24347825348377228,
+                        0.6028985381126404
+                    ]
+                ],
+                "brushes": {}
+            },
+            "bl_fill_badge": {
+                "position": 181.93058529861713,
+                "origins": [
+                    [
+                        -0.17391304671764374,
+                        -0.469565212726593
+                    ],
+                    [
+                        -0.3478260934352875,
+                        0.5275362133979797
+                    ]
+                ],
+                "brushes": {}
+            },
+            "bl_fill_shadow": {
+                "position": 225.17206214148263,
+                "origins": [
+                    [
+                        -0.260869562625885,
+                        -0.6086956262588501
+                    ]
+                ],
+                "brushes": {}
+            },
+            "bl_fill_blue": {
+                "position": 353.05403548108984,
+                "origins": [
+                    [
+                        0.2028985470533371,
+                        -0.12173912674188614
+                    ]
+                ],
+                "brushes": {}
+            }
+        }
+    },
+    "__materials__": {
+        "bl_fill_shadow": {
+            "color": "#000000ff",
+            "fill_color": "#232323ff",
+            "mix_color": "#ffffffff",
+            "mix_factor": 0.5,
+            "texture_scale": [
+                1.0,
+                1.0
+            ],
+            "texture_offset": [
+                -0.5,
+                0.0
+            ],
+            "pixel_size": 100.0,
+            "show_fill": true
+        },
+        "bl_fill_badge": {
+            "color": "#000000ff",
+            "fill_color": "#efffffff",
+            "mix_color": "#ffffffff",
+            "mix_factor": 0.5,
+            "texture_scale": [
+                1.0,
+                1.0
+            ],
+            "texture_offset": [
+                -0.5,
+                0.0
+            ],
+            "pixel_size": 100.0,
+            "show_fill": true
+        },
+        "bl_fill_blue": {
+            "color": "#000000ff",
+            "fill_color": "#05183cff",
+            "mix_color": "#ffffffff",
+            "mix_factor": 0.5,
+            "texture_scale": [
+                1.0,
+                1.0
+            ],
+            "texture_offset": [
+                -0.5,
+                0.0
+            ],
+            "pixel_size": 100.0,
+            "show_fill": true
+        },
+        "bl_fill_orange": {
+            "color": "#000000ff",
+            "fill_color": "#cb3301ff",
+            "mix_color": "#ffffffff",
+            "mix_factor": 0.5,
+            "texture_scale": [
+                1.0,
+                1.0
+            ],
+            "texture_offset": [
+                -0.5,
+                0.0
+            ],
+            "pixel_size": 100.0,
+            "show_fill": true
+        },
+        "bl_fill_text": {
+            "color": "#000000ff",
+            "fill_color": "#303030ff",
+            "mix_color": "#ffffffff",
+            "mix_factor": 0.5,
+            "texture_scale": [
+                1.0,
+                1.0
+            ],
+            "texture_offset": [
+                -0.5,
+                0.0
+            ],
+            "pixel_size": 100.0,
+            "show_fill": true
+        }
+    },
+    "__brushes__": {}
+}
