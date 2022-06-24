@@ -64,11 +64,18 @@ class GPCOLORPICKER_PT_Palette(bpy.types.Panel):
 
         # Palettes List
         row = layout.row()
+        
+        col = row.column()
         gpmp = context.scene.gpmatpalettes
-        row.template_list("GPCOLORPICKER_UL_PaletteList",'GP_Palettes', \
+        col.template_list("GPCOLORPICKER_UL_PaletteList",'GP_Palettes', \
                         dataptr=gpmp, propname="palettes", \
                         active_dataptr=gpmp, active_propname="active_index", \
                         )
+
+        col = row.column(align=True)
+        col.separator()
+        col.operator('scene.move_palette', icon='TRIA_UP', text='').move_up = True
+        col.operator('scene.move_palette', icon='TRIA_DOWN', text='').move_up = False
 
 classes = [GPCOLORPICKER_UL_PaletteList, GPCOLORPICKER_PT_Palette]
 
