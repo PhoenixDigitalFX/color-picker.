@@ -188,8 +188,14 @@ class GPMatPalette(PropertyGroup):
     is_dirty: BoolProperty(name="Dirty", description="The palette was modified recently", default=False)
     is_obsolete: BoolProperty(name = "Obsolete", description="A new version of the palette exists", default=False,  update=update_with_lock)
     lock_obsolete: BoolProperty(default=False)
+
+    def poll_material(self, object):
+        if (object is None) or (not object.is_grease_pencil):
+            return False
+        return not self.contains_material(object.name)
+
     
-    pending_material: PointerProperty(type=bpy.types.Material)
+    pending_material: PointerProperty(type=bpy.types.Material, poll=poll_material)
 
     ''' Automatic data update for palettes using old material indexation system
     '''
