@@ -16,10 +16,10 @@ import bpy
 bl_info = {
     "name": "GP Color Picker",
     "author": "Les Fées Spéciales (LFS)",
-    "description": "Quickly switch between materials of the active Grease pencil object",
+    "description": "Quickly switch between materials of the active grease pencil object",
     "blender": (3, 0, 0),
     "version": (1, 1, 0),
-    "location": "Press S in Draw mode with a GP object activated",
+    "location": "Press A in Draw mode with a grease pencil object activated",
     "category": "Materials"
 }
 
