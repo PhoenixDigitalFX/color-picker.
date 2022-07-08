@@ -168,11 +168,11 @@ class GPCOLORPICKER_preferences(AddonPreferences):
                 row.prop(self.autoload_mode, "path", text="")
                 row.operator("scene.autoload_palette", text="", icon= "FILE_REFRESH")
 
-            # AUTOCHECK MODE prefs
-            row = mats.row()
-            row.prop(self.autoload_mode, "autocheck")
-            if self.autoload_mode.autocheck:
-                row.prop(self.autoload_mode, "timerval")
+                # AUTOCHECK MODE prefs
+                row = mats.row()
+                row.prop(self.autoload_mode, "autocheck")
+                if self.autoload_mode.autocheck:
+                    row.prop(self.autoload_mode, "timerval")
 
             # DEFAULT BRUSH mode
             row = mats.row()
