@@ -254,7 +254,7 @@ class GPCOLORPICKER_OT_editImage(bpy.types.Operator):
         layout = self.layout
         pal = context.scene.gpmatpalettes.active()
         row = layout.row()
-        row.template_ID(pal, "image", new="image.new", open="image.open")
+        row.template_ID(pal, "image", open="image.open")
 
     def invoke(self, context, event):
         wm = context.window_manager
