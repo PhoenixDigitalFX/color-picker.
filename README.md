@@ -32,7 +32,7 @@ Note that during the export, all palettes in the current blender file will be ex
 
 
 ### Editing palettes
-In the viewport, press Ctrl+Shift+A to launch the palette editor mode.
+In the viewport, press Alt+Shift+A to launch the palette editor mode.
 
 If your file contains no palette, then you can create one by clicking on the cross that appears at the center of the icon. Otherwise, to create a new palette, you need to first go to the end of the existing palettes by pressing Tab.
 
