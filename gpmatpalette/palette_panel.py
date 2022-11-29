@@ -10,12 +10,12 @@ class GPCOLORPICKER_UL_PaletteList(bpy.types.UIList):
 
         if self.layout_type in {'DEFAULT', 'COMPACT', 'GRID'}:
             # Palette name
-            decorated_name = item.name            
+            col = layout.column()          
             if item.autoloaded:
-                decorated_name = '[' + decorated_name + ']'
-            
-            col = layout.column()
-            col.label(text=decorated_name)
+                decorated_name = '[' + item.name + ']'
+                col.label(text=decorated_name)
+            else:
+                col.prop(item, 'name', text='', emboss=False)
             col.enabled = item.visible
 
             # Warning if palette is obsolete
